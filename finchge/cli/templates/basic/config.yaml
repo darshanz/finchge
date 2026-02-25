@@ -1,0 +1,19 @@
+experiment:
+  random_seed: 1234
+  num_generations: 200
+  verbose: false
+  cache_type: lru
+  cache_size: 128
+
+ge:
+  grammar_file: grammar.bnf
+  population_size: 100
+  codon_size: 127
+  max_wraps: 6
+  max_recursion_depth: 20
+  genome_length: 100
+  init_type: random_genome
+  mutation_probability: 0.01
+  crossover_probability: 0.5
+  elite_size: 1
+  tournament_size: 3

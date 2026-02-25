@@ -1,0 +1,40 @@
+# compiled Python files
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.pyo
+*.pyc
+# logs
+**/logs/
+.pytest_cache/
+*.log
+
+site/
+# coverage reports
+htmlcov/
+.coverage
+.coverage.*
+.nox/
+.tox/
+
+
+# virtual environments
+venv/
+.venv/
+
+# Python egg and build files
+pip-wheel-metadata/
+*.egg-info/
+*.egg/
+dist/
+build/
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+
+.mypy_cache/
+
+
+/code_inspector.py

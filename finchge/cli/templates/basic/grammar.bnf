@@ -1,0 +1,3 @@
+# Grammar for lower case letters and an underscore symbol
+<string> ::= <letter> | <letter> <string>
+<letter> ::= _ | 'a'..'z'

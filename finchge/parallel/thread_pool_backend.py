@@ -1,0 +1,153 @@
+import concurrent.futures
+import logging
+import random
+import threading
+from typing import Any, Dict, Optional
+
+import numpy as np
+
+from finchge.config import Keys
+from finchge.fitness import GEFitnessFunction
+from finchge.parallel.base import BaseParallelBackend
+
+
+def seed_everything(seed: int, use_torch: bool = False) -> None:
+    """
+    Set seeds for reproducibility.
+    """
+    random.seed(seed)
+    np.random.seed(seed)
+
+    if use_torch:
+        import torch
+
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+
+
+class ThreadPoolBackend(BaseParallelBackend):
+    """
+    Thread-based parallel backend.
+    """
+
+    def __init__(self, config: Dict[str, Any]) -> None:
+        self.max_workers: Optional[int] = config.get(Keys.MAX_WORKERS, None)
+        self.batch_size: int = config.get(Keys.BATCH_SIZE, 10)
+        self.executor: Optional[concurrent.futures.ThreadPoolExecutor] = None
+        self._local: threading.local = threading.local()
+
+    def _evaluate_single(
+        self,
+        runner: Any,
+        phenotype: str,
+        fitness_functions: list[GEFitnessFunction],
+        required_keys: Dict[str, Any],
+        seed: int,
+    ) -> list[float]:
+        """
+        Evaluate a single individual in a thread.
+        """
+        try:
+            # Set seed for reproducibility
+            use_torch = False
+            if runner is not None:
+                use_torch = hasattr(runner, "train_dataset")
+
+            seed_everything(seed, use_torch=use_torch)
+
+            eval_context: Dict[str, Any] = {}
+
+            if runner is not None:
+                # Run the phenotype
+                eval_context = runner.run(
+                    phenotype=phenotype, context_hints=required_keys
+                )
+
+                if hasattr(runner, "get_context"):
+                    extra_context = runner.get_context()
+                    if isinstance(extra_context, dict):
+                        eval_context.update(extra_context)
+            else:
+                # No runner required . eg. stringmatch
+                eval_context = {
+                    "phenotype": phenotype,
+                }
+
+            # Calculate fitness
+            return [fn.evaluate(eval_context) for fn in fitness_functions]
+
+        except Exception as e:
+            logging.error(f"Thread worker failed: {e}")
+            import traceback
+
+            traceback.print_exc()
+            return [
+                float("inf") if fn.maximize else float("-inf")
+                for fn in fitness_functions
+            ]
+
+    async def evaluate_batch(
+        self,
+        contexts: list[dict[str, Any]],
+        fitness_functions: list[GEFitnessFunction],
+    ) -> list[list[float]]:
+        """
+        Evaluate a batch of individuals using thread pool.
+
+        Args:
+            contexts: list of context dicts with 'runner', 'phenotype', 'seed'
+            fitness_functions: list of fitness functions
+
+        Returns:
+            list of fitness values for each individual
+        """
+        if self.executor is None:
+            self.executor = concurrent.futures.ThreadPoolExecutor(
+                max_workers=self.max_workers, thread_name_prefix="FinchGE_Thread"
+            )
+
+        all_results: list[list[float]] = []
+        total_items = len(contexts)
+
+        # Process in batches
+        for batch_start in range(0, total_items, self.batch_size):
+            batch_end = min(batch_start + self.batch_size, total_items)
+            batch_futures: list[concurrent.futures.Future[list[float]]] = []
+            # Submit batch to thread pool
+            for i in range(batch_start, batch_end):
+                ctx = contexts[i]
+                future = self.executor.submit(
+                    self._evaluate_single,
+                    ctx.get("runner"),
+                    str(ctx.get("phenotype", "")),
+                    fitness_functions,
+                    ctx.get("required_keys", {}),
+                    ctx.get("seed", 0),
+                )
+                batch_futures.append(future)
+
+            # Collect results with timeout
+            for future in batch_futures:
+                try:
+                    result = future.result(timeout=60)
+                    # Ensure result is list[float]
+                    if not isinstance(result, list):
+                        result = [float("-inf")] * len(fitness_functions)
+                except concurrent.futures.TimeoutError:
+                    logging.warning("Thread task timed out")
+                    result = [float("-inf")] * len(fitness_functions)
+                except Exception as e:
+                    logging.error(f"Thread worker failed: {e}")
+                    result = [float("-inf")] * len(fitness_functions)
+
+                all_results.append(result)
+
+        return all_results
+
+    async def shutdown(self) -> None:
+        """Shutdown the thread pool gracefully."""
+        if self.executor is not None:
+            self.executor.shutdown(wait=True, cancel_futures=False)
+            self.executor = None
