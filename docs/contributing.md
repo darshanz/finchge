@@ -184,7 +184,7 @@ We are constantly improving the library with tests. We encourage you to write te
 
 ## Documentation
 
-During current alpha relase the documents may not be up-to-date, however we are constantly improving the documentation. Any contribution to documentation are welcome.
+During current beta relase the documents may not be up-to-date, however we are constantly improving the documentation. Any contribution to documentation are welcome.
 
 ## Recommended Development Workflow
 

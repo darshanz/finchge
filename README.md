@@ -72,7 +72,7 @@ For further details and more advanced usage, please check documentation at [finc
 
 
 ## Development Status
-Note: This is version ```1.0.1-alpha.1``` - an alpha release. Expect breaking changes and bugs.
+Note: This is version ```1.0.1-beta.1``` - an beta release. Expect breaking changes and bugs.
 
 What to expect:
 
