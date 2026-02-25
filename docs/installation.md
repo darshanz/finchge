@@ -52,7 +52,7 @@ print(f"finchGE {finchge.__version__} installed successfully")
 # Latest stable version from PyPI
 pip install finchge
 
-# Specific version (e.g., alpha release)
+# Specific version (e.g., beta release)
 pip install finchge==1.0.1-beta.1
 ```
 
