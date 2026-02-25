@@ -70,7 +70,7 @@ ge_.run()
 For further details and more advanced usage, please check. [Getting Started](/getting_started/), [API Reference](/api/) and [Examples](/examples/)
 
 ## Development Status
-Note: This is version ```1.0.1-alpha.1``` - an alpha release. Expect breaking changes and bugs.
+Note: This is version ```1.0.1-beta.1``` - an alpha release. Expect breaking changes and bugs.
 
 What to expect:
 - Bugs and unexpected behavior
