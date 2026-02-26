@@ -45,7 +45,7 @@ class Grammar:
         References
          [1] Conor Ryan, J. J. Collins, and Michael O'Neill. 1998. Grammatical Evolution: Evolving Programs for an Arbitrary Language.
          In Proceedings of the First European Workshop on Genetic Programming (EuroGP '98).
-         Springer-Verlag, Berlin, Heidelberg, 83–96.
+         Springer-Verlag, Berlin, Heidelberg, 83-96.
 
          [2] O’Neill, M. and Ryan, C. (2001,) Grammatical Evolution.
          IEEE Transactions on Evolutionary Computation, 5, 349-358. https://doi.org/10.1109/4235.942529

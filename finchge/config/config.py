@@ -418,10 +418,10 @@ class ConfigValidator:
     REQUIRED_FIELDS = {
         "experiment": {
             Keys.RANDOM_SEED,
-            Keys.POPULATION_SIZE,
             Keys.NUM_GENERATIONS,
         },
         "ge": {
+            Keys.POPULATION_SIZE,
             Keys.GRAMMAR_FILE,
             Keys.GENOME_LENGTH,
             Keys.CODON_SIZE,
@@ -437,11 +437,11 @@ class ConfigValidator:
     # field validators
     FIELD_VALIDATORS: dict[str, dict[str, Any]] = {
         "experiment": {
-            Keys.POPULATION_SIZE: lambda v: isinstance(v, int) and v > 0,
             Keys.NUM_GENERATIONS: lambda v: isinstance(v, int) and v > 0,
             Keys.RANDOM_SEED: lambda v: isinstance(v, int),
         },
         "ge": {
+            Keys.POPULATION_SIZE: lambda v: isinstance(v, int) and v > 0,
             Keys.GENOME_LENGTH: lambda v: isinstance(v, int) and v > 0,
             Keys.CODON_SIZE: lambda v: isinstance(v, int) and v > 0,
             Keys.MAX_WRAPS: lambda v: isinstance(v, int) and v >= 0,

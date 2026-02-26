@@ -7,14 +7,14 @@ from sklearn.base import BaseEstimator, RegressorMixin
 from finchge.config.config import FinchConfig, Keys
 from finchge.core.engine import GrammaticalEvolution
 from finchge.core.individual import Individual
-from finchge.utils.logger import ExperimentLogger
-from finchge.utils.random_mixin import RandomStateMixin
-from finchge.utils.results import GEResult
+from finchge.core.result import GEResult
 from finchge.fitness.fitness_evaluator import FitnessEvaluator
 from finchge.fitness.fitness_functions import GEFitnessFunction
 from finchge.grammar import GenotypeMapper, Grammar
 from finchge.runners.sr import SymbolicRegressionRunner
 from finchge.symbolic.expression import SymbolicExpression
+from finchge.utils.logger import ExperimentLogger
+from finchge.utils.random_mixin import RandomStateMixin
 
 
 class GERegressor(RandomStateMixin, BaseEstimator, RegressorMixin):  # type: ignore[misc]

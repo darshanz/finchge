@@ -131,9 +131,9 @@ jupyter: ">=1.0.0"        # Notebook support
 
 After successful installation:
 
-1. **Try the [Getting Started](/getting_started/) Guide** – Run your first Grammatical Evolution program
-2. **Explore [Examples](/examples/)** – See example use cases
-3. **Check the [API docReference](/api/)** – Learn about all available features
+1. **Try the [Getting Started](/getting_started/) Guide** - Run your first Grammatical Evolution program
+2. **Explore [Examples](/examples/)** - See example use cases
+3. **Check the [API docReference](/api/)** - Learn about all available features
 
 ---
 
@@ -141,10 +141,10 @@ After successful installation:
 
 If you encounter issues during installation:
 
-1. **Check the [GitHub Issues](https://github.com/finchGE/finchge/issues)** – See if others have similar problems
-2. **Create a New Issue** – Report your specific problem
-3. **Check Python Version** – Ensure you're using Python 3.8 or higher
-4. **Update pip** – Run `pip install --upgrade pip`
+1. **Check the [GitHub Issues](https://github.com/finchGE/finchge/issues)** - See if others have similar problems
+2. **Create a New Issue** - Report your specific problem
+3. **Check Python Version** - Ensure you're using Python 3.8 or higher
+4. **Update pip** - Run `pip install --upgrade pip`
 
 ---
 

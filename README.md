@@ -53,20 +53,25 @@ Step 2. Define a Fitness Evaluator ; `fitness_evaluator`
 
 ```python
 
-fitness_evaluator = FitnessEvaluator(fitness_functions=fitness_fn,
-                                     training_required=False)
+fitness_evaluator = FitnessEvaluator(
+    fitness_functions=StringMatchFitness("hello"),
+    mapper=GenotypeMapper(grammar=grammar)
+)
 
 ```
 
 Step 3. Create `GrammaticalEvolution` instance and run
 
 ```python
-ge_ = GrammaticalEvolution(fitness_evaluator=fitness_evaluator)
+ge_ = GrammaticalEvolution(config=FinchConfig.default(),
+                           grammar=grammar,
+                           fitness_evaluator=fitness_evaluator)
 ge_.run()
 
 ```
 
-For further details and more advanced usage, please check documentation at [finchge.readthedocs.io](https://finchge.readthedocs.io/), including [Getting Started](https://finchge.readthedocs.io/latest/getting_started/), [API docReference](https://finchge.readthedocs.io/latest/api/) and [Examples](https://finchge.readthedocs.io/latest/examples/)
+For further details and more advanced usage, please check documentation
+at [finchge.readthedocs.io](https://finchge.readthedocs.io/), including [Getting Started](https://finchge.readthedocs.io/latest/getting_started/), [API docReference](https://finchge.readthedocs.io/latest/api/) and [Examples](https://finchge.readthedocs.io/latest/examples/)
 
 
 

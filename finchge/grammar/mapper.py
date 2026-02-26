@@ -3,10 +3,10 @@ from typing import Any, Iterable, Optional, Sequence, Union
 
 from tabulate import tabulate
 
-from finchge.utils.random_mixin import RandomStateMixin
 from finchge.grammar import Grammar
 from finchge.grammar.derivation_tree import TreeNode
 from finchge.grammar.repair_strategy import RepairStrategy
+from finchge.utils.random_mixin import RandomStateMixin
 
 
 @dataclass(frozen=True)
@@ -23,7 +23,7 @@ class MappingResult:
 
 class GenotypeMapper(RandomStateMixin):
     """
-    Bidirectional genotype–phenotype codec for Grammatical Evolution.
+    Bidirectional genotype-phenotype codec for Grammatical Evolution.
 
     `GenotypeMapper` implements the core mapping logic of Grammatical Evolution (GE),
     providing:
