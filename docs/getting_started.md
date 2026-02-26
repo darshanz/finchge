@@ -64,7 +64,7 @@ Once the project is created using ```finchge new NAME``` command, either open it
   For more information, check out [Configuration](/introduction/#configuration) section.
 
 - **`grammar.bnf`**
-  Defines the grammar used for genotype–phenotype mapping and constrains the search space.
+  Defines the grammar used for genotype-phenotype mapping and constrains the search space.
 
 - **`fitness.py`**
   Contains the problem-specific custom fitness function(s).
@@ -94,7 +94,7 @@ This logging system is designed to support **reproducibility**, **analysis**, an
 
 ## Where to Go Next
 
-- For hands-on usage examples, see the  [Examples](/examples/) section:
+- For hands-on usage examples, see the  [Examples](examples.md) section:
   - Interactive notebook-based examples
   - Project-based experiment examples
 

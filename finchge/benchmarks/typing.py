@@ -5,23 +5,19 @@ from typing import Callable, Tuple, TypeAlias, TypedDict
 import numpy as np
 from numpy.typing import NDArray
 
-# ---- Arrays ----
-
+# Arrays
 FloatArray: TypeAlias = NDArray[np.float64]
 
-# ---- Ranges ----
-
+# Ranges
 Range1D: TypeAlias = tuple[float, float]
 Range2D: TypeAlias = tuple[Range1D, Range1D]
 Range: TypeAlias = Range1D | Range2D
 
-# ---- Benchmark callable ----
-
+# Benchmark callable
 BenchmarkCallable: TypeAlias = Callable[[FloatArray], FloatArray]
 
-# ---- Base function metadata ----
 
-
+# Base function metadata
 class BenchmarkFunctionInfoBase(TypedDict, total=False):
     name: str
     equation: str

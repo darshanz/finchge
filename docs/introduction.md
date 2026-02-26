@@ -32,7 +32,7 @@ fitness or optimization objectives.
 
 ### Context-free grammars
 
-finchGE uses **Backus–Naur Form (BNF)** to define the grammar that guides Grammatical Evolution.
+finchGE uses **Backus-Naur Form (BNF)** to define the grammar that guides Grammatical Evolution.
 A grammar specifies the **syntactic rules** that determine how valid individuals are generated.
 A context-free grammar consists of the following elements:
 
@@ -366,7 +366,7 @@ x[:, 0..10 step 2]` is expanded to `x[:, 0] | x[:, 2] | x[:, 4] | x[:, 6] | x[:,
 
 ### Genotype Mapper
 
-Grammatical Evolution is primarily driven an important process of _genotype–phenotype mapping_.
+Grammatical Evolution is primarily driven an important process of _genotype-phenotype mapping_.
 In FinchGE, this responsibility is handled by the `GenotypeMapper`.
 
 !!! info "NOTE"
@@ -455,7 +455,7 @@ This is essential for:
 
 - Tree-based initialisation (PI-Grow, RHH)
 - Subtree crossover and mutation
-- Hybrid genome–tree evolutionary workflows
+- Hybrid genome-tree evolutionary workflows
 - Checkpointing and reproducibility
 
 
@@ -835,8 +835,8 @@ not to hide algorithmic logic.
 FinchGE uses a **structured configuration system** to describe experiments in a clear, reproducible, and extensible way.
 After refactoring, configuration is centered around **two top-level sections**:
 
-- `experiment` – run-level concerns (how long, how big, logging, caching, randomness)
-- `ge` – *all* Grammatical Evolution–specific parameters (grammar, initialisation, operators)
+- `experiment` - run-level concerns (how long, how big, logging, caching, randomness)
+- `ge` - *all* Grammatical Evolution-specific parameters (grammar, initialisation, operators)
 
 This design avoids artificial separation between tightly coupled GE components (grammar, initialisation, operators) and ensures consistent parameter sharing.
 
@@ -849,11 +849,11 @@ Controls how an experiment is executed.
 
 Typical parameters include:
 
-- `random_seed` – global seed for reproducibility
-- `population_size` – number of individuals
-- `num_generations` – evolution length
-- `verbose` – logging verbosity
-- `cache_type`, `cache_size` – optional fitness caching
+- `random_seed` - global seed for reproducibility
+- `population_size` - number of individuals
+- `num_generations` - evolution length
+- `verbose` - logging verbosity
+- `cache_type`, `cache_size` - optional fitness caching
 
 **`ge` section**
 Defines the Grammatical Evolution system itself.

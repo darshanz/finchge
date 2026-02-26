@@ -32,7 +32,7 @@ FinchGE is a modern, modular, and user-friendly Python library for Grammatical E
 ```bash
 pip install finchge
 ```
-For further details on installation, please check. [Installation](/installation)
+For further details on installation, please check. [Installation](installation.md)
 
 
 ## Quick Example
@@ -67,7 +67,7 @@ ge_.run()
 
 ```
 
-For further details and more advanced usage, please check. [Getting Started](/getting_started/), [API Reference](/api/) and [Examples](/examples/)
+For further details and more advanced usage, please check. [Getting Started](getting_started.md), [API Reference](api.md) and [Examples](examples.md)
 
 ## Development Status
 Note: This is version ```1.0.1-beta.1``` - an beta release. Expect breaking changes and bugs.
