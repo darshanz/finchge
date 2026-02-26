@@ -108,6 +108,47 @@ class AccuracyFitness(GEFitnessFunction):
         return float(correct_predictions / total_predictions)
 
 
+class MAEFitness(GEFitnessFunction):
+    """
+    Mean Absolute Error fitness for regression problems.
+    Lower values indicate better fit (minimization objective).
+    """
+
+    def __init__(self) -> None:
+        super().__init__(maximize=False)
+
+    @property
+    def required_context_keys(self) -> set[str]:
+        return {"y_true", "y_pred"}
+
+    def evaluate(self, context: dict[str, Any]) -> float:
+        """
+        Calculate Mean Absolute Error between true and predicted values.
+
+        Args:
+            context: Must contain:
+                - 'y_true': Ground truth values (array-like)
+                - 'y_pred': Predicted values (array-like)
+
+        """
+        y_true = np.asarray(context["y_true"])
+        y_pred = np.asarray(context["y_pred"])
+
+        if y_true.shape != y_pred.shape:
+            raise ValueError(
+                f"Shape mismatch: y_true {y_true.shape} vs y_pred {y_pred.shape}"
+            )
+
+        if y_true.size == 0:
+            raise ValueError("Cannot compute MAE on empty arrays")
+
+        if np.isnan(y_pred).any():
+            return np.inf
+
+        mae = np.mean(np.abs(y_true - y_pred))
+        return float(mae)
+
+
 class RewardFitness(GEFitnessFunction):
     """
     Fitness function for control problems with reward maximization.

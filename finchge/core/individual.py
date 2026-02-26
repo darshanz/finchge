@@ -15,7 +15,7 @@ class Individual:
     An Individual encapsulates the genetic representation (genotype), its expressed
     form (phenotype), and metadata produced during evaluation and selection.
     Fitness values are not assigned at construction time and must be computed by
-    a [FitnessEvaluator](/api/#finchge.fitness.FitnessEvaluator).
+    a [FitnessEvaluator][finchge.fitness.FitnessEvaluator].
 
     Algorithm-specific information (e.g., Pareto rank, crowding distance, or
     reference-point association) is stored in the `meta` dictionary and is expected
@@ -125,11 +125,9 @@ class Individual:
         Construct an Individual from a genotype.
 
         Args:
-            genotype (list[int]):
-              Genetic representation as a list of integers.
+            genotype (list[int]): Genetic representation as a list of integers.
 
-        Returns:
-            A new Individual initialized with the given genotype.
+        Returns: A new Individual initialized with the given genotype.
         """
         return cls(genotype=genotype)
 

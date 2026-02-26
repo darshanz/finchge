@@ -7,7 +7,7 @@ class RangeHandler(ABC):
     """
     Base class for all range handlers.
     This is the interface for different types of range handlers.
-    There are several range handlers currently supported by finchGE [BNFGrammarParser](/api/#finchge.grammar.parser.BNFGrammarParser).
+    There are several range handlers currently supported by finchGE [BNFGrammarParser][finchge.grammar.parser.BNFGrammarParser].
     To add custom range support new range handler can be created and should register by calling.
 
      `parser.range_registry.register(MyCustomRangeHandler())`

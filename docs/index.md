@@ -57,22 +57,23 @@ fitness_evaluator = FitnessEvaluator(
 
 ```
 
-Step 3. Create [`GrammaticalEvolution`](api/#finchge.evolution.GrammaticalEvolution) instance and run
+Step 3. Create [`GrammaticalEvolution`][finchge.core.GrammaticalEvolution] instance and run
 
 ```python
-ge_ = GrammaticalEvolution(config=FinchConfig.default(),
+ge = GrammaticalEvolution(config=FinchConfig.default(),
                            grammar=grammar,
                            fitness_evaluator=fitness_evaluator)
-ge_.run()
+ge.run()
 
 ```
 
 For further details and more advanced usage, please check. [Getting Started](getting_started.md), [API Reference](api.md) and [Examples](examples.md)
 
 ## Development Status
-Note: This is version ```1.0.1-beta.1``` - an beta release. Expect breaking changes and bugs.
+Note: This is version ```1.0.1-beta.2``` - an beta release. Expect breaking changes and bugs.
 
 What to expect:
+
 - Bugs and unexpected behavior
 - Rapid API changes
 - Frequent updates

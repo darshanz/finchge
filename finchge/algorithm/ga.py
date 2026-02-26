@@ -22,7 +22,7 @@ class GeneticAlgorithm(BaseAlgorithm):
         mutation: Mutation strategy instance or function.
         replacement: Replacement strategy instance or function.
         elite_size (int): Number of elite individuals to carry over.
-        random_state(int): random state
+        random_state (Optional[int]): random state
     """
 
     def __init__(

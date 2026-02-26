@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1-beta.2] - 2026-02-26
+
+### Added
+- Added MAEFitness function
+- Documentation for multiple classes
+### Fixed
+- Fixed hyperlinks in documentation to make compatible with ReadTheDocs
 
 ## [1.0.1-beta.1] - 2026-02-25
 

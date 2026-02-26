@@ -61,7 +61,7 @@ In this example:
 - ```<num>``` restricts digits to a fixed range
 - ```<number>``` supports symbolic values or numeric ranges with steps
 
-Once defined, the grammar is passed to the [```Grammar```](api/#finchge.grammar.Grammar) class, which parses and manages these rules during evolution.
+Once defined, the grammar is passed to the [`Grammar`][finchge.grammar.Grammar] class, which parses and manages these rules during evolution.
 
 ```python
     grammar = Grammar(grammar_str)
@@ -284,7 +284,9 @@ The parser comes with built-in handlers for common range types:
 ??? tip "Pro Tip : Custom Ranges in Grammar "
 
      While finchGE supports various range notations in grammar, custom ranges can be used if any special range is required by any problem.
-    FinchGE uses a plugin-based architecture for range handling. Using [```RangeHandler```](api/#finchge.grammar.parser.range_handlers.RangeHandler) interface for creating custom range handlers which can be registered with [`BNFGrammarParser`](api/#finchge.grammar.parser.BNFGrammarParser) as following:
+    FinchGE uses a plugin-based architecture for range handling. Using [```RangeHandler```][finchge.grammar.range_handlers.RangeHandler]
+    interface for creating custom range handlers which can be registered
+    with [`BNFGrammarParser`][finchge.grammar.parser.BNFGrammarParser] as following:
     ```python
 
     # create a custom range handler
@@ -367,12 +369,13 @@ x[:, 0..10 step 2]` is expanded to `x[:, 0] | x[:, 2] | x[:, 4] | x[:, 6] | x[:,
 ### Genotype Mapper
 
 Grammatical Evolution is primarily driven an important process of _genotype-phenotype mapping_.
-In FinchGE, this responsibility is handled by the `GenotypeMapper`.
+In FinchGE, this responsibility is handled by the [`GenotypeMapper`][finchge.grammar.GenotypeMapper].
 
 !!! info "NOTE"
 
     Although the canonical Grammatical Evolution,
-    _mapping_ is generally considered as a one way process of mapping the genotype to phenotype, in FinchGE, `GenotypeMapper`
+    _mapping_ is generally considered as a one way process of mapping the genotype to phenotype,
+    in FinchGE, [`GenotypeMapper`][finchge.grammar.GenotypeMapper]
     has been implemented as a _codec_, providing a bi-directional process of encoding and decoding.
 
     - The reconstructed genome is **not guaranteed to be identical to the original
@@ -418,7 +421,7 @@ result = mapper.map(genotype)
 Where:
 
 - `genotype` is a `list[int]`
-- `result` is a `MappingResult` containing: (`phenotype`, `tree`, `used_genome`, `used_codon_count`, `invalid`)
+- `result` is a [`MappingResult`][finchge.grammar.mapper.MappingResult] containing: (`phenotype`, `tree`, `used_genome`, `used_codon_count`, `invalid`)
 
 Example:
 
@@ -508,7 +511,7 @@ The **fitness function** defines how good a generated solution is by assigning i
 **Fitness evaluation** is the process of applying this function to each individual in the population,
 guiding evolution by favoring higher-quality solutions for selection and reproduction.
 
-In finchGE fitness evaluation is handled by [```FitnessEvaluator```](api/#finchge.fitness.FitnessEvaluator) class which allows
+In finchGE fitness evaluation is handled by [```FitnessEvaluator```][finchge.fitness.FitnessEvaluator] class which allows
 flexible and convenient fitness evaluation especially for use cases where data and models are involved.
 For example, in hyperparameter optimization or neural architecture search.
 
@@ -520,8 +523,8 @@ including symbolic regression, program synthesis, and multi-objective evolution 
 ## Population and Individuals
 
 In FinchGE, the evolutionary state is explicitly represented through
-the [`Individual`](/api/#finchge.representation.Individual) and
-[`Population`](/api/#finchge.representation.Population)
+the [`Individual`][finchge.core.Individual] and
+[`Population`][finchge.core.Population]
 classes. Each individual encodes a candidate solution derived from the grammar,
 while the population manages the collective state of evolution across generations.
 
@@ -555,7 +558,7 @@ FinchGE implements several academically established initialisation methods. Thes
 #### Random Genome Initialisation
 
 Random Genome Initialisation is the classical initialisation strategy used in canonical Grammatical Evolution.
-[`RandomGenomeInitialiser`](/api/#finchge.initialisation.RandomGenomeInitialiser) creates individuals
+[`RandomGenomeInitialiser`][finchge.initialisation.RandomGenomeInitialiser] creates individuals
 by randomly generating linear genomes (codon sequences),
 which are later mapped to phenotypes using grammar-based decoding.
 
@@ -568,7 +571,7 @@ which are later mapped to phenotypes using grammar-based decoding.
 
 
 #### Random Initialisation with Valids and No Duplicates (RVD)
-[`RVDInitializer`](/api/#finchge.initialisation.RandomGenomeInitialiser) is an implementation of
+[`RVDInitializer`][finchge.initialisation.RandomGenomeInitialiser] is an implementation of
 Random Initialisation with Valids and No Duplicates (RVD)
 [[Nicolau, 2017](https://link.springer.com/article/10.1007/s10710-017-9309-9#Bib1)], a genome-based
 population initialisation strategy designed to improve the quality of randomly
@@ -618,7 +621,7 @@ is the Grammatical Evolution adaptation of Koza’s Ramped Half-and-Half (RHH) m
 It generates individuals using both Full and Grow strategies across a range of depth limits.
 In GE, recursive grammar productions assume the role of GP function nodes in controlling tree expansion.
 Grammar analysis is used to ensure depth feasibility and termination.
-In finchGE, [`RHHInitializer`](/api/#finchge.initialisation.RHHInitialiser) class implements this initialisation.
+In finchGE, [`RHHInitializer`][finchge.initialisation.RHHInitialiser] class implements this initialisation.
 
 ##### Key Characteristics
 
@@ -766,17 +769,6 @@ print("Phenotype:", phenotype)
 
 
 ```
-
-
-
-
-
----
-
-
-
-
----
 
 ## Genetic Operators
 
@@ -958,7 +950,7 @@ Defaults are documented and consistently applied across the library.
 
 ### Loading Configuration with `FinchConfig`
 
-FinchGE provides an optional helper class, [`FinchConfig`](api/#finchge.config.FinchConfig), for loading and managing configuration files.
+FinchGE provides an optional helper class, [`FinchConfig`][finchge.config.FinchConfig], for loading and managing configuration files.
 
 
 ```python
@@ -977,11 +969,11 @@ cfg.ge["init_type"]
 cfg.ge["mutation_probability"]
 ```
 
-Note: [`FinchConfig`](api/#finchge.config.FinchConfig) is a convenience layer.
+Note: [`FinchConfig`][finchge.config.FinchConfig] is a convenience layer.
 FinchGE classes also accept configs in the form of plain Python dictionaries.
 
 ### Using dictionary as config
-For notebooks or scripts, we can bypass [`FinchConfig`](api/#finchge.config.FinchConfig) entirely
+For notebooks or scripts, we can bypass [`FinchConfig`][finchge.config.FinchConfig] entirely
 by creating configs in the form of dictionaries, as shown below.
 
 ```python
@@ -1044,7 +1036,10 @@ This makes experiments easy to reproduce and compare.
 
 ## Experiment Utilities
 
-finchGE provides utilities for logging, result tracking and visualization of results. Apart from the interactive notebook-based workflow finchGE provides a recommended experiment structure designed for efficient experimentation for various use cases. Read more about [finchGE Experiments](/getting_started/#finchge_experimetns)
+finchGE provides utilities for logging, result tracking and visualization of results.
+Apart from the interactive notebook-based workflow finchGE provides a recommended experiment structure
+designed for efficient experimentation for various use cases.
+Read more about [finchGE Experiments](getting_started.md#project-based-workflow)
 
 
 ### Logging and Experiment Tracking
@@ -1467,6 +1462,7 @@ Environments are created fresh for each evaluation using factory functions.
 
 The `GEFitnessFunction` classes calculate how good a solution is:
 
+- `MAEFitness` - For regression (lower is better)
 - `RMSEFitness` - For regression (lower is better)
 - `RewardFitness` - For control problems (higher is better)
 - `AccuracyFitness` - For logic problems (higher is better)

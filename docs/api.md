@@ -48,6 +48,14 @@ The finchGE API consists of:
           - "!^__.*__$"
           - "!^_.*"
 
+::: finchge.grammar.mapper.MappingResult
+    options:
+      show_root_heading: true
+      show_source: false
+      filters:
+          - "!^__.*__$"
+          - "!^_.*"
+
 ::: finchge.grammar.derivation_tree.TreeNode
     options:
       show_root_heading: true
@@ -140,7 +148,7 @@ The finchGE API consists of:
       show_source: false
 
 
- 
+
 ::: finchge.core.GrammaticalEvolution
     options:
       show_root_heading: true
