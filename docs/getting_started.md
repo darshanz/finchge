@@ -31,7 +31,7 @@ directly inside a Jupyter notebook. In the sample project, find the notebook (``
 
 This approach provides maximum control and visibility into the evolutionary process.
 
-See: [Examples - Interactive String Matching Example](/examples/)
+See: [Examples - Interactive String Matching Example](examples.md)
 
 ---
 
@@ -61,7 +61,7 @@ Once the project is created using ```finchge new NAME``` command, either open it
   mutation probability, crossover probability, and elite size.
   Using a config file makes experiments easy to reproduce and modify without
   changing code. For configuration `.yaml` and  `.ini`  files are supported.
-  For more information, check out [Configuration](/introduction/#configuration) section.
+  For more information, check out [Configuration](introduction.md#configuration) section.
 
 - **`grammar.bnf`**
   Defines the grammar used for genotype-phenotype mapping and constrains the search space.

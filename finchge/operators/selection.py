@@ -167,9 +167,6 @@ class RankSelection(GESelectionStrategy):
             higher-ranked individuals. Must be between 1.0 and 2.0. Defaults to 1.5.
         random_state (int) : random state
 
-    Returns:
-        None
-
     Raises:
         ValueError: If selection_pressure is not between 1.0 and 2.0.
     """

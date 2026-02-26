@@ -63,10 +63,10 @@ fitness_evaluator = FitnessEvaluator(
 Step 3. Create `GrammaticalEvolution` instance and run
 
 ```python
-ge_ = GrammaticalEvolution(config=FinchConfig.default(),
+ge = GrammaticalEvolution(config=FinchConfig.default(),
                            grammar=grammar,
                            fitness_evaluator=fitness_evaluator)
-ge_.run()
+ge.run()
 
 ```
 
@@ -77,7 +77,7 @@ at [finchge.readthedocs.io](https://finchge.readthedocs.io/), including [Getting
 
 
 ## Development Status
-Note: This is version ```1.0.1-beta.1``` - an beta release. Expect breaking changes and bugs.
+Note: This is version ```-1.0.1-beta.2``` - an beta release. Expect breaking changes and bugs.
 
 What to expect:
 

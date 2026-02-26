@@ -25,8 +25,6 @@ class Population:
         Exactly one of `individuals` or `initialiser` must be provided.
 
         Args:
-            individuals:
-                Pre-constructed individuals.
             initialiser:
                 Initializer used to generate individuals.
             population_size:

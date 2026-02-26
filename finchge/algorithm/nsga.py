@@ -170,12 +170,12 @@ class NSGA3(BaseAlgorithm):
 
 
         Args:
-            selection: Selection strategy instance or function.
-            crossover: Crossover strategy instance or function.
-            mutation: Mutation strategy instance or function.
-            replacement: Replacement strategy instance or function.
-            elite_size (int): Number of elite individuals to carry over.
+            selection (GESelectionStrategy: Selection strategy instance or function.
+            crossover (GECrossoverStrategy): Crossover strategy instance or function.
+            mutation (GEMutationStrategy): Mutation strategy instance or function.
+            fitness_evaluator (FitnessEvaluator): Fitness Evaluator for performing Evaluation
             num_divisions (int): Number of divisions for reference points.
+            random_state (Optional[int]) : Random state
         """
         super().__init__(random_state=random_state)
         self.num_divisions = num_divisions

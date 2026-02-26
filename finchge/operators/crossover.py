@@ -316,7 +316,6 @@ class SubtreeCrossover(GECrossoverStrategy):
         individuals.
 
         Args:
-            **kwargs:
             p_0: First parent individual.
             p_1: Second parent individual.
 

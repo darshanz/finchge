@@ -29,6 +29,7 @@ nav:
   - Changelog: changelog.md
 plugins:
   - search
+  - autorefs
   - mkdocstrings:
       handlers:
         python:

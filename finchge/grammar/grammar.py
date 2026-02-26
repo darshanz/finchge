@@ -2,7 +2,7 @@ from typing import Any, Dict, Optional, Set
 
 from tabulate import tabulate
 
-from finchge.grammar.parser import BNFGrammarParser
+from finchge.grammar.parser import BNFGrammarParser, GrammarParser
 from finchge.utils.display_utils import display_html, highlight_bnf, is_jupyter
 
 
@@ -15,14 +15,13 @@ class Grammar:
 
     Args:
         grammar_str (str): The grammar definition as a BNF-formatted string.
-        parser(Optional): GrammarParser will be used if not provided
-        random_state (int) : random state
+        parser (Optional[GrammarParser]): GrammarParser will be used if not provided
     """
 
     def __init__(
         self,
         grammar_str: str,
-        parser: Optional[BNFGrammarParser] = None,
+        parser: Optional[GrammarParser] = None,
     ) -> None:
         parser = BNFGrammarParser(grammar_str) if not parser else parser
         (
@@ -240,7 +239,7 @@ class Grammar:
     def from_file(
         cls,
         filename: str,
-        parser: Optional[BNFGrammarParser] = None,
+        parser: Optional[GrammarParser] = None,
     ) -> "Grammar":
         """
         Create a Grammar instance from a file containing BNF rules.
@@ -249,8 +248,7 @@ class Grammar:
 
         Args:
             filename (str): Path to the file containing BNF grammar rules
-            repair_strategy (optional): Optional strategy to repair incomplete or invalid phenotypes.
-            parser(Optional): GrammarParser will be used if not provided
+            parser (Optional[GrammarParser]): GrammarParser will be used if not provided
         """
         with open(filename, "r") as f:
             grammar_str = f.read()
