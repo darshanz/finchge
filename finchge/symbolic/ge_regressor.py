@@ -19,7 +19,20 @@ from finchge.utils.random_mixin import RandomStateMixin
 
 class GERegressor(RandomStateMixin, BaseEstimator, RegressorMixin):  # type: ignore[misc]
     """
-    Sklearn-style wrapper for symbolic regression using Grammatical Evolution.
+    Scikit-learn compatible symbolic regression model based on
+    Grammatical Evolution (GE).
+
+    The estimator evolves mathematical expressions defined by a grammar
+    and selects the best-performing individual according to the provided
+    fitness function(s). The resulting symbolic expression can then be
+    evaluated to make predictions.
+
+    Attributes:
+        ge_result_ (GEResult): Result object returned by the GE run.
+        selected_individual_ (Individual | None): Individual currently
+            selected for prediction.
+        selected_expression_ (SymbolicExpression | None): Parsed symbolic
+            expression corresponding to the selected individual.
     """
 
     def __init__(
@@ -31,6 +44,24 @@ class GERegressor(RandomStateMixin, BaseEstimator, RegressorMixin):  # type: ign
         population_size: int = 100,
         random_state: Optional[int] = None,
     ):
+        """
+        Initialize the symbolic regression estimator.
+
+        Args:
+            grammar (Grammar): Grammar defining the search space of valid
+                symbolic expressions.
+            config (FinchConfig | dict[str, Any]): Configuration controlling
+                GE behavior (operators, mutation rates, limits, etc.).
+                A dictionary will be converted into a ``FinchConfig``.
+            fitness_functions (GEFitnessFunction | list[GEFitnessFunction]):
+                Fitness function(s) used to evaluate candidate expressions.
+            generations (int, optional): Number of evolutionary generations.
+                Defaults to 100.
+            population_size (int, optional): Number of individuals per
+                generation. Defaults to 100.
+            random_state (int | None, optional): Random seed for reproducibility.
+        """
+
         super().__init__(random_state=random_state)
         self.grammar = grammar
         self.generations = generations
@@ -57,6 +88,21 @@ class GERegressor(RandomStateMixin, BaseEstimator, RegressorMixin):  # type: ign
         )
 
     def fit(self, X: Any, y: Any) -> "GERegressor":
+        """
+        Run grammatical evolution to discover a symbolic expression that
+        fits the provided data.
+
+        This launches the evolutionary search, evaluates individuals using
+        the configured fitness function(s), and stores the resulting GE run
+        along with the best individual (if available).
+
+        Args:
+            X (Any): Training features.
+            y (Any): Target values.
+
+        Returns:
+            GERegressor: The fitted estimator.
+        """
         sym_runner = SymbolicRegressionRunner(
             data_train=(X, y),
         )
@@ -92,10 +138,33 @@ class GERegressor(RandomStateMixin, BaseEstimator, RegressorMixin):  # type: ign
         return self
 
     def select_individual(self, individual: Individual) -> None:
+        """
+        Manually select an individual from the GE population for prediction.
+
+        Useful for multi-objective runs where no single best individual is
+        automatically chosen.
+
+        Args:
+            individual (Individual): Individual whose phenotype will be used
+                as the prediction expression.
+        """
         self.selected_individual_ = individual
         self.selected_expression_ = SymbolicExpression(individual.phenotype)
 
     def predict(self, X: Any) -> NDArray[np.float64]:
+        """
+        Evaluate the selected symbolic expression on the input data.
+
+        Args:
+            X (Any): Input features.
+
+        Returns:
+            NDArray[np.float64]: Predicted target values.
+
+        Raises:
+            RuntimeError: If the estimator has not been fitted or no
+                individual has been selected.
+        """
         if self.selected_expression_ is None:
             raise RuntimeError("Model has not been fitted or no valid model selected")
 
