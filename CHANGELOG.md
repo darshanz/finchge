@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.1-beta.3] - 2026-03-05
+
+### Added
+- Documentation for SymbolicExpression, GERegressor
+### Fixed
+- Fixed psqrt, plog issues in SymbolicExpression
+- Fixed CLI when param not passed
+
 ## [1.0.1-beta.2] - 2026-02-26
 
 ### Added

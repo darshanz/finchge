@@ -145,6 +145,9 @@ class SymbolicExpression:
             "cos": np.cos,
             "abs": np.abs,
             "sign": np.sign,
+            "pdiv": self._safe_div,
+            "psqrt": self._safe_sqrt,
+            "plog": self._safe_log,
         }
 
         return [safe_numpy, "numpy"]

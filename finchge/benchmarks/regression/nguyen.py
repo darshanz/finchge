@@ -385,7 +385,6 @@ class NguyenBenchmark(Benchmark):
         # Add protected operators for functions with domain restrictions
         if self.function in [NguyenFunction.N7, NguyenFunction.N8]:
             grammar += """
-        // Protected functions for restricted domains
         <func> ::= sin | cos | exp | plog | psqrt
         <const> ::= 0.1 | 0.5 | 1.0 | 2.0 | 3.0 | 4.0 | 5.0 | 0.01 | 0.001
             """

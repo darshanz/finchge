@@ -185,6 +185,9 @@ The finchGE API consists of:
     options:
       show_root_heading: true
       show_source: false
+      members:
+        - SymbolicExpression
+        - GERegressor
 
 
 ::: finchge.grammar.range_handlers

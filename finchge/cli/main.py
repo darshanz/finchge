@@ -15,7 +15,7 @@ from finchge.cli.validate import (
 app = typer.Typer(help="finchGE command line tools")
 
 
-@app.callback(invoke_without_command=True)
+@app.callback()
 def cli(
     version: bool = typer.Option(
         False,
