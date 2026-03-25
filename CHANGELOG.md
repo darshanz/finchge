@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.1-beta.4] - 2026-03-25
+
+### Changed
+- Updated documentation
+- Changed grammar method in benchmarks to return Grammar instance instead of string
+
 ## [1.0.1-beta.3] - 2026-03-05
 
 ### Added
