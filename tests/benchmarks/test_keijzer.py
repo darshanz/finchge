@@ -181,7 +181,6 @@ class TestKeijzerFunctionDefinitions:
 
 
 class TestKeijzerDataGeneration:
-
     @pytest.mark.parametrize(
         "func_class,train_size,test_size",
         [
@@ -453,8 +452,8 @@ class TestKeijzerGrammars:
         bench_1d = Keijzer1Benchmark()
         bench_2d = Keijzer10Benchmark()
 
-        grammar_1d = bench_1d.grammar()
-        grammar_2d = bench_2d.grammar()
+        grammar_1d = bench_1d.grammar_str()
+        grammar_2d = bench_2d.grammar_str()
 
         assert "x0" in grammar_1d
         assert "x1" not in grammar_1d

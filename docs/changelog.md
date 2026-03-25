@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 For changelog we follow  [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format and for versioning use  [Semantic Versioning](https://semver.org/)
 
+## [1.0.1-beta.4](https://github.com/finchGE/finchge/releases/tag/v1.0.1-beta.4) - 2026-03-25
+### Changed
+- Updated documentation
+- Changed grammar method in benchmarks to return Grammar instance instead of string
+
 ## [1.0.1-beta.3](https://github.com/finchGE/finchge/releases/tag/v1.0.1-beta.3) - 2026-03-05
 ### Added
 - Documentation for SymbolicExpression, GERegressor

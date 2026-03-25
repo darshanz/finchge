@@ -100,6 +100,9 @@ class TreeGenerator:
         if not start_symbol:
             start_symbol = self.grammar.start_rule
 
+        # The smaller value is taken for effective tree depth.
+        # If global max_depth is set to smaller value, the initializers' max depth may not be effective.
+        # Config Validator should validate the params.
         effective_depth = min(max_depth, self.max_tree_depth)
         return self._generate_derivation_tree(
             max_depth=effective_depth,

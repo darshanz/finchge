@@ -7,6 +7,7 @@ from numpy.typing import NDArray
 
 from finchge.benchmarks.base import Benchmark, BenchmarkMetadata
 from finchge.benchmarks.registry import register
+from finchge.grammar import Grammar
 
 
 @register("koza_quartic", "regression")
@@ -72,7 +73,7 @@ class KozaQuarticBenchmark(Benchmark):
     def metadata(self) -> BenchmarkMetadata:
         return self._metadata
 
-    def grammar(self) -> str:
+    def grammar_str(self) -> str:
         return """
         <expr> ::= <expr> <op> <expr>
                 | <func> ( <expr> )
@@ -87,6 +88,12 @@ class KozaQuarticBenchmark(Benchmark):
 
         <const> ::= 0.1 | 0.5 | 1..5 | 10
         """
+
+    def grammar(self) -> Grammar:
+        """
+        Return the Grammar object.
+        """
+        return Grammar(grammar_str=self.grammar_str())
 
     def _generate_points(
         self,

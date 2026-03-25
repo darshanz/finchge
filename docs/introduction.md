@@ -1130,7 +1130,7 @@ Example:
 ```python
 from finchge.utils.logger import ExperimentLogger
 
-logger = ArtifactLogger(exclude=["trees"])
+logger = ExperimentLogger(exclude=["trees"])
 ```
 
 Use this logger when:
@@ -1146,9 +1146,9 @@ automatically.
 ```python
 ge = GrammaticalEvolution(
     grammar=grammar,
-    fitness_evaluator=fitness,
+    fitness_evaluator=fitness_evaluator,
     config=config,
-    logger=ArtifactLogger(),
+    logger=ExperimentLogger(),
 )
 
 result = ge.run()
@@ -1170,7 +1170,7 @@ Design notes
 
 !!! info "Tip"
 
-    Use FileLogger during development and ArtifactLogger for
+    Use FileLogger during development and ExperimentLogger for
     final experiments for detailed results analysis for publications.
 
 
@@ -1396,7 +1396,7 @@ Each benchmark provides:
 from finchge.benchmarks.regression import Nguyen1Benchmark
 
 bench = Nguyen1Benchmark(random_state=42)
-X_train, y_train, X_test, y_test = bench.generate_data()
+X_train, y_train, X_test, y_test = bench.load_data()
 print(f"Training samples: {len(X_train)}")  # 20 points
 print(f"Test samples: {len(X_test)}")  # 1000 points
 
@@ -1434,7 +1434,7 @@ print(f"Test samples: {len(X_test)}")  # 1000 points
 from finchge.benchmarks import Keijzer1Benchmark
 
 bench = Keijzer1Benchmark(random_state=42)
-X_train, y_train, X_test, y_test = bench.generate_data()
+X_train, y_train, X_test, y_test = bench.load_data()
 
 ```
 
@@ -1453,7 +1453,7 @@ Classic quartic polynomial benchmark from Koza's 1992 GP book.
 from finchge.benchmarks.logic.multiplexer import Multiplexer6Benchmark
 
 bench = Multiplexer6Benchmark()
-X, y, _, _ = bench.generate_data()  # Complete truth table
+X, y, _, _ = bench.load_data()  # Complete truth table
 ```
 
 
@@ -1476,8 +1476,8 @@ from finchge.benchmarks.logic import Multiplexer6Benchmark
 Each benchmark provides:
 
 - `metadata` - Information about the problem
-- `grammar()` - The language for valid solutions
-- `create_runner()` - Creates something that can evaluate phenotypes eg. evaluating expressions, or training models etc.
+- `grammar()` - The BNF grammar for valid solutions
+- `create_runner()` - Creates a runner that can evaluate phenotypes eg. evaluating expressions, or training models etc.
 
 ##### Runners
 
