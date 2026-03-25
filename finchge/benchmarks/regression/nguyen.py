@@ -18,7 +18,6 @@ def _nguyen1(x: NDArray[np.float64]) -> NDArray[np.float64]:
 
 
 def _nguyen2(x: NDArray[np.float64]) -> NDArray[np.float64]:
-    """Compute Nguyen-2: x^4 + x^3 + x^2 + x."""
     return np.asarray(x**4 + x**3 + x**2 + x, dtype=np.float64)
 
 
