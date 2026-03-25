@@ -1130,7 +1130,7 @@ Example:
 ```python
 from finchge.utils.logger import ExperimentLogger
 
-logger = ArtifactLogger(exclude=["trees"])
+logger = ExperimentLogger(exclude=["trees"])
 ```
 
 Use this logger when:
@@ -1146,9 +1146,9 @@ automatically.
 ```python
 ge = GrammaticalEvolution(
     grammar=grammar,
-    fitness_evaluator=fitness,
+    fitness_evaluator=fitness_evaluator,
     config=config,
-    logger=ArtifactLogger(),
+    logger=ExperimentLogger(),
 )
 
 result = ge.run()
@@ -1170,7 +1170,7 @@ Design notes
 
 !!! info "Tip"
 
-    Use FileLogger during development and ArtifactLogger for
+    Use FileLogger during development and ExperimentLogger for
     final experiments for detailed results analysis for publications.
 
 
