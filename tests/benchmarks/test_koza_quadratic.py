@@ -226,7 +226,7 @@ class TestKozaQuarticGrammar:
     def test_grammar_content(self):
         """Test that grammar contains expected elements."""
         bench = KozaQuarticBenchmark()
-        grammar = bench.grammar()
+        grammar = bench.grammar_str()
 
         # Should contain basic operators
         assert "+" in grammar
@@ -250,7 +250,7 @@ class TestKozaQuarticGrammar:
     def test_grammar_validity(self):
         """Test that grammar is syntactically valid (basic check)."""
         bench = KozaQuarticBenchmark()
-        grammar = bench.grammar()
+        grammar = bench.grammar_str()
 
         # Check for proper BNF structure
         assert "::=" in grammar

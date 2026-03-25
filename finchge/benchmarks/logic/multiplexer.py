@@ -98,7 +98,7 @@ class Multiplexer11Benchmark(Benchmark):
     def metadata(self) -> BenchmarkMetadata:
         return self._metadata
 
-    def grammar(self) -> str:
+    def grammar_str(self) -> str:
         return """
         <expr> ::= <if> | <and> | <or> | <not> | <var>
         <if> ::= if ( <expr> , <expr> , <expr> )
@@ -107,6 +107,12 @@ class Multiplexer11Benchmark(Benchmark):
         <not> ::= not ( <expr> )
         <var> ::= x[0..10]
         """
+
+    def grammar(self) -> Grammar:
+        """
+        Return the Grammar object.
+        """
+        return Grammar(grammar_str=self.grammar_str())
 
     def _generate_data(
         self,

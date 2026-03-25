@@ -22,7 +22,6 @@ from finchge.benchmarks.regression.nguyen import (
     NguyenBenchmark,
     NguyenFunction,
 )
-from finchge.grammar import Grammar
 
 
 class TestNguyenFunctionDefinitions:
@@ -426,8 +425,8 @@ class TestNguyenGrammars:
         bench_1d = Nguyen1Benchmark()
         bench_2d = Nguyen9Benchmark()
 
-        grammar_1d = Grammar(bench_1d.grammar())
-        grammar_2d = Grammar(bench_2d.grammar())
+        grammar_1d = bench_1d.grammar()
+        grammar_2d = bench_2d.grammar()
 
         assert "x0" in grammar_1d.terminals
         assert "x1" not in grammar_1d.terminals
@@ -453,7 +452,7 @@ class TestNguyenGrammars:
     def test_restricted_domain_grammars(self, func_class, restricted):
         """Test that functions with restricted domains have appropriate grammars."""
         bench = func_class()
-        grammar = bench.grammar()
+        grammar = bench.grammar_str()
 
         if restricted:
             # Should mention protected functions or have extra constants

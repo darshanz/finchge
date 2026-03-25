@@ -12,7 +12,6 @@ from finchge.grammar.grammar import Grammar
 
 
 class TestMultiplexer6Benchmark:
-
     def test_metadata(self):
         bench = Multiplexer6Benchmark()
 
@@ -134,7 +133,7 @@ class TestMultiplexer6Benchmark:
 
     def test_grammar_content(self):
         bench = Multiplexer6Benchmark()
-        grammar = Grammar(bench.grammar())
+        grammar = bench.grammar()
 
         assert "if" in grammar.terminals
         assert "and" in grammar.terminals
@@ -171,7 +170,6 @@ class TestMultiplexer6Benchmark:
 
 
 class TestMultiplexer11Benchmark:
-
     def test_metadata(self):
         bench = Multiplexer11Benchmark()
 
@@ -288,7 +286,7 @@ class TestMultiplexer11Benchmark:
 
     def test_grammar_content(self):
         bench = Multiplexer11Benchmark()
-        grammar = Grammar(bench.grammar())
+        grammar = Grammar(bench.grammar_str())
 
         # Should have all needed functions
         assert "if" in grammar.terminals
@@ -326,7 +324,6 @@ class TestMultiplexer11Benchmark:
 
 
 class TestMultiplexerCommon:
-
     def test_no_random_state_effect(self):
         bench1 = Multiplexer6Benchmark(random_state=42)
         bench2 = Multiplexer6Benchmark(random_state=123)
