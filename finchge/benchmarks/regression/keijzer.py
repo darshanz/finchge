@@ -8,6 +8,7 @@ from numpy.typing import NDArray
 from finchge.benchmarks.base import Benchmark, BenchmarkMetadata
 from finchge.benchmarks.registry import register
 from finchge.benchmarks.typing import BenchmarkFunctionInfoBase, Range
+from finchge.grammar import Grammar
 
 
 class KeijzerFunction(Enum):
@@ -491,12 +492,18 @@ class KeijzerBenchmark(Benchmark):
     def metadata(self) -> BenchmarkMetadata:
         return self._metadata
 
-    def grammar(self) -> str:
+    def grammar_str(self) -> str:
         """Return appropriate grammar based on complexity."""
         if self.input_dim == 1:
             return self._get_1d_grammar()
         else:
             return self._get_2d_grammar()
+
+    def grammar(self) -> Grammar:
+        """
+        Return the Grammar object.
+        """
+        return Grammar(grammar_str=self.grammar_str())
 
     def _get_1d_grammar(self) -> str:
         """

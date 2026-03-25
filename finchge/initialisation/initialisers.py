@@ -1,4 +1,4 @@
-from typing import Any, Optional, TypeAlias
+from typing import Any, Optional
 
 from finchge.config.config import ConfigError, Keys
 from finchge.core.individual import Individual
@@ -444,10 +444,10 @@ class RHHInitialiser(GETreeInitialiser):
 
     def _build_koza_schedule(self) -> None:
         """
-        Build schedule matching PonyGE2 Ramped Half-and-Half behaviour.
+        Build schedule for Ramped Half-and-Half behaviour.
         """
 
-        # PonyGE depth definition
+        # depth definition based on min and max depth params
         depths = list(range(self.init_min_depth + 1, self.init_max_depth + 1))
 
         if self.population_size < 2:

@@ -5,6 +5,7 @@ from numpy.typing import NDArray
 
 from finchge.benchmarks.base import Benchmark, BenchmarkMetadata
 from finchge.benchmarks.registry import register
+from finchge.grammar import Grammar
 from finchge.runners.base import PhenotypeRunner
 
 
@@ -32,7 +33,7 @@ class Multiplexer6Benchmark(Benchmark):
     def metadata(self) -> BenchmarkMetadata:
         return self._metadata
 
-    def grammar(self) -> str:
+    def grammar_str(self) -> str:
         return """
         <expr> ::= <if> | <and> | <or> | <not> | <var>
         <if> ::= if ( <expr> , <expr> , <expr> )
@@ -41,6 +42,12 @@ class Multiplexer6Benchmark(Benchmark):
         <not> ::= not ( <expr> )
         <var> ::= x[0..5]
         """
+
+    def grammar(self) -> Grammar:
+        """
+        Return the Grammar object.
+        """
+        return Grammar(grammar_str=self.grammar_str())
 
     def _generate_data(
         self,

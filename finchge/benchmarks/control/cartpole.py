@@ -6,6 +6,7 @@ from numpy.typing import NDArray
 from finchge.benchmarks.base import Benchmark, BenchmarkMetadata
 from finchge.benchmarks.control.base import ControlEnvironment
 from finchge.benchmarks.registry import register
+from finchge.grammar import Grammar
 from finchge.runners.control import ControlRunner
 
 
@@ -371,7 +372,7 @@ class CartPoleBenchmark(Benchmark):
     def metadata(self) -> BenchmarkMetadata:
         return self._metadata
 
-    def grammar(self) -> str:
+    def grammar_str(self) -> str:
         return """
         <code> ::= <line> | <code> <line>
         <line> ::= <if> | <action>
@@ -382,6 +383,12 @@ class CartPoleBenchmark(Benchmark):
         <number> ::= -1.0 | -0.5 | 0.0 | 0.5 | 1.0
         <action> ::= left | right
         """
+
+    def grammar(self) -> Grammar:
+        """
+        Return the Grammar object.
+        """
+        return Grammar(grammar_str=self.grammar_str())
 
     def create_runner(self, data_type: str = "train") -> CartPoleRunner:
         def env_factory() -> CartPoleEnvironment:

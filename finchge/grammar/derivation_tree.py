@@ -9,6 +9,10 @@ class TreeNode:
     Represents a derivation tree (root node) and its children.
     The Derivation Tree is used during genotype-to-phenotype mapping.
 
+    As TreeNode is used to represent both node and full derivation tree, the properties such as depth,
+    max_depth should be used with caution. The property`depth` is the depth of current node,
+     while `max_depth` should be used to get the depth of the tree.
+
     Each node holds a symbol (terminal or non-terminal) and may have children.
     The tree supports JSON and string (CSV-like) serialization.
     Args:

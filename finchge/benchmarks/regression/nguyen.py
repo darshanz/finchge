@@ -7,6 +7,7 @@ from numpy.typing import NDArray
 from finchge.benchmarks.base import Benchmark, BenchmarkMetadata
 from finchge.benchmarks.registry import register
 from finchge.benchmarks.typing import BenchmarkFunctionInfoBase, Range
+from finchge.grammar import Grammar
 
 # Type alias for the function type
 NguyenFunctionType = Callable[[NDArray[np.float64]], NDArray[np.float64]]
@@ -362,14 +363,20 @@ class NguyenBenchmark(Benchmark):
     def metadata(self) -> BenchmarkMetadata:
         return self._metadata
 
-    def grammar(self) -> str:
+    def grammar_str(self) -> str:
         """
-        Return appropriate grammar based on function complexity.
+        Return grammar string based on function complexity.
         """
         if self.func_info["input_dim"] == 1:
             return self._get_1d_grammar()
         else:
             return self._get_2d_grammar()
+
+    def grammar(self) -> Grammar:
+        """
+        Return the Grammar object on function complexity.
+        """
+        return Grammar(grammar_str=self.grammar_str())
 
     def _get_1d_grammar(self) -> str:
         """Grammar for 1D functions."""

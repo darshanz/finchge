@@ -7,6 +7,7 @@ from numpy.typing import NDArray
 from finchge.benchmarks.base import Benchmark, BenchmarkMetadata
 from finchge.benchmarks.control.base import ControlEnvironment
 from finchge.benchmarks.registry import register
+from finchge.grammar import Grammar
 from finchge.runners.control import ControlRunner
 
 SFE_TRAIL_STRING = """
@@ -446,7 +447,7 @@ class SantaFeTrailBenchmark(Benchmark):
     def metadata(self) -> BenchmarkMetadata:
         return self._metadata
 
-    def grammar(self) -> str:
+    def grammar_str(self) -> str:
         """
         Return grammar for Santa Fe Trail problem.
         """
@@ -456,6 +457,12 @@ class SantaFeTrailBenchmark(Benchmark):
         <condition> ::= ifelse food-ahead (<line>) (<line>)
         <op> ::= turn-left | turn-right | move
         """
+
+    def grammar(self) -> Grammar:
+        """
+        Return the Grammar object.
+        """
+        return Grammar(grammar_str=self.grammar_str())
 
     def create_runner(self, data_type: str = "train") -> SantaFeRunner:
         """

@@ -6,6 +6,7 @@ from typing import Any, Optional, Tuple
 
 from numpy.typing import NDArray
 
+from finchge.grammar import Grammar
 from finchge.utils.random_mixin import RandomStateMixin
 
 
@@ -54,8 +55,13 @@ class Benchmark(RandomStateMixin, ABC):
         pass
 
     @abstractmethod
-    def grammar(self) -> str:
+    def grammar_str(self) -> str:
         """Return the BNF grammar string for this problem."""
+        pass
+
+    @abstractmethod
+    def grammar(self) -> Grammar:
+        """Return the BNF Grammar for this problem."""
         pass
 
     def _generate_data(
