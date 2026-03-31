@@ -235,9 +235,9 @@ class ExperimentLogger(FileLogger):
         self.compress_genotypes: bool = compress_genotypes
         self.log_population_samples: bool = log_population_samples
         self.sample_size: int = sample_size
-        self.custom_log_hook: Optional[Callable[[dict[str, Any]], None]] = (
-            custom_log_hook
-        )
+        self.custom_log_hook: Optional[
+            Callable[[dict[str, Any]], None]
+        ] = custom_log_hook
 
         self.log_dir: Optional[Path] = None
         self.csv_path: Optional[Path] = None
@@ -421,7 +421,7 @@ class ExperimentLogger(FileLogger):
             genotype_path.write_text(str(best.genotype))
 
         if best.tree and "trees" not in self.exclude:
-            tree_path = self.log_dir / "trees" / f"{generation}.json"
+            tree_path = self.log_dir / "trees" / f"{generation}_tree.txt"
             tree_path.write_text(best.tree)
 
         # calculate tree depth

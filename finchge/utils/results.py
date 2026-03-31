@@ -134,12 +134,14 @@ class ResultHelper:
         # perhaps the tree of the best individual can be saved at the end of the evolution
         best_generation = generation_data["generation"].max()
         self.logger.info(
-            f"Tree saved for: {best_generation} --  {get_log_dir(self.project_id)}/trees/{best_generation}.json"
+            f"Tree saved for: {best_generation} --  {get_log_dir(self.project_id)}/trees/{best_generation}_tree.txt"
         )
 
         # tree for best generation
 
-        best_tree_path = f"{get_log_dir(self.project_id)}/trees/{best_generation}.json"
+        best_tree_path = (
+            f"{get_log_dir(self.project_id)}/trees/{best_generation}_tree.txt"
+        )
         try:
             with open(best_tree_path, "r") as file:
                 best_tree_json = file.read()
