@@ -4,12 +4,14 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, Optional
 
+from finchge.config import FinchConfig
 from finchge.core.individual import Individual
 from finchge.utils.random_mixin import RandomStateMixin
 from finchge.grammar.tree_generator import TreeGenerator
 
 
-class InitializerType(str, Enum):
+# Initialiser types, just a helper class with string constants to be passed to factory method make_initializer for clarity
+class InitialiserType(str, Enum):
     RANDOM_GENOME = "random_genome"
     FULL = "full"
     GROW = "grow"
@@ -17,7 +19,7 @@ class InitializerType(str, Enum):
     RHH = "rhh"
     PTC1 = "ptc1"
     PTC2 = "ptc2"
-    PTC2D = "ptc2d"
+    RAMPED_PTC2 = "ramped_ptc2"
 
 
 class GEInitialiser(RandomStateMixin, ABC):
@@ -43,14 +45,13 @@ class GEInitialiser(RandomStateMixin, ABC):
     @classmethod
     @abstractmethod
     def from_config(
-        cls, cfg: dict[str, Any], random_state: int | None = None
+        cls, cfg: FinchConfig
     ) -> "GEInitialiser":
         """
         Construct an initialiser from configuration.
 
         Args:
-            random_state:
-            cfg:
+            cfg: FinchConfig
 
         Returns:
         """

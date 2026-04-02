@@ -1,6 +1,6 @@
 from typing import Any
 
-from finchge.config import Keys
+from finchge.config import Keys, FinchConfig
 from finchge.initialisation.base import GEInitialiser, GETreeInitialiser
 from finchge.initialisation.initialisers import (
     FullTreeInitialiser,
@@ -15,8 +15,7 @@ from finchge.initialisation.initialisers import (
 
 
 def make_initialiser(
-    cfg: dict[str, Any],
-    random_state: int | None = None,
+    cfg: FinchConfig,
 ) -> GEInitialiser | GETreeInitialiser:
     """
     Create an initialiser instance based on configuration.
@@ -34,7 +33,7 @@ def make_initialiser(
 
     Args:
         cfg:
-            Configuration dictionary.
+            Configuration instance (FinchConfig).
         random_state:
             Optional RNG seed.
 
@@ -42,7 +41,7 @@ def make_initialiser(
         GEInitializer or GETreeInitializer
     """
 
-    init_type = cfg.get(Keys.INIT_TYPE, "random_genome").lower()
+    init_type = cfg.ge.get(Keys.INIT_TYPE, "random_genome").lower() # use random_genome as default init type
 
     # Registry mapping initialiser names to classes
     initialiser_registry: dict[str, type[GEInitialiser | GETreeInitialiser]] = {
@@ -59,11 +58,12 @@ def make_initialiser(
     if init_type not in initialiser_registry:
         raise ValueError(
             f"Unknown initialisation type '{init_type}'. "
-            f"Valid options are: {sorted(initialiser_registry.keys())}"
+            f"Valid options are: {sorted(initialiser_registry.keys())}. "
+            f"For config-based initialisation is not supported for custom intialisation method"
         )
 
     print(f"Initialisation type: {init_type}")
 
     initialiser_cls = initialiser_registry[init_type]
 
-    return initialiser_cls.from_config(cfg, random_state=random_state)
+    return initialiser_cls.from_config(cfg)

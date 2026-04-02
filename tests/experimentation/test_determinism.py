@@ -72,9 +72,7 @@ def create_deterministic_components(ge_config, grammar_bnf, seed=42):
         mapper=mapper,
     )
 
-    initialiser = RandomGenomeInitialiser.from_config(
-        ge_config.ge, random_state=shared_rng
-    )
+    initialiser = RandomGenomeInitialiser.from_config(ge_config)
     algorithm = GeneticAlgorithm(
         selection=TournamentSelection(max_best=False),
         crossover=OnePointCrossover(

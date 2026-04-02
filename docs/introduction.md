@@ -679,7 +679,7 @@ and further refined by Nicolau (2017).
 Unlike traditional depth-based routines, PTC2 focuses on the number of grammar expansions performed.
 It maintains a **frontier** of active non-terminals and selects the next node to expand **uniformly at random**.
 This process effectively eliminates the structural and left-recursive biases
-common in standard depth-first initialization.
+common in standard depth-first initialisation.
 
 ??? note "Refined PTC2 vs. PTC2D"
 
@@ -789,6 +789,31 @@ print("Phenotype:", phenotype)
 
 
 ```
+
+Initializers can also be declared in config file with `init_type` key under the section `ge` as following:
+
+
+```yaml
+
+ge:
+  init_type: random_genome
+  genome_length: 100
+  codon_size: 127 
+```
+
+All the intialser support initialisation using config files through `from_config()` method. 
+For example  `RandomGenomeInitialiser` can be used as following.
+
+```python
+from finchge.initialisation import  RandomGenomeInitialiser
+from finchge.config import  FinchConfig
+
+config = FinchConfig.from_yaml("config.yaml")
+initialiser = RandomGenomeInitialiser.from_config(ge_config=config)
+
+```
+
+Note: To intitialise using config, all the parameters required by the respective initializers must be provided in the config files.
 
 ## Genetic Operators
 

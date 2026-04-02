@@ -24,7 +24,6 @@ def __getattr__(name: str) -> Any:
         "PIGrowInitialiser",
         "SensibleInitialiser",
         "PTC2Initialiser",
-        "PTC2DInitialiser",
         "RampedPTC2Initialiser",
     }:
         from .base import GEInitialiser
@@ -52,6 +51,5 @@ __all__ = [
     "PIGrowInitialiser",
     "RHHInitialiser",
     "PTC2Initialiser",
-    "PTC2DInitialiser",
     "RampedPTC2Initialiser",
 ]

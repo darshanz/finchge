@@ -122,20 +122,19 @@ class GrammaticalEvolution(RandomStateMixin):
         # if neither of them are provided make_initialiser takes empty dict
         # and returns default initialiser(random_genome) with default parameters.
 
-        ge_config = self.config.ge
+
         if initialiser is not None:
-            if ge_config:
-                warnings.warn(
-                    "Initializer provided explicitly; "
-                    "initialisation settings in config will be ignored.",
-                    UserWarning,
-                )
+            warnings.warn(
+                "Initializer provided explicitly; "
+                "initialisation settings in config, if any, will be ignored.",
+                UserWarning,
+            )
             self.initialiser: GEInitialiser | GETreeInitialiser = initialiser
         else:
             self.logger.info(
-                f"Making Initializer from config with initialisation type: {ge_config[Keys.INIT_TYPE]}"
+                f"Making Initializer from config with initialisation type: {self.config.ge[Keys.INIT_TYPE]}"
             )
-            self.initialiser = make_initialiser(ge_config, random_state=random_state)
+            self.initialiser = make_initialiser(self.config)
 
             if isinstance(self.initialiser, GETreeInitialiser):
                 self.tree_generator = TreeGenerator(
