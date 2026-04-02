@@ -353,7 +353,7 @@ class FinchConfig:
         return self.section("parallel")
 
     @classmethod
-    def default(self):
+    def default(self) -> dict[str, Any]:
         default_config = {
             "experiment": {
                 "random_seed": 42,

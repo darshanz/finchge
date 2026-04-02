@@ -11,11 +11,6 @@ from finchge.config.config import FinchConfig, Keys
 from finchge.core.individual import Individual
 from finchge.core.population import Population
 from finchge.core.result import GEResult
-from finchge.utils.cache import CacheManager
-from finchge.utils.checkpoint import CheckpointManager, stable_config_hash
-from finchge.utils.logger import BaseLogger, get_logger, setup_logging
-from finchge.utils.random_mixin import RandomStateMixin
-from finchge.utils.results import ResultHelper, StatsHelper
 from finchge.fitness.fitness_evaluator import FitnessEvaluator
 from finchge.grammar import Grammar
 from finchge.grammar.tree_generator import TreeGenerator
@@ -25,6 +20,11 @@ from finchge.operators.crossover import OnePointCrossover
 from finchge.operators.mutation import IntFlipMutation
 from finchge.operators.replacement import GenerationalReplacement
 from finchge.operators.selection import TournamentSelection
+from finchge.utils.cache import CacheManager
+from finchge.utils.checkpoint import CheckpointManager, stable_config_hash
+from finchge.utils.logger import BaseLogger, get_logger, setup_logging
+from finchge.utils.random_mixin import RandomStateMixin
+from finchge.utils.results import ResultHelper, StatsHelper
 
 
 class GrammaticalEvolution(RandomStateMixin):
@@ -121,7 +121,6 @@ class GrammaticalEvolution(RandomStateMixin):
         # initialiser passed through GrammaticalEvolution should always get priority and config will be ignored..
         # if neither of them are provided make_initialiser takes empty dict
         # and returns default initialiser(random_genome) with default parameters.
-
 
         if initialiser is not None:
             warnings.warn(

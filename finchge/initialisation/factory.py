@@ -1,6 +1,4 @@
-from typing import Any
-
-from finchge.config import Keys, FinchConfig
+from finchge.config import FinchConfig, Keys
 from finchge.initialisation.base import GEInitialiser, GETreeInitialiser
 from finchge.initialisation.initialisers import (
     FullTreeInitialiser,
@@ -9,8 +7,8 @@ from finchge.initialisation.initialisers import (
     PTC2Initialiser,
     RampedPTC2Initialiser,
     RandomGenomeInitialiser,
-    RVDInitialiser,
     RHHInitialiser,
+    RVDInitialiser,
 )
 
 
@@ -41,7 +39,9 @@ def make_initialiser(
         GEInitializer or GETreeInitializer
     """
 
-    init_type = cfg.ge.get(Keys.INIT_TYPE, "random_genome").lower() # use random_genome as default init type
+    init_type = cfg.ge.get(
+        Keys.INIT_TYPE, "random_genome"
+    ).lower()  # use random_genome as default init type
 
     # Registry mapping initialiser names to classes
     initialiser_registry: dict[str, type[GEInitialiser | GETreeInitialiser]] = {

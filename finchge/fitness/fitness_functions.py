@@ -210,12 +210,12 @@ class RMSEFitness(GEFitnessFunction):
 
 
 class StringMatchFitness(GEFitnessFunction):
-    def __init__(self, target):
+    def __init__(self, target: str):
         super().__init__(maximize=False)
         self.target = target
         self.target_len = len(target)
 
-    def evaluate(self, context):
+    def evaluate(self, context: dict[str, Any]) -> int:
         phenotype = context["phenotype"]
 
         max_len = max(self.target_len, len(phenotype))

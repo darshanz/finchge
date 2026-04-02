@@ -25,7 +25,10 @@ def test_random_genome_init_from_conf():
 
     from finchge.initialisation.initialisers import RandomGenomeInitialiser
 
-    init_config = {"experiment": {"random_seed": 42},  "ge": {"codon_size": 120, "genome_length": 80} }
+    init_config = {
+        "experiment": {"random_seed": 42},
+        "ge": {"codon_size": 120, "genome_length": 80},
+    }
     config = FinchConfig.from_dict(init_config)
     initialiser = RandomGenomeInitialiser.from_config(config)
     individual = initialiser.initialise()
@@ -37,12 +40,13 @@ def test_init_using_factory_random_genome():
     Initializer made using factory for random genome initialisation
     """
 
-    init_config_ = {"experiment": {"random_seed": 42}
-        , "ge": {
+    init_config_ = {
+        "experiment": {"random_seed": 42},
+        "ge": {
             "init_type": "random_genome",
             "codon_size": 127,
             "genome_length": 100,
-        }
+        },
     }
     cfg = FinchConfig.from_dict(init_config_)
     initialiser_ = make_initialiser(cfg)
@@ -56,12 +60,13 @@ def test_invalid_init_type():
     Should raise ValueError if unsupported intialization type is provided
     Test both that ValueError is raised AND the message is correct.
     """
-    init_config_ = {"experiment": {"random_seed": 42}
-        , "ge": {
-        "init_type": "wrong_init_type",
-        "codon_size": 127,
-        "genome_length": 100,
-    }
+    init_config_ = {
+        "experiment": {"random_seed": 42},
+        "ge": {
+            "init_type": "wrong_init_type",
+            "codon_size": 127,
+            "genome_length": 100,
+        },
     }
     cfg = FinchConfig.from_dict(init_config_)
 

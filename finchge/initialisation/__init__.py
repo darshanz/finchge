@@ -9,8 +9,8 @@ if TYPE_CHECKING:
         PTC2Initialiser,
         RampedPTC2Initialiser,
         RandomGenomeInitialiser,
-        RVDInitialiser,
         RHHInitialiser,
+        RVDInitialiser,
     )
 
 
@@ -34,8 +34,8 @@ def __getattr__(name: str) -> Any:
             PTC2Initialiser,
             RampedPTC2Initialiser,
             RandomGenomeInitialiser,
-            RVDInitialiser,
             RHHInitialiser,
+            RVDInitialiser,
         )
 
         return locals()[name]

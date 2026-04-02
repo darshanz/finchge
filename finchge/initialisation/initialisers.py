@@ -1,6 +1,6 @@
-from typing import Any, Optional
+from typing import Optional
 
-from finchge.config.config import ConfigError, Keys, FinchConfig
+from finchge.config.config import ConfigError, FinchConfig, Keys
 from finchge.core.individual import Individual
 from finchge.grammar import GenotypeMapper
 from finchge.grammar.tree_generator import TreeGenerator
@@ -31,9 +31,7 @@ class RandomGenomeInitialiser(GEInitialiser):
         self.codon_size = codon_size
 
     @classmethod
-    def from_config(
-        cls, config: FinchConfig
-    ) -> "RandomGenomeInitialiser":
+    def from_config(cls, config: FinchConfig) -> "RandomGenomeInitialiser":
         """
         Create a RandomGenomeInitialiser using FinchConfig object
 
@@ -102,9 +100,7 @@ class RVDInitialiser(GEInitialiser):
         self._attempts = 0
 
     @classmethod
-    def from_config(
-        cls, config: FinchConfig
-    ) -> "RVDInitialiser":
+    def from_config(cls, config: FinchConfig) -> "RVDInitialiser":
         """
         Create a RVDInitializer from the [ge] config section.
 
@@ -204,9 +200,7 @@ class FullTreeInitialiser(GETreeInitialiser):
         self._index = 0
 
     @classmethod
-    def from_config(
-        cls, config: FinchConfig
-    ) -> "FullTreeInitialiser":
+    def from_config(cls, config: FinchConfig) -> "FullTreeInitialiser":
         try:
             random_state = config.experiment[Keys.RANDOM_SEED]
             min_depth = config.ge[Keys.INIT_MIN_DEPTH]
@@ -285,9 +279,7 @@ class GrowTreeInitialiser(GETreeInitialiser):
         self._index = 0
 
     @classmethod
-    def from_config(
-        cls, config: FinchConfig
-    ) -> "GrowTreeInitialiser":
+    def from_config(cls, config: FinchConfig) -> "GrowTreeInitialiser":
         try:
             random_state = config.experiment[Keys.RANDOM_SEED]
             min_depth = config.ge[Keys.INIT_MIN_DEPTH]
@@ -410,9 +402,7 @@ class RHHInitialiser(GETreeInitialiser):
             self.inject_tree_generator_rng()
 
     @classmethod
-    def from_config(
-        cls, config: FinchConfig
-    ) -> "RHHInitialiser":
+    def from_config(cls, config: FinchConfig) -> "RHHInitialiser":
         """
         Create a RampedHalfAndHalfInitializer from configuration.
 
@@ -552,9 +542,7 @@ class PIGrowInitialiser(GETreeInitialiser):
         self.tree_generator: TreeGenerator | None = None
 
     @classmethod
-    def from_config(
-        cls, config: FinchConfig
-    ) -> "PIGrowInitialiser":
+    def from_config(cls, config: FinchConfig) -> "PIGrowInitialiser":
         """
         Create a PI-Grow initialiser from GE configuration.
 
@@ -690,9 +678,7 @@ class RampedPTC2Initialiser(GETreeInitialiser):
         self.tree_generator: TreeGenerator | None = None
 
     @classmethod
-    def from_config(
-        cls, config: FinchConfig
-    ) -> "RampedPTC2Initialiser":
+    def from_config(cls, config: FinchConfig) -> "RampedPTC2Initialiser":
         try:
             random_state = config.experiment[Keys.RANDOM_SEED]
             min_size = config.ge[Keys.INIT_TREE_MIN_SIZE]

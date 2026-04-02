@@ -404,22 +404,16 @@ class SymbolicExpression:
     def _safe_div(
         a: Union[float, NDArray[np.float64]], b: Union[float, NDArray[np.float64]]
     ) -> NDArray[np.float64]:
-        """Ultra-safe division."""
-        # Convert to arrays if needed
+        """Safe division."""
         a_arr = np.asarray(a, dtype=np.float64)
         b_arr = np.asarray(b, dtype=np.float64)
 
         # Handle zero/almost zero denominators
         safe_b: NDArray[np.float64] = np.where(np.abs(b_arr) < 1e-10, 1.0, b_arr)
-        result: NDArray[np.float64] = a_arr / safe_b
+        result: NDArray[np.float64] = np.asarray(a_arr / safe_b, dtype=np.float64)
 
-        # Replace infinities with large finite numbers
-        inf_mask: NDArray[np.bool_] = ~np.isfinite(result)
-        if np.any(inf_mask):
-            signs: NDArray[np.float64] = np.sign(result[inf_mask])
-            # Handle case where result[inf_mask] might be all zeros (sign undefined)
-            signs = np.where(signs == 0, 1.0, signs)
-            result[inf_mask] = 1e10 * signs
+        signs = np.where(np.sign(result) == 0, 1.0, np.sign(result))
+        result = np.where(np.isfinite(result), result, 1e10 * signs)
         return result
 
     @staticmethod
@@ -434,22 +428,18 @@ class SymbolicExpression:
         result: NDArray[np.float64] = np.power(np.abs(a_arr), b_arr)
 
         # Preserve sign for integer exponents
-        if np.isscalar(b):
-            if isinstance(b, (int, float)) and float(b).is_integer():
-                b_int: int = int(b)
-                odd_mask: NDArray[np.bool_] = (a_arr < 0) & (b_int % 2 == 1)
+        if np.ndim(b_arr) == 0:
+            b_scalar = float(b_arr)
+            if b_scalar.is_integer():
+                b_int = int(b_scalar)
+                odd_mask = (a_arr < 0) & (b_int % 2 == 1)
                 result = np.where(odd_mask, -result, result)
         else:
-            # Handle array exponents
-            b_int_mask: NDArray[np.bool_] = np.mod(b_arr, 1) == 0
-            odd_negative_mask: NDArray[np.bool_] = (
-                (a_arr < 0) & b_int_mask & (np.mod(b_arr, 2) == 1)
-            )
+            b_int_mask = np.mod(b_arr, 1) == 0
+            odd_negative_mask = (a_arr < 0) & b_int_mask & (np.mod(b_arr, 2) == 1)
             result = np.where(odd_negative_mask, -result, result)
 
-        # Handle non-finite results
-        non_finite_mask: NDArray[np.bool_] = ~np.isfinite(result)
-        result[non_finite_mask] = 1e10
+        result = np.where(np.isfinite(result), result, 1e10)
         return result
 
     @staticmethod
@@ -469,21 +459,20 @@ class SymbolicExpression:
     def _safe_tan(x: Union[float, NDArray[np.float64]]) -> NDArray[np.float64]:
         """Safe tangent."""
         x_arr = np.asarray(x, dtype=np.float64)
-
-        # Avoid values near π/2 + kπ
         near_pole: NDArray[np.bool_] = np.abs(np.mod(x_arr - np.pi / 2, np.pi)) < 0.1
         x_shifted: NDArray[np.float64] = np.where(near_pole, x_arr + 0.1, x_arr)
 
         result: NDArray[np.float64] = np.tan(x_shifted)
-        result[~np.isfinite(result)] = 0
+        result = np.where(np.isfinite(result), result, 0.0)
         return result
 
     @staticmethod
     def _safe_cot(x: Union[float, NDArray[np.float64]]) -> NDArray[np.float64]:
         """Safe cotangent."""
         x_arr = np.asarray(x, dtype=np.float64)
-        clipped: NDArray[np.float64] = np.clip(x_arr, -1.5, 1.5)
-        return np.asarray(1.0 / np.tan(clipped), dtype=np.float64)
+        tan_x = np.tan(x_arr)
+        result = np.where(np.abs(tan_x) < 1e-10, 1e10, 1.0 / tan_x)
+        return np.asarray(result, dtype=np.float64)
 
     @staticmethod
     def _safe_sec(x: Union[float, NDArray[np.float64]]) -> NDArray[np.float64]:

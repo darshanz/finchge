@@ -2,10 +2,10 @@ import random
 
 import pytest
 
-from finchge.utils.checkpoint import FileCheckpointManager, stable_config_hash
-from finchge.utils.logger import ExperimentLogger
 from finchge.fitness.fitness_functions import GEFitnessFunction
 from finchge.grammar import GenotypeMapper, Grammar
+from finchge.utils.checkpoint import FileCheckpointManager, stable_config_hash
+from finchge.utils.logger import ExperimentLogger
 
 
 @pytest.fixture(autouse=True)
@@ -88,6 +88,7 @@ def ge_factory(simple_grammar, fitness_evaluator, ge_config):
         cfg = dict(ge_config)
 
         from finchge.core.engine import GrammaticalEvolution
+
         return GrammaticalEvolution(
             grammar=simple_grammar,
             fitness_evaluator=fitness_evaluator,

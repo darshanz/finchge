@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, Optional
+from typing import Optional
 
 from finchge.config import FinchConfig
 from finchge.core.individual import Individual
-from finchge.utils.random_mixin import RandomStateMixin
 from finchge.grammar.tree_generator import TreeGenerator
+from finchge.utils.random_mixin import RandomStateMixin
 
 
 # Initialiser types, just a helper class with string constants to be passed to factory method make_initializer for clarity
@@ -44,9 +44,7 @@ class GEInitialiser(RandomStateMixin, ABC):
 
     @classmethod
     @abstractmethod
-    def from_config(
-        cls, cfg: FinchConfig
-    ) -> "GEInitialiser":
+    def from_config(cls, cfg: FinchConfig) -> "GEInitialiser":
         """
         Construct an initialiser from configuration.
 
