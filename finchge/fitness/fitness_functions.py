@@ -204,6 +204,10 @@ class RMSEFitness(GEFitnessFunction):
         if np.isnan(y_pred).any():
             # Check for NaN set very high RMSE for discarded ones.
             return np.inf
+
+        # To fix RuntimeWarning: overflow encountered in square
+        # Clip predictions to keep RMSE stable.
+        y_pred = np.clip(y_pred, -1e10, 1e10)
         rmse: np.float64 = np.sqrt(np.mean((y_true - y_pred) ** 2))
         fitness = np.inf if np.isnan(rmse) else rmse  # Return Inf if rmse is NaN
         return float(fitness)
