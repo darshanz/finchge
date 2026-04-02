@@ -8,13 +8,13 @@ from cloudpickle import cloudpickle
 from finchge.config import Keys
 from finchge.core.individual import Individual
 from finchge.core.population import Population
-from finchge.utils.cache import CacheManager
 from finchge.fitness.fitness_functions import GEFitnessFunction
 from finchge.grammar import GenotypeMapper
 from finchge.grammar.derivation_tree import TreeNode
 from finchge.grammar.mapper import MappingResult
 from finchge.parallel.base import BaseParallelBackend
 from finchge.runners.base import PhenotypeRunner
+from finchge.utils.cache import CacheManager
 
 
 class FitnessEvaluator:

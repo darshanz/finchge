@@ -9,8 +9,8 @@ if TYPE_CHECKING:
         PTC2Initialiser,
         RampedPTC2Initialiser,
         RandomGenomeInitialiser,
-        RVDInitialiser,
         RHHInitialiser,
+        RVDInitialiser,
     )
 
 
@@ -24,7 +24,6 @@ def __getattr__(name: str) -> Any:
         "PIGrowInitialiser",
         "SensibleInitialiser",
         "PTC2Initialiser",
-        "PTC2DInitialiser",
         "RampedPTC2Initialiser",
     }:
         from .base import GEInitialiser
@@ -35,8 +34,8 @@ def __getattr__(name: str) -> Any:
             PTC2Initialiser,
             RampedPTC2Initialiser,
             RandomGenomeInitialiser,
-            RVDInitialiser,
             RHHInitialiser,
+            RVDInitialiser,
         )
 
         return locals()[name]
@@ -52,6 +51,5 @@ __all__ = [
     "PIGrowInitialiser",
     "RHHInitialiser",
     "PTC2Initialiser",
-    "PTC2DInitialiser",
     "RampedPTC2Initialiser",
 ]

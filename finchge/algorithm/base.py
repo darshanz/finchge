@@ -3,8 +3,8 @@ from typing import Any, Optional
 
 from finchge.core.individual import Individual
 from finchge.core.population import Population
-from finchge.utils.random_mixin import RandomStateMixin
 from finchge.operators.base import GECrossoverStrategy, GEMutationStrategy
+from finchge.utils.random_mixin import RandomStateMixin
 
 
 class BaseAlgorithm(RandomStateMixin, ABC):

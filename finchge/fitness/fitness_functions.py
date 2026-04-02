@@ -204,24 +204,28 @@ class RMSEFitness(GEFitnessFunction):
         if np.isnan(y_pred).any():
             # Check for NaN set very high RMSE for discarded ones.
             return np.inf
+
+        # To fix RuntimeWarning: overflow encountered in square
+        # Clip predictions to keep RMSE stable.
+        y_pred = np.clip(y_pred, -1e10, 1e10)
         rmse: np.float64 = np.sqrt(np.mean((y_true - y_pred) ** 2))
         fitness = np.inf if np.isnan(rmse) else rmse  # Return Inf if rmse is NaN
         return float(fitness)
 
 
 class StringMatchFitness(GEFitnessFunction):
-    def __init__(self, target):
+    def __init__(self, target: str):
         super().__init__(maximize=False)
         self.target = target
-        self.target_len = len(target)
+        self.target_len: int = len(target)
 
-    def evaluate(self, context):
+    def evaluate(self, context: dict[str, Any]) -> int:
         phenotype = context["phenotype"]
 
         max_len = max(self.target_len, len(phenotype))
         min_len = min(self.target_len, len(phenotype))
 
-        matches = sum(
+        matches: int = sum(
             t == g for t, g in zip(self.target[:min_len], phenotype[:min_len])
         )
 

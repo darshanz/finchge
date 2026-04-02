@@ -2,6 +2,7 @@ import random
 
 import pytest
 
+from finchge.config import FinchConfig
 from finchge.initialisation.factory import make_initialiser
 
 
@@ -24,8 +25,12 @@ def test_random_genome_init_from_conf():
 
     from finchge.initialisation.initialisers import RandomGenomeInitialiser
 
-    init_config = {"codon_size": 120, "genome_length": 80}
-    initialiser = RandomGenomeInitialiser.from_config(init_config)
+    init_config = {
+        "experiment": {"random_seed": 42},
+        "ge": {"codon_size": 120, "genome_length": 80},
+    }
+    config = FinchConfig.from_dict(init_config)
+    initialiser = RandomGenomeInitialiser.from_config(config)
     individual = initialiser.initialise()
     assert len(individual.genotype) == 80
 
@@ -36,11 +41,15 @@ def test_init_using_factory_random_genome():
     """
 
     init_config_ = {
-        "init_type": "random_genome",
-        "codon_size": 127,
-        "genome_length": 100,
+        "experiment": {"random_seed": 42},
+        "ge": {
+            "init_type": "random_genome",
+            "codon_size": 127,
+            "genome_length": 100,
+        },
     }
-    initialiser_ = make_initialiser(init_config_)
+    cfg = FinchConfig.from_dict(init_config_)
+    initialiser_ = make_initialiser(cfg)
     individual = initialiser_.initialise()
 
     assert len(individual.genotype) == 100
@@ -52,12 +61,16 @@ def test_invalid_init_type():
     Test both that ValueError is raised AND the message is correct.
     """
     init_config_ = {
-        "init_type": "wrong_init_type",
-        "codon_size": 127,
-        "genome_length": 100,
+        "experiment": {"random_seed": 42},
+        "ge": {
+            "init_type": "wrong_init_type",
+            "codon_size": 127,
+            "genome_length": 100,
+        },
     }
+    cfg = FinchConfig.from_dict(init_config_)
 
     with pytest.raises(ValueError) as exc_info:
-        make_initialiser(init_config_)
+        make_initialiser(cfg)
 
     assert "Unknown initialisation type" in str(exc_info.value)

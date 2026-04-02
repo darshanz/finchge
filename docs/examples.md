@@ -8,7 +8,7 @@
     finchge new my_experiment --notebook
     ```
 
-    Then find the notebook (```starter.ipynb```) in ```my_experiment/notebooks``` folder.
+    Then find the notebook (```basic.ipynb```) in ```my_experiment/notebooks``` folder.
 
 
 This example demonstrates how to use **finchGE** interactively to solve a simple but illustrative

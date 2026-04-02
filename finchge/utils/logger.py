@@ -421,7 +421,7 @@ class ExperimentLogger(FileLogger):
             genotype_path.write_text(str(best.genotype))
 
         if best.tree and "trees" not in self.exclude:
-            tree_path = self.log_dir / "trees" / f"{generation}.json"
+            tree_path = self.log_dir / "trees" / f"{generation}_tree.txt"
             tree_path.write_text(best.tree)
 
         # calculate tree depth

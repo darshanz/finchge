@@ -308,9 +308,36 @@ The parser comes with built-in handlers for common range types:
 
 ---
 
+#### Symbolic Variable Notation
+FinchGE supports symbolic variable notation in the form of zero‑indexed column names in the dataset.
+For example, the first column in the dataset is represented as  `x0`.
+
+```bnf
+
+<expr> ::= <expr> <op> <expr> | <var> | <const>
+<op> ::= + | -
+<var> ::= x0 | x3 | x6
+<const> ::= 1.0 | 2.0 | 3.0
+
+```
+
+#### Symbolic Variable Notation
+To represent ranges of symbolic variables in grammars, FinchGE supports symbolic variable range notation,
+allowing evolved mathematical expressions to refer to multiple variables using a compact range syntax.
+For example, `x[0..4]` is alternative way to write the columns `x0 | x1 | x2 | x3 | x4`
+
+```bnf
+
+<expr> ::= <expr> <op> <expr> | <var> | <const>
+<op> ::= + | -
+<var> ::= x[0..4]
+<const> ::= 1.0 | 2.0 | 3.0
+
+```
+
 #### Array Slicer Notation
 
-FinchGE supports **array slicer notation** in grammars, allowing
+Alternative to Symbolic Variable Range Notation, FinchGE also supports **array slicer notation** in grammars, allowing
 evolved mathematical expressions to directly reference the dataset columns using Python/NumPy slicing syntax.
 
 In symbolic regression, we need expressions that can operate on real data.
@@ -652,7 +679,7 @@ and further refined by Nicolau (2017).
 Unlike traditional depth-based routines, PTC2 focuses on the number of grammar expansions performed.
 It maintains a **frontier** of active non-terminals and selects the next node to expand **uniformly at random**.
 This process effectively eliminates the structural and left-recursive biases
-common in standard depth-first initialization.
+common in standard depth-first initialisation.
 
 ??? note "Refined PTC2 vs. PTC2D"
 
@@ -720,7 +747,7 @@ tree-based initialisers (RHH, Full, Grow, PI-Grow, PTC2, etc.).
 
 ```python
 
-# Step 1 — Define Grammar
+# Define Grammar
 from finchge.grammar import Grammar
 
 grammar = Grammar("""
@@ -731,7 +758,7 @@ grammar = Grammar("""
 <var> ::= x | y | 1 | 2
 """)
 
-# Step 2 — Create Tree Generator
+# Create Tree Generator
 # Responsible for constructing grammar-valid derivation trees
 from finchge.grammar.tree_generator import TreeGenerator
 
@@ -740,8 +767,7 @@ tree_generator = TreeGenerator(
     max_tree_depth=6
 )
 
-# Step 3 — Select Initializer
-# (Swap this class to use different initialisation strategies)
+# Select Initializer
 from finchge.initialisation.initialisers import RHHInitialiser
 
 initialiser = RHHInitialiser(
@@ -754,21 +780,40 @@ initialiser = RHHInitialiser(
 # Tree-based initialisers require the TreeGenerator
 initialiser.set_tree_generator(tree_generator)
 
-# Step 4 — Generate Population
-population = [initialiser.initialise() for _ in range(20)]
+# Initialize single individual
+ind = initialiser.initialise()
 
-# Step 5 — Access Individual Phenotype
-# Individual stores the trees as JSON and can be reconstructed
-from finchge.grammar.derivation_tree import TreeNode
-
-tree = TreeNode.from_string(population[0].tree)
-phenotype = tree.to_phenotype()
-
+phenotype = ind.phenotype
 print("Phenotype:", phenotype)
 
 
 
 ```
+
+Initializers can also be declared in config file with `init_type` key under the section `ge` as following:
+
+
+```yaml
+
+ge:
+  init_type: random_genome
+  genome_length: 100
+  codon_size: 127 
+```
+
+All the intialser support initialisation using config files through `from_config()` method. 
+For example  `RandomGenomeInitialiser` can be used as following.
+
+```python
+from finchge.initialisation import  RandomGenomeInitialiser
+from finchge.config import  FinchConfig
+
+config = FinchConfig.from_yaml("config.yaml")
+initialiser = RandomGenomeInitialiser.from_config(ge_config=config)
+
+```
+
+Note: To intitialise using config, all the parameters required by the respective initializers must be provided in the config files.
 
 ## Genetic Operators
 
@@ -1391,6 +1436,10 @@ Each benchmark provides:
     | `"nguyen10"`| $2\sin(x)\cos(y)$ | $x, y \in [0, 1]$, uniform (20 pts) | $x, y \in [0, 1]$, grid (1000 pts) |
     | `"nguyen11"`| $x^y$ | $x, y \in [0, 1]$, uniform (20 pts) | $x, y \in [0, 1]$, grid (1000 pts) |
     | `"nguyen12"`| $x^4 - x^3 + \frac{1}{2}y^2 - y$ | $x, y \in [-1, 1]$, uniform (20 pts) | $x, y \in [-1, 1]$, grid (1000 pts) |
+
+ **Reference:** Uy, N.Q., Hoai, N.X., O’Neill, M., McKay, R.I. and Galván-López, E., (2011).
+*Semantically-based crossover in genetic programming: application to real-valued symbolic regression. Genetic Programming and Evolvable Machines**
+
 
 ```python
 from finchge.benchmarks.regression import Nguyen1Benchmark

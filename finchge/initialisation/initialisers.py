@@ -1,6 +1,6 @@
-from typing import Any, Optional
+from typing import Optional
 
-from finchge.config.config import ConfigError, Keys
+from finchge.config.config import ConfigError, FinchConfig, Keys
 from finchge.core.individual import Individual
 from finchge.grammar import GenotypeMapper
 from finchge.grammar.tree_generator import TreeGenerator
@@ -31,15 +31,12 @@ class RandomGenomeInitialiser(GEInitialiser):
         self.codon_size = codon_size
 
     @classmethod
-    def from_config(
-        cls, ge_config: dict[str, Any], random_state: Optional[int] = None
-    ) -> "RandomGenomeInitialiser":
+    def from_config(cls, config: FinchConfig) -> "RandomGenomeInitialiser":
         """
-        Create a RandomGenomeInitialiser from the [ge] config section.
+        Create a RandomGenomeInitialiser using FinchConfig object
 
         Args:
-            random_state (int): random state
-            ge_config: Configuration dictionary for GE-related parameters.
+            config: FinchConfig instance
 
         Returns:
             RandomGenomeInitialiser
@@ -48,8 +45,9 @@ class RandomGenomeInitialiser(GEInitialiser):
             ConfigError: If required configuration keys are missing or invalid.
         """
         try:
-            genome_length = ge_config[Keys.GENOME_LENGTH]
-            codon_size = ge_config[Keys.CODON_SIZE]
+            random_state = config.experiment[Keys.RANDOM_SEED]
+            genome_length = config.ge[Keys.GENOME_LENGTH]
+            codon_size = config.ge[Keys.CODON_SIZE]
         except KeyError as e:
             raise ConfigError(
                 f"Missing required GE config key for RandomGenomeInitialiser: {e.args[0]}"
@@ -102,15 +100,12 @@ class RVDInitialiser(GEInitialiser):
         self._attempts = 0
 
     @classmethod
-    def from_config(
-        cls, ge_config: dict[str, Any], random_state: Optional[int] = None
-    ) -> "RVDInitialiser":
+    def from_config(cls, config: FinchConfig) -> "RVDInitialiser":
         """
         Create a RVDInitializer from the [ge] config section.
 
         Args:
-            random_state (int): random state
-            ge_config: Configuration dictionary for GE-related parameters.
+            config: FinchConfig instance
 
         Returns:
             RandomGenomeInitialiser
@@ -119,9 +114,10 @@ class RVDInitialiser(GEInitialiser):
             ConfigError: If required configuration keys are missing or invalid.
         """
         try:
-            genome_length = ge_config[Keys.GENOME_LENGTH]
-            codon_size = ge_config[Keys.CODON_SIZE]
-            population_size = ge_config[Keys.POPULATION_SIZE]
+            random_state = config.experiment[Keys.RANDOM_SEED]
+            genome_length = config.ge[Keys.GENOME_LENGTH]
+            codon_size = config.ge[Keys.CODON_SIZE]
+            population_size = config.ge[Keys.POPULATION_SIZE]
         except KeyError as e:
             raise ConfigError(
                 f"Missing required GE config key for RandomGenomeInitialiser: {e.args[0]}"
@@ -204,13 +200,12 @@ class FullTreeInitialiser(GETreeInitialiser):
         self._index = 0
 
     @classmethod
-    def from_config(
-        cls, cfg: dict[str, Any], random_state: Optional[int] = None
-    ) -> "FullTreeInitialiser":
+    def from_config(cls, config: FinchConfig) -> "FullTreeInitialiser":
         try:
-            min_depth = cfg[Keys.INIT_MIN_DEPTH]
-            max_depth = cfg[Keys.INIT_MAX_DEPTH]
-            strict_full = cfg.get(Keys.INIT_TREE_STRICT_FULL, True)
+            random_state = config.experiment[Keys.RANDOM_SEED]
+            min_depth = config.ge[Keys.INIT_MIN_DEPTH]
+            max_depth = config.ge[Keys.INIT_MAX_DEPTH]
+            strict_full = config.ge.get(Keys.INIT_TREE_STRICT_FULL, True)
         except KeyError as e:
             raise ConfigError(
                 "Missing required GE config keys for Full initialiser"
@@ -284,12 +279,11 @@ class GrowTreeInitialiser(GETreeInitialiser):
         self._index = 0
 
     @classmethod
-    def from_config(
-        cls, cfg: dict[str, Any], random_state: Optional[int] = None
-    ) -> "GrowTreeInitialiser":
+    def from_config(cls, config: FinchConfig) -> "GrowTreeInitialiser":
         try:
-            min_depth = cfg[Keys.INIT_MIN_DEPTH]
-            max_depth = cfg[Keys.INIT_MAX_DEPTH]
+            random_state = config.experiment[Keys.RANDOM_SEED]
+            min_depth = config.ge[Keys.INIT_MIN_DEPTH]
+            max_depth = config.ge[Keys.INIT_MAX_DEPTH]
         except KeyError as e:
             raise ConfigError(
                 "Missing required GE config keys for Grow initialiser"
@@ -408,15 +402,12 @@ class RHHInitialiser(GETreeInitialiser):
             self.inject_tree_generator_rng()
 
     @classmethod
-    def from_config(
-        cls, cfg: dict[str, Any], random_state: Optional[int] = None
-    ) -> "RHHInitialiser":
+    def from_config(cls, config: FinchConfig) -> "RHHInitialiser":
         """
         Create a RampedHalfAndHalfInitializer from configuration.
 
         Args:
-            random_state (int): random state
-            cfg: GE configuration dictionary.
+            config: FinchConfig instance
 
         Returns:
             RampedHalfAndHalfInitializer
@@ -425,10 +416,11 @@ class RHHInitialiser(GETreeInitialiser):
             ConfigError: If required configuration keys are missing or invalid.
         """
         try:
-            init_min_depth = cfg[Keys.INIT_MIN_DEPTH]
-            init_max_depth = cfg[Keys.INIT_MAX_DEPTH]
-            population_size = cfg[Keys.POPULATION_SIZE]
-            strict_full = cfg.get(Keys.INIT_TREE_STRICT_FULL, True)
+            random_state = config.experiment[Keys.RANDOM_SEED]
+            init_min_depth = config.ge[Keys.INIT_MIN_DEPTH]
+            init_max_depth = config.ge[Keys.INIT_MAX_DEPTH]
+            population_size = config.ge[Keys.POPULATION_SIZE]
+            strict_full = config.ge.get(Keys.INIT_TREE_STRICT_FULL, True)
         except KeyError as e:
             raise ConfigError(
                 f"Missing required GE config key for RHH initialiser: {e.args[0]}"
@@ -550,14 +542,12 @@ class PIGrowInitialiser(GETreeInitialiser):
         self.tree_generator: TreeGenerator | None = None
 
     @classmethod
-    def from_config(
-        cls, cfg: dict[str, Any], random_state: Optional[int] = None
-    ) -> "PIGrowInitialiser":
+    def from_config(cls, config: FinchConfig) -> "PIGrowInitialiser":
         """
         Create a PI-Grow initialiser from GE configuration.
 
         Args:
-            cfg: GE configuration dictionary.
+            config: FinchConfig instance
 
         Returns:
             PIGrowInitializer
@@ -566,7 +556,8 @@ class PIGrowInitialiser(GETreeInitialiser):
             ConfigError: If required configuration keys are missing or invalid.
         """
         try:
-            init_max_depth = cfg[Keys.INIT_MAX_DEPTH]
+            random_state = config.experiment[Keys.RANDOM_SEED]
+            init_max_depth = config.ge[Keys.INIT_MAX_DEPTH]
         except KeyError:
             raise ConfigError(
                 "Missing required GE config key: 'init_max_depth' for PI-Grow initialiser"
@@ -614,12 +605,12 @@ class PTC2Initialiser(GETreeInitialiser):
     @classmethod
     def from_config(
         cls,
-        cfg: dict[str, Any],
-        random_state: Optional[int] = None,
+        config: FinchConfig,
         max_depth: Optional[int] = None,
     ) -> "PTC2Initialiser":
         try:
-            target_size = cfg[Keys.PTC2_TARGET_SIZE]
+            random_state = config.experiment[Keys.RANDOM_SEED]
+            target_size = config.ge[Keys.PTC2_TARGET_SIZE]
         except KeyError:
             raise ConfigError("Missing required config key 'ptc2_target_size'")
 
@@ -687,19 +678,18 @@ class RampedPTC2Initialiser(GETreeInitialiser):
         self.tree_generator: TreeGenerator | None = None
 
     @classmethod
-    def from_config(
-        cls, cfg: dict[str, Any], random_state: int | None = None
-    ) -> "RampedPTC2Initialiser":
+    def from_config(cls, config: FinchConfig) -> "RampedPTC2Initialiser":
         try:
-            min_size = cfg[Keys.INIT_TREE_MIN_SIZE]
-            max_size = cfg[Keys.INIT_TREE_MAX_SIZE]
-            pop_size = cfg[Keys.POPULATION_SIZE]
+            random_state = config.experiment[Keys.RANDOM_SEED]
+            min_size = config.ge[Keys.INIT_TREE_MIN_SIZE]
+            max_size = config.ge[Keys.INIT_TREE_MAX_SIZE]
+            pop_size = config.ge[Keys.POPULATION_SIZE]
         except KeyError as e:
             raise ConfigError(
                 f"Missing config key for RampedPTC2Initializer: {e.args[0]}"
             )
 
-        max_depth = cfg.get(Keys.INIT_MAX_DEPTH, None)
+        max_depth = config.ge.get(Keys.INIT_MAX_DEPTH, None)
 
         return cls(
             init_min_size=min_size,

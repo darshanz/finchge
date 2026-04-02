@@ -21,13 +21,21 @@ finchge new my_experiment --notebook
 
 This will create a sample project with a starter notebook and a project for project-based workflow.
 
+Use `--template` option for different project templates. Following templates are available.
+
+- `--template basic`  (default template): StringMatch problem
+- `--template control`: SantaFE Trail Problem
+- `--template logic`  : Multiplexer problem
+- `--template symbolic_regression`  : Symbolic Regression problem (Nguyen-6)
+
+
 ---
 
 
 ## Interactive Usage (Jupyter)
 
 For quick experimentation, learning, or exploratory research, you can use finchGE
-directly inside a Jupyter notebook. In the sample project, find the notebook (```starter.ipynb```) in ```my_experiment/notebooks``` folder and follow along the notebook cells.
+directly inside a Jupyter notebook. In the sample project, find the notebook (```basic.ipynb```) in ```my_experiment/notebooks``` folder and follow along the notebook cells.
 
 This approach provides maximum control and visibility into the evolutionary process.
 
