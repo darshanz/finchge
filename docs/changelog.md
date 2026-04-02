@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 For changelog we follow  [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format and for versioning use  [Semantic Versioning](https://semver.org/)
 
+
+
+## [1.0.1-beta.5](https://github.com/finchGE/finchge/releases/tag/v1.0.1-beta.5) - 2026-04-02
+
+### Added
+- Project templates for CLI project creation
+
+### Changed
+- Updated documentation Population, Grammar, benchmarks.
+- Updated logger, saving trees as txt files
+
+### Fixed
+- Fixed SymbolicExpression Safe Eval issues
+- Fixed Warnings for high values in RMSE fitness by clipping high pred values before squaring
+
 ## [1.0.1-beta.4](https://github.com/finchGE/finchge/releases/tag/v1.0.1-beta.4) - 2026-03-25
 ### Changed
 - Updated documentation

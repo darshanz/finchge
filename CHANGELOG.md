@@ -1,5 +1,19 @@
 # Changelog
 
+
+## [1.0.1-beta.5] - 2026-04-02
+
+### Added
+- Project templates for CLI project creation
+
+### Changed
+- Updated documentation Population, Grammar, benchmarks.
+- Updated logger, saving trees as txt files
+
+### Fixed
+- Fixed SymbolicExpression Safe Eval issues
+- Fixed Warnings for high values in RMSE fitness by clipping high pred values before squaring
+
 ## [1.0.1-beta.4] - 2026-03-25
 
 ### Changed
