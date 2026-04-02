@@ -497,7 +497,7 @@ class MazeMediumBenchmark(Benchmark):
         )
 
     def grammar(self) -> str:
-        return """
+        grammar_str =  """
         <code> ::= <line> | <code> <line>
         <line> ::= <condition> | <op>
         <condition> ::= if-wall-ahead ( <line> ) ( <line> )
@@ -505,6 +505,7 @@ class MazeMediumBenchmark(Benchmark):
                       | if-wall-right ( <line> ) ( <line> )
         <op> ::= up | down | left | right
         """
+        return Grammar(grammar_str=grammar_str)
 
     def create_runner(self, data_type: str = "train") -> MazeRunner:
         def env_factory() -> MazeEnvironment:
@@ -553,7 +554,7 @@ class MazeHardBenchmark(Benchmark):
         )
 
     def grammar(self) -> str:
-        return """
+        grammar_str =  """
         <code> ::= <line> | <code> <line>
         <line> ::= <condition> | <op>
         <condition> ::= if-wall-ahead ( <line> ) ( <line> )
@@ -561,6 +562,7 @@ class MazeHardBenchmark(Benchmark):
                       | if-wall-right ( <line> ) ( <line> )
         <op> ::= up | down | left | right
         """
+        return Grammar(grammar_str=grammar_str)
 
     def create_runner(self, data_type: str = "train") -> MazeRunner:
         def env_factory() -> MazeEnvironment:
