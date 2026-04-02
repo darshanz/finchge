@@ -496,8 +496,8 @@ class MazeMediumBenchmark(Benchmark):
             "Control Problems do not implement _generate_data function."
         )
 
-    def grammar(self) -> str:
-        grammar_str =  """
+    def grammar_str(self) -> str:
+        return """
         <code> ::= <line> | <code> <line>
         <line> ::= <condition> | <op>
         <condition> ::= if-wall-ahead ( <line> ) ( <line> )
@@ -505,7 +505,13 @@ class MazeMediumBenchmark(Benchmark):
                       | if-wall-right ( <line> ) ( <line> )
         <op> ::= up | down | left | right
         """
-        return Grammar(grammar_str=grammar_str)
+
+
+    def grammar(self) -> Grammar:
+        """
+        Return the Grammar object.
+        """
+        return Grammar(grammar_str=self.grammar_str())
 
     def create_runner(self, data_type: str = "train") -> MazeRunner:
         def env_factory() -> MazeEnvironment:
@@ -553,8 +559,8 @@ class MazeHardBenchmark(Benchmark):
             "Control Problems do not implement _generate_data function."
         )
 
-    def grammar(self) -> str:
-        grammar_str =  """
+    def grammar_str(self) -> str:
+        return """
         <code> ::= <line> | <code> <line>
         <line> ::= <condition> | <op>
         <condition> ::= if-wall-ahead ( <line> ) ( <line> )
@@ -562,7 +568,12 @@ class MazeHardBenchmark(Benchmark):
                       | if-wall-right ( <line> ) ( <line> )
         <op> ::= up | down | left | right
         """
-        return Grammar(grammar_str=grammar_str)
+
+    def grammar(self) -> Grammar:
+        """
+        Return the Grammar object.
+        """
+        return Grammar(grammar_str=self.grammar_str())
 
     def create_runner(self, data_type: str = "train") -> MazeRunner:
         def env_factory() -> MazeEnvironment:
