@@ -26,12 +26,16 @@ def create_project(name: str, template: str, notebook: bool):
 
     # Optionally add notebook
     if notebook:
-        notebooks_dir = project_path / "notebooks"
-        notebooks_dir.mkdir(exist_ok=True)
-
-        nb_template = TEMPLATES_DIR / "notebook" / "starter.ipynb"
+        nb_template = TEMPLATES_DIR / "notebook" / f"{template}.ipynb"
         if nb_template.exists():
-            shutil.copy(nb_template, notebooks_dir / "starter.ipynb")
+            notebooks_dir = project_path / "notebooks"
+            notebooks_dir.mkdir(exist_ok=True)
+            shutil.copy(nb_template, notebooks_dir / f"{template}.ipynb")
+        else:
+            typer.secho(
+                f"Notebook not available for '{template}'. Skipping Notebook creation.",
+                fg=typer.colors.YELLOW,
+            )
 
     typer.secho(
         f"finchGE project '{name}' created successfully.", fg=typer.colors.GREEN

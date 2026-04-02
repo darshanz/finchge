@@ -1,7 +1,5 @@
-# finchGE Example Project
+# finchGE Example Project - StringMatch
 
-This directory was generated using the finchGE command-line interface.
-
-Please modify it as per your requirements.
+This directory was generated using the finchGE.
 
 Read more about FinchGE at [finchge.readthedocs.io](https://finchge.readthedocs.io)

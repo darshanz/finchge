@@ -506,7 +506,6 @@ class MazeMediumBenchmark(Benchmark):
         <op> ::= up | down | left | right
         """
 
-
     def grammar(self) -> Grammar:
         """
         Return the Grammar object.

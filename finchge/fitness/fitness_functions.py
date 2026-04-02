@@ -217,7 +217,7 @@ class StringMatchFitness(GEFitnessFunction):
     def __init__(self, target: str):
         super().__init__(maximize=False)
         self.target = target
-        self.target_len = len(target)
+        self.target_len: int = len(target)
 
     def evaluate(self, context: dict[str, Any]) -> int:
         phenotype = context["phenotype"]
@@ -225,7 +225,7 @@ class StringMatchFitness(GEFitnessFunction):
         max_len = max(self.target_len, len(phenotype))
         min_len = min(self.target_len, len(phenotype))
 
-        matches = sum(
+        matches: int = sum(
             t == g for t, g in zip(self.target[:min_len], phenotype[:min_len])
         )
 
