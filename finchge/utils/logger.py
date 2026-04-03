@@ -485,6 +485,10 @@ class ExperimentLogger(FileLogger):
                             str(ind.genotype) if ind.genotype else ""
                         )
 
+            if ind.tree and "trees" not in self.exclude:
+                (gen_dir / "trees").mkdir(exist_ok=True)
+                (gen_dir / "trees" / f"{i}_tree.txt").write_text(ind.tree)
+
         # Save CSV with headers
         if self.objective_names:
             headers = ["id", *self.objective_names]
