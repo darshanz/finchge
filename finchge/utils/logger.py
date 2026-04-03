@@ -235,9 +235,9 @@ class ExperimentLogger(FileLogger):
         self.compress_genotypes: bool = compress_genotypes
         self.log_population_samples: bool = log_population_samples
         self.sample_size: int = sample_size
-        self.custom_log_hook: Optional[Callable[[dict[str, Any]], None]] = (
-            custom_log_hook
-        )
+        self.custom_log_hook: Optional[
+            Callable[[dict[str, Any]], None]
+        ] = custom_log_hook
 
         self.log_dir: Optional[Path] = None
         self.csv_path: Optional[Path] = None
@@ -302,17 +302,6 @@ class ExperimentLogger(FileLogger):
         """Create directory structure for organized logging."""
         if not self.log_dir:
             raise AttributeError("Log directory is not set")
-
-        # Always create these directories
-        directories = [
-            "config",
-            "analysis",  # For user's analysis scripts
-            "custom_logs",  # For custom logging hooks
-            "plots",  # For generated plots
-        ]
-
-        for dir_name in directories:
-            (self.log_dir / dir_name).mkdir(exist_ok=True)
 
         # Create phenotype/genotype/tree directories if not excluded
         if "phenotypes" not in self.exclude:
