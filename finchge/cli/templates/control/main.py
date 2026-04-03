@@ -8,12 +8,12 @@ from finchge.utils.logger import ExperimentLogger
 
 if __name__ == "__main__":
     # instantiate the benchmark
-    benchmark = SantaFeTrailBenchmark(max_steps=600, n_episodes=3)
+    benchmark = SantaFeTrailBenchmark()
     # prepare benchmark runner
     runner = benchmark.create_runner("train")
 
     # setup reward fitness function
-    fitness = RewardFitness(maximize=True, optimal_fitness=89 * 3)
+    fitness = RewardFitness(maximize=True, optimal_fitness=89)
 
     # This example uses the default grammar from the benchmark.
     # Custom grammar can be used sing Grammar class eg. Grammar.from_file("grammar.bnf")
@@ -45,4 +45,4 @@ if __name__ == "__main__":
     )
     result = ge_.run()
 
-    print(f"Best fitness: {result.best_individual.fitness[0]}/{89 * 3} food eaten")
+    print(f"Best fitness: {result.best_individual.fitness[0]}/89 food eaten")

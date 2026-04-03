@@ -81,7 +81,7 @@ class SantaFeEnvironment(ControlEnvironment):
         Initialize Santa Fe environment.
 
         Args:
-            max_steps: Maximum number of steps per episode
+            max_steps: Maximum number of steps
         """
         super().__init__("SantaFe", max_steps)
         self.original_grid: NDArray[np.int8] = SANTA_FE_TRAIL.copy()
@@ -340,7 +340,6 @@ class SantaFeRunner(ControlRunner[SantaFeEnvironment]):
     def __init__(
         self,
         env_factory: Callable[[], SantaFeEnvironment],
-        n_episodes: int = 1,
         interpreter: Optional[SantaFeInterpreter] = None,
         random_state: Optional[Any] = None,
     ) -> None:
@@ -349,13 +348,12 @@ class SantaFeRunner(ControlRunner[SantaFeEnvironment]):
 
         Args:
             env_factory: Function that creates new SantaFeEnvironment instances
-            n_episodes: Number of episodes to run per evaluation
             interpreter: Program interpreter (creates new one if None)
         """
         super().__init__(
             random_state=random_state,
             env_factory=env_factory,
-            n_episodes=n_episodes,
+            n_episodes=1,
             optimal_fitness=89.0,
         )
         self.interpreter = interpreter or SantaFeInterpreter()
@@ -401,6 +399,19 @@ class SantaFeRunner(ControlRunner[SantaFeEnvironment]):
         """Called when unpickling."""
         self.__dict__.update(state)
 
+    def evaluate(self, phenotype: str) -> float:
+        """
+        Evaluate SantaFe
+        Overrides the base evaluate because santafe needs to run a single eposide only.
+        Args:
+            phenotype:
+
+        Returns:
+
+        """
+        env = self.env_factory()
+        return self._run_episode(phenotype, env)
+
 
 @register("santafe_trail", "control")
 class SantaFeTrailBenchmark(Benchmark):
@@ -412,10 +423,7 @@ class SantaFeTrailBenchmark(Benchmark):
     """
 
     def __init__(
-        self,
-        random_state: Optional[int] = None,
-        max_steps: int = MAX_STEPS,
-        n_episodes: int = 1,
+        self, random_state: Optional[int] = None, max_steps: int = MAX_STEPS
     ) -> None:
         """
         Initialize Santa Fe Trail benchmark.
@@ -428,7 +436,6 @@ class SantaFeTrailBenchmark(Benchmark):
         super().__init__(random_state=random_state)
 
         self.max_steps = max_steps
-        self.n_episodes = n_episodes
         self.total_food = TOTAL_FOOD
         self.random_state = random_state
 
@@ -439,8 +446,8 @@ class SantaFeTrailBenchmark(Benchmark):
             reference="Koza, J.R. (1992). Genetic Programming",
             input_dim=0,  # Control problems do not have fixed input dim
             output_dim=1,  # Single fitness value
-            train_size=n_episodes,
-            test_size=n_episodes,
+            train_size=1,  # santafe runs single eposide
+            test_size=1,  # santafe runs single eposide
         )
 
     @property
@@ -478,6 +485,4 @@ class SantaFeTrailBenchmark(Benchmark):
         env_factory: Callable[[], SantaFeEnvironment] = functools.partial(
             create_santafe_env, max_steps=self.max_steps
         )
-        return SantaFeRunner(
-            env_factory, n_episodes=self.n_episodes, random_state=self.random_state
-        )
+        return SantaFeRunner(env_factory, random_state=self.random_state)

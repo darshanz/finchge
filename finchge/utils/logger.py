@@ -303,14 +303,6 @@ class ExperimentLogger(FileLogger):
         if not self.log_dir:
             raise AttributeError("Log directory is not set")
 
-        # Create phenotype/genotype/tree directories if not excluded
-        if "phenotypes" not in self.exclude:
-            (self.log_dir / "phenotypes").mkdir(exist_ok=True)
-        if "genotypes" not in self.exclude:
-            (self.log_dir / "genotypes").mkdir(exist_ok=True)
-        if "trees" not in self.exclude:
-            (self.log_dir / "trees").mkdir(exist_ok=True)
-
         # Create population samples directory if enabled
         if self.log_population_samples:
             (self.log_dir / "population_samples").mkdir(exist_ok=True)
@@ -400,6 +392,14 @@ class ExperimentLogger(FileLogger):
         if not self.log_dir:
             return
 
+        # Create phenotype/genotype/tree directories if not excluded
+        if "phenotypes" not in self.exclude:
+            (self.log_dir / "phenotypes").mkdir(exist_ok=True)
+        if "genotypes" not in self.exclude:
+            (self.log_dir / "genotypes").mkdir(exist_ok=True)
+        if "trees" not in self.exclude:
+            (self.log_dir / "trees").mkdir(exist_ok=True)
+
         # Your existing best individual logging
         if best.phenotype and "phenotypes" not in self.exclude:
             phenotype_path = self.log_dir / "phenotypes" / f"{generation}.txt"
@@ -456,7 +456,7 @@ class ExperimentLogger(FileLogger):
         gen_dir = self.log_dir / f"generation_{generation}"
         gen_dir.mkdir(exist_ok=True)
 
-        # Save front fitness matrix (analysis-ready format)
+        # Save front fitness matrix as npy
         fitness_matrix = np.array([ind.fitness for ind in front])
         np.save(gen_dir / "front_fitness.npy", fitness_matrix)
 
