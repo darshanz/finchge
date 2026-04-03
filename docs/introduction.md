@@ -798,10 +798,10 @@ Initializers can also be declared in config file with `init_type` key under the 
 ge:
   init_type: random_genome
   genome_length: 100
-  codon_size: 127 
+  codon_size: 127
 ```
 
-All the intialser support initialisation using config files through `from_config()` method. 
+All the intialser support initialisation using config files through `from_config()` method.
 For example  `RandomGenomeInitialiser` can be used as following.
 
 ```python
@@ -1579,7 +1579,6 @@ deterministic experiments.
 A typical experiment flows like this:
 
 ```python
-
 benchmark = SantaFeTrailBenchmark(random_state=42)
 grammar = Grammar.from_string(benchmark.grammar())
 runner = benchmark.create_runner()

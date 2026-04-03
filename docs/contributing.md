@@ -7,8 +7,6 @@ We welcome and value contributions to finchGE. To report a bug or submit a fix, 
 - Implementing new features (for major changes, please open an issue for discussion first)
 
 
-
-
 ## How to Contribute
 
 
