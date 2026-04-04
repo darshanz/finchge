@@ -150,7 +150,8 @@ class CartPoleInterpreter:
     def __init__(self) -> None:
         self.actions = ["left", "right"]
         self.state_vars = ["cart_pos", "cart_vel", "pole_angle", "pole_ang_vel"]
-        self.operators = ["<", ">", "<=", ">="]
+        # grammar support for lt
+        self.operators = ["lt", "gt", "le", "ge"]
         self.numbers = ["-1.0", "-0.5", "0.0", "0.5", "1.0"]
 
     def tokenize(self, program: str) -> List[str]:
@@ -210,13 +211,14 @@ class CartPoleInterpreter:
         except ValueError:
             return False
         value = observation.get(var, 0.0)
-        if op == "<":
+
+        if op == "lt":
             return value < num
-        elif op == "<=":
+        elif op == "le":
             return value <= num
-        elif op == ">":
+        elif op == "gt":
             return value > num
-        elif op == ">=":
+        elif op == "ge":
             return value >= num
         else:
             return False
@@ -224,51 +226,55 @@ class CartPoleInterpreter:
     def evaluate(
         self, tokens: List[str], observation: Dict[str, float], pc: int = 0
     ) -> Tuple[Optional[str], int]:
-        if pc >= len(tokens):
-            return None, pc
+        while pc < len(tokens):
+            token = tokens[pc]
 
-        token = tokens[pc]
+            # Actions
+            if token in self.actions:
+                return token, pc + 1
 
-        # Actions
-        if token in self.actions:
-            return token, pc + 1
+            if token == "if":
+                try:
+                    # the format should be if (var op num) (true case) else (false case)
+                    if tokens[pc + 1] != "(":
+                        return None, pc + 1
 
-        if token == "if":
-            if pc + 1 >= len(tokens) or tokens[pc + 1] != "(":
-                return None, pc + 2
-            condition_tokens = []
-            cond_pc = pc + 2
-            while cond_pc < len(tokens) and tokens[cond_pc] != ")":
-                condition_tokens.append(tokens[cond_pc])
-                cond_pc += 1
-            if cond_pc >= len(tokens) or tokens[cond_pc] != ")":
-                return None, cond_pc
-            condition_true = self.evaluate_condition(condition_tokens, observation)
+                    # Extract condition tokens
+                    cond_start = pc + 2
+                    cond_end = cond_start + 3
+                    condition_tokens = tokens[cond_start:cond_end]
 
-            if cond_pc + 1 >= len(tokens) or tokens[cond_pc + 1] != "(":
-                return None, cond_pc + 2
-            true_action, true_pc = self.evaluate(tokens, observation, cond_pc + 2)
+                    condition_true = self.evaluate_condition(
+                        condition_tokens, observation
+                    )
 
-            if true_pc >= len(tokens) or tokens[true_pc] != ")":
-                return None, true_pc
+                    # Jump to True Branch start
+                    true_branch_start = cond_end + 2  # Skip ') ('
+                    action, next_pc = self.evaluate(
+                        tokens, observation, true_branch_start
+                    )
 
-            if true_pc + 1 >= len(tokens) or tokens[true_pc + 1] != "else":
-                return None, true_pc + 2
+                    # Find the 'else' by skipping the rest of the true branch structure
+                    # assuming ( action ) else ( action )
+                    else_index = tokens.index("else", next_pc)
+                    false_branch_start = else_index + 2
 
-            if true_pc + 2 >= len(tokens) or tokens[true_pc + 2] != "(":
-                return None, true_pc + 3
+                    if condition_true:
+                        # we have the 'action' from the true branch
+                        #  need to find where the whole if block ends
+                        final_pc = tokens.index(")", false_branch_start) + 1
+                        return action, final_pc
+                    else:
+                        # the false branch
+                        return self.evaluate(tokens, observation, false_branch_start)
 
-            false_action, false_pc = self.evaluate(tokens, observation, true_pc + 3)
+                except (ValueError, IndexError):
+                    return None, pc + 1
 
-            if false_pc >= len(tokens) or tokens[false_pc] != ")":
-                return None, false_pc
+                    # skip unknown tokens
+                pc += 1
 
-            if condition_true:
-                return true_action, false_pc + 1
-            else:
-                return false_action, false_pc + 1
-
-        return self.evaluate(tokens, observation, pc + 1)
+                return None, pc
 
 
 # Cart-Pole Runner
@@ -291,31 +297,27 @@ class CartPoleRunner(ControlRunner[CartPoleEnvironment]):
         self._last_rewards: List[float] = []
 
     def _run_episode(self, phenotype: str, env: CartPoleEnvironment) -> float:
+        # reject if passed empty phenotype
+        if not phenotype or not phenotype.strip():
+            return 0.0
         # Tokenize program once per episode
         tokens = self.interpreter.tokenize(phenotype)
-
         env.reset()
-        program_counter = 0
         total_reward = 0.0
 
         while not env.is_done():
             observation = env.get_observation()
-            action, program_counter = self.interpreter.evaluate(
-                tokens, observation, program_counter
-            )
+            # start from the beginning pc=0
+            action, _ = self.interpreter.evaluate(tokens, observation, 0)
 
-            if action is None:
-                actions = env.get_available_actions()
-                action = self.rng.choice(actions) if actions else None
-                program_counter = 0
-
-            if action:
+            if action in ["left", "right"]:
                 _, reward, _, _ = env.step(action)
                 total_reward += reward
-
-            if program_counter >= len(tokens):
-                program_counter = 0
-
+            else:
+                _, reward, _, _ = env.step(
+                    "left"
+                )  # Default action, not necessary it wil fall anyway
+                total_reward += reward
         return total_reward
 
     def __getstate__(self) -> dict[str, Any]:
@@ -333,8 +335,10 @@ class CartPoleRunner(ControlRunner[CartPoleEnvironment]):
 
 
 # Cart-Pole Benchmark
-def create_cartpole_environment(max_steps: int = 500) -> CartPoleEnvironment:
-    return CartPoleEnvironment(max_steps=max_steps)
+def create_cartpole_environment(
+    max_steps: int = 500, random_state: Optional[Any] = None
+) -> CartPoleEnvironment:
+    return CartPoleEnvironment(max_steps=max_steps, random_state=random_state)
 
 
 @register("cartpole", "control")
@@ -374,12 +378,11 @@ class CartPoleBenchmark(Benchmark):
 
     def grammar_str(self) -> str:
         return """
-        <code> ::= <line> | <code> <line>
-        <line> ::= <if> | <action>
-        <if> ::= if ( <condition> ) <line> else <line>
+        <code> ::= <if> | <action>
+        <if> ::= if ( <condition> ) ( <code> ) else ( <code> )
         <condition> ::= <state> <op> <number>
         <state> ::= cart_pos | cart_vel | pole_angle | pole_ang_vel
-        <op> ::= < | > | <= | >=
+        <op> ::= lt | gt | le | ge
         <number> ::= -1.0 | -0.5 | 0.0 | 0.5 | 1.0
         <action> ::= left | right
         """
@@ -392,6 +395,8 @@ class CartPoleBenchmark(Benchmark):
 
     def create_runner(self, data_type: str = "train") -> CartPoleRunner:
         def env_factory() -> CartPoleEnvironment:
-            return create_cartpole_environment(self.max_steps)
+            return create_cartpole_environment(
+                max_steps=self.max_steps, random_state=self.random_state
+            )
 
         return CartPoleRunner(env_factory, n_episodes=self.n_episodes)
