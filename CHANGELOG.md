@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.0.1-beta.6] - 2026-04-04
+
+### Added
+- Tree Logging for multi-objective GE
+
+### Changed
+- Refactored visualization module to separate tree plots
+- Logging updated for cleaner output directories for single and multi-objective ge
+- Updated control problem benchmarks
+
+### Fixed
+- Fixed grammar and map of SantaFe Trail benchmark
+- Updated grammar for Cartpole problem comparison symbols replaced by lt, gt, ge, le.
+- Updated random state handling for deterministic experiments in control benchmarks
 
 ## [1.0.1-beta.5] - 2026-04-02
 
