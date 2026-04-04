@@ -16,14 +16,10 @@ def sample_grammar():
 @pytest.fixture
 def sample_grammar_dt():
     grammar_str = """
-<dt_params> ::= {
-   "criterion" : <criterion> ,
-   "max_depth" : <max_depth> ,
-    "min_samples_leaf" : <min_samples_leaf> ,
-    "min_samples_split" : <min_samples_split> ,
-    "max_leaf_nodes" : <max_leaf_nodes>
-}
-<criterion> ::= "gini" | "entropy" | "log_loss"
+<dt_params> ::= '{ "criterion" : '<criterion>' , "max_depth" : '<max_depth>
+', "min_samples_leaf" :' <min_samples_leaf> ', "min_samples_split" : '<min_samples_split>
+', "max_leaf_nodes" :' <max_leaf_nodes> }
+<criterion> ::= '"gini"' | '"entropy"' | '"log_loss"'
 <max_depth> ::= 10..70 step 10
 <min_samples_leaf> ::= [1-3]
 <min_samples_split> ::= [2-5]
@@ -88,7 +84,7 @@ def test_grammar_analyse(sample_grammar_dt):
     assert sample_grammar_dt.start_rule == "<dt_params>"
     assert sample_grammar_dt.rules["<dt_params>"].min_path is not None
     # number of terminals and non terminals
-    assert len(sample_grammar_dt.terminals) == 24
+    assert len(sample_grammar_dt.terminals) == 21
     assert len(sample_grammar_dt.non_terminals) == 6
     # Max arity
     assert sample_grammar_dt.max_arity > 0
