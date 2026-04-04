@@ -235,9 +235,9 @@ class ExperimentLogger(FileLogger):
         self.compress_genotypes: bool = compress_genotypes
         self.log_population_samples: bool = log_population_samples
         self.sample_size: int = sample_size
-        self.custom_log_hook: Optional[Callable[[dict[str, Any]], None]] = (
-            custom_log_hook
-        )
+        self.custom_log_hook: Optional[
+            Callable[[dict[str, Any]], None]
+        ] = custom_log_hook
 
         self.log_dir: Optional[Path] = None
         self.csv_path: Optional[Path] = None
@@ -302,25 +302,6 @@ class ExperimentLogger(FileLogger):
         """Create directory structure for organized logging."""
         if not self.log_dir:
             raise AttributeError("Log directory is not set")
-
-        # Always create these directories
-        directories = [
-            "config",
-            "analysis",  # For user's analysis scripts
-            "custom_logs",  # For custom logging hooks
-            "plots",  # For generated plots
-        ]
-
-        for dir_name in directories:
-            (self.log_dir / dir_name).mkdir(exist_ok=True)
-
-        # Create phenotype/genotype/tree directories if not excluded
-        if "phenotypes" not in self.exclude:
-            (self.log_dir / "phenotypes").mkdir(exist_ok=True)
-        if "genotypes" not in self.exclude:
-            (self.log_dir / "genotypes").mkdir(exist_ok=True)
-        if "trees" not in self.exclude:
-            (self.log_dir / "trees").mkdir(exist_ok=True)
 
         # Create population samples directory if enabled
         if self.log_population_samples:
@@ -411,6 +392,14 @@ class ExperimentLogger(FileLogger):
         if not self.log_dir:
             return
 
+        # Create phenotype/genotype/tree directories if not excluded
+        if "phenotypes" not in self.exclude:
+            (self.log_dir / "phenotypes").mkdir(exist_ok=True)
+        if "genotypes" not in self.exclude:
+            (self.log_dir / "genotypes").mkdir(exist_ok=True)
+        if "trees" not in self.exclude:
+            (self.log_dir / "trees").mkdir(exist_ok=True)
+
         # Your existing best individual logging
         if best.phenotype and "phenotypes" not in self.exclude:
             phenotype_path = self.log_dir / "phenotypes" / f"{generation}.txt"
@@ -467,7 +456,7 @@ class ExperimentLogger(FileLogger):
         gen_dir = self.log_dir / f"generation_{generation}"
         gen_dir.mkdir(exist_ok=True)
 
-        # Save front fitness matrix (analysis-ready format)
+        # Save front fitness matrix as npy
         fitness_matrix = np.array([ind.fitness for ind in front])
         np.save(gen_dir / "front_fitness.npy", fitness_matrix)
 
@@ -495,6 +484,10 @@ class ExperimentLogger(FileLogger):
                         (gen_dir / "genotypes" / f"{i}.txt").write_text(
                             str(ind.genotype) if ind.genotype else ""
                         )
+
+            if ind.tree and "trees" not in self.exclude:
+                (gen_dir / "trees").mkdir(exist_ok=True)
+                (gen_dir / "trees" / f"{i}_tree.txt").write_text(ind.tree)
 
         # Save CSV with headers
         if self.objective_names:
