@@ -24,7 +24,7 @@ FinchGE is a modern, modular, and user-friendly Python library for Grammatical E
 
 ## Why finchGE
 
-- Modular and extensible: Plug-and-play mutation,  election, fitness, and search strategies.
+- Modular and extensible: Plug-and-play mutation,  selection, fitness, and search strategies.
 - Designed for research and industry: Convenient and flexible API for quicker implementation.
 
 ## Installation

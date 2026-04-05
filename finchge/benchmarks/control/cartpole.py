@@ -294,10 +294,10 @@ class CartPoleInterpreter:
                 except IndexError:
                     return None, pc + 1
 
-                    # Skip unknown tokens
-                pc += 1
+            # Skip unknown tokens
+            pc += 1
 
-                return None, pc
+        return None, pc
 
 
 # Cart-Pole Runner

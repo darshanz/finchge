@@ -229,13 +229,6 @@ class MazeInterpreter:
     """
     Interpreter for maze navigation programs.
 
-    Grammar:
-        <code> ::= <line> | <code> <line>
-        <line> ::= <condition> | <op>
-        <condition> ::= if-wall-ahead ( <line> ) ( <line> )
-                      | if-wall-left ( <line> ) ( <line> )
-                      | if-wall-right ( <line> ) ( <line> )
-        <op> ::= up | down | left | right
     """
 
     def __init__(self) -> None:

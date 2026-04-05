@@ -145,9 +145,17 @@ class BNFGrammarParser(GrammarParser):
         self.range_registry = RangeHandlerRegistry()
 
     def _scan_rhs(self, rhs: str) -> list[str]:
+        # spaces around the pipe are also not important
+        rhs = re.sub(r"\s*\|\s*", "|", rhs)
+
         tokens = []
         i = 0
         n = len(rhs)
+
+        # first space in the RHS is not important remove that
+        if i < n and rhs[i].isspace():
+            i += 1
+
         while i < n:
             ch = rhs[i]
             if ch == "|":
@@ -199,16 +207,9 @@ class BNFGrammarParser(GrammarParser):
                     break
                 i += 1
             token = rhs[start:i]
-            if token and token != " ":  # we don't need space as a separate token.
+            if token:
                 tokens.append(token)
         return tokens
-
-    def _rhs_contains_non_terminal(self, tokens: list[str]) -> bool:
-        """check if rhs has non-terminal. or is purely made of terminal choices"""
-        for tok in tokens:
-            if self.non_terminal_pattern.match(tok):
-                return True
-        return False
 
     def _preprocess_ranges(self, rhs: str) -> tuple[str, dict[str, list[str]]]:
         """
@@ -224,9 +225,9 @@ class BNFGrammarParser(GrammarParser):
         placeholders = {}
         counter = 0
 
-        def replacer(match):
+        def replacer(match: re.Match[str]) -> str:
             nonlocal counter
-            token = match.group(0)
+            token: str = match.group(0)
             expanded = self.range_registry.expand_token(token)
             if expanded and expanded != [token]:
                 placeholder = f"__RANGE_{counter}__"
@@ -286,11 +287,6 @@ class BNFGrammarParser(GrammarParser):
                         expanded_tokens.extend(range_placeholders[token_clean])
                     else:
                         expanded_tokens.append(token)
-
-                has_non_terminal = self._rhs_contains_non_terminal(expanded_tokens)
-                if not has_non_terminal:
-                    expanded_tokens = [t.strip() for t in expanded_tokens]
-                    tokens = [t.strip() for t in tokens]
 
                 # Store for later validation
                 rhs_tokens.append((lhs, expanded_tokens))

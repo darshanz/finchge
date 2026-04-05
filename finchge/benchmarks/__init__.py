@@ -1,5 +1,14 @@
 from typing import TYPE_CHECKING, Any
 
+if TYPE_CHECKING:
+    from finchge.benchmarks.base import Benchmark, BenchmarkMetadata
+    from finchge.benchmarks.control import (  # Base classes
+        ControlEnvironment,
+        SantaFeEnvironment,
+        SantaFeTrailBenchmark,
+    )
+    from finchge.benchmarks.registry import get_benchmark, list_benchmarks, register
+
 
 def __getattr__(name: str) -> Any:
     if name in {"get_benchmark", "list_benchmarks", "register"}:
@@ -28,7 +37,7 @@ __all__ = [
     "list_benchmarks",
     "register",
     # Control base
-    "ControlEnvironment"
+    "ControlEnvironment",
     # Santa Fe
     "SantaFeEnvironment",
     "SantaFeTrailBenchmark",
