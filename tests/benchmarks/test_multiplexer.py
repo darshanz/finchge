@@ -135,10 +135,10 @@ class TestMultiplexer6Benchmark:
         bench = Multiplexer6Benchmark()
         grammar = bench.grammar()
 
-        assert "if" in grammar.terminals
-        assert "and" in grammar.terminals
-        assert "or" in grammar.terminals
-        assert "not" in grammar.terminals
+        assert "if ( " in grammar.terminals
+        assert "and ( " in grammar.terminals
+        assert "or ( " in grammar.terminals
+        assert "not ( " in grammar.terminals
 
         for i in range(6):
             assert f"x{i}" in grammar.terminals
@@ -289,10 +289,10 @@ class TestMultiplexer11Benchmark:
         grammar = Grammar(bench.grammar_str())
 
         # Should have all needed functions
-        assert "if" in grammar.terminals
-        assert "and" in grammar.terminals
-        assert "or" in grammar.terminals
-        assert "not" in grammar.terminals
+        assert "if ( " in grammar.terminals
+        assert "and ( " in grammar.terminals
+        assert "or ( " in grammar.terminals
+        assert "not ( " in grammar.terminals
 
         # Should have all 11 variables
         for i in range(11):

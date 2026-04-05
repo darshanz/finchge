@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 For changelog we follow  [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format and for versioning use  [Semantic Versioning](https://semver.org/)
 
+## [1.0.1-beta.7](https://github.com/finchGE/finchge/releases/tag/v1.0.1-beta.7) - 2026-04-05
+
+### Added
+- Added API docs and documentation for benchmarks
+
+### Changed
+- Revised Introduction section of documentation to include links to API docs.
+
+### Fixed
+- Fixed grammar parser to support angular brackets in phenotype
+- Updated Cartpole grammar to make more readable with comparison symbols.
 
 ## [1.0.1-beta.6](https://github.com/finchGE/finchge/releases/tag/v1.0.1-beta.6) - 2026-04-04
 

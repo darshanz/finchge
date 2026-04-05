@@ -150,8 +150,7 @@ class CartPoleInterpreter:
     def __init__(self) -> None:
         self.actions = ["left", "right"]
         self.state_vars = ["cart_pos", "cart_vel", "pole_angle", "pole_ang_vel"]
-        # grammar support for lt
-        self.operators = ["lt", "gt", "le", "ge"]
+        self.operators = ["<", ">", "<=", ">="]
         self.numbers = ["-1.0", "-0.5", "0.0", "0.5", "1.0"]
 
     def tokenize(self, program: str) -> List[str]:
@@ -212,13 +211,13 @@ class CartPoleInterpreter:
             return False
         value = observation.get(var, 0.0)
 
-        if op == "lt":
+        if op == "<":
             return value < num
-        elif op == "le":
+        elif op == "<=":
             return value <= num
-        elif op == "gt":
+        elif op == ">":
             return value > num
-        elif op == "ge":
+        elif op == ">=":
             return value >= num
         else:
             return False
@@ -235,46 +234,70 @@ class CartPoleInterpreter:
 
             if token == "if":
                 try:
-                    # the format should be if (var op num) (true case) else (false case)
-                    if tokens[pc + 1] != "(":
+                    # the format should be
+                    # if ( <condition> ) ( <code> ) else ( <code> )
+                    if pc + 1 >= len(tokens) or tokens[pc + 1] != "(":
                         return None, pc + 1
 
                     # Extract condition tokens
                     cond_start = pc + 2
                     cond_end = cond_start + 3
+
+                    if cond_end >= len(tokens) or tokens[cond_end] != ")":
+                        return None, cond_end
+
                     condition_tokens = tokens[cond_start:cond_end]
 
                     condition_true = self.evaluate_condition(
                         condition_tokens, observation
                     )
 
-                    # Jump to True Branch start
-                    true_branch_start = cond_end + 2  # Skip ') ('
-                    action, next_pc = self.evaluate(
-                        tokens, observation, true_branch_start
+                    true_branch_open = cond_end + 1
+                    if (
+                        true_branch_open >= len(tokens)
+                        or tokens[true_branch_open] != "("
+                    ):
+                        return None, true_branch_open
+
+                    true_action, true_end = self.evaluate(
+                        tokens, observation, true_branch_open + 1
                     )
 
-                    # Find the 'else' by skipping the rest of the true branch structure
-                    # assuming ( action ) else ( action )
-                    else_index = tokens.index("else", next_pc)
-                    false_branch_start = else_index + 2
+                    if true_end >= len(tokens) or tokens[true_end] != ")":
+                        return None, true_end
+
+                    else_index = true_end + 1
+                    if else_index >= len(tokens) or tokens[else_index] != "else":
+                        return None, else_index
+
+                    false_branch_open = else_index + 1
+                    if (
+                        false_branch_open >= len(tokens)
+                        or tokens[false_branch_open] != "("
+                    ):
+                        return None, false_branch_open
+
+                    false_action, false_end = self.evaluate(
+                        tokens, observation, false_branch_open + 1
+                    )
+
+                    if false_end >= len(tokens) or tokens[false_end] != ")":
+                        return None, false_end
+
+                    final_pc = false_end + 1
 
                     if condition_true:
-                        # we have the 'action' from the true branch
-                        #  need to find where the whole if block ends
-                        final_pc = tokens.index(")", false_branch_start) + 1
-                        return action, final_pc
+                        return true_action, final_pc
                     else:
-                        # the false branch
-                        return self.evaluate(tokens, observation, false_branch_start)
+                        return false_action, final_pc
 
-                except (ValueError, IndexError):
+                except IndexError:
                     return None, pc + 1
 
-                    # skip unknown tokens
-                pc += 1
+            # Skip unknown tokens
+            pc += 1
 
-                return None, pc
+        return None, pc
 
 
 # Cart-Pole Runner
@@ -310,14 +333,11 @@ class CartPoleRunner(ControlRunner[CartPoleEnvironment]):
             # start from the beginning pc=0
             action, _ = self.interpreter.evaluate(tokens, observation, 0)
 
-            if action in ["left", "right"]:
-                _, reward, _, _ = env.step(action)
-                total_reward += reward
-            else:
-                _, reward, _, _ = env.step(
-                    "left"
-                )  # Default action, not necessary it wil fall anyway
-                total_reward += reward
+            if action is None:
+                break
+
+            _, reward, _, _ = env.step(action)
+            total_reward += reward
         return total_reward
 
     def __getstate__(self) -> dict[str, Any]:
@@ -382,7 +402,7 @@ class CartPoleBenchmark(Benchmark):
         <if> ::= if ( <condition> ) ( <code> ) else ( <code> )
         <condition> ::= <state> <op> <number>
         <state> ::= cart_pos | cart_vel | pole_angle | pole_ang_vel
-        <op> ::= lt | gt | le | ge
+        <op> ::= < | > | <= | >=
         <number> ::= -1.0 | -0.5 | 0.0 | 0.5 | 1.0
         <action> ::= left | right
         """

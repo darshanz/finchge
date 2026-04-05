@@ -144,57 +144,100 @@ class BNFGrammarParser(GrammarParser):
         # Registry for registering range handlers
         self.range_registry = RangeHandlerRegistry()
 
-        # Build the symbol pattern (combining handler patterns with base patterns)
-        self.symbol_pattern = self._build_symbol_pattern()
+    def _scan_rhs(self, rhs: str) -> list[str]:
+        # spaces around the pipe are also not important
+        rhs = re.sub(r"\s*\|\s*", "|", rhs)
 
-    def _build_symbol_pattern(self) -> re.Pattern[str]:
-        """Build the complete symbol pattern using registered handlers and base patterns."""
-
-        # Get range patterns from handlers
-        range_pattern = self.range_registry.get_combined_pattern()
-
-        # Base patterns for other tokens, the symbol patterns.
-        # IMPORTANT:: Update from v1.0.1alpha5 separated - sign to support negative integers in range handling.
-        base_patterns = [
-            r'"[^"]*"',  # Double-quoted strings
-            r"'[^']*'",  # Single-quoted strings
-            r"<[^>]+>",  # Non-terminals
-            r"-?\d+\.\d+",  # Float numbers (including negative)
-            r"-?\d+",  # Integer numbers (including negative)
-            r"\w+",  # Identifiers
-            r"[{}()\[\];|:=,+*/=]",  # Symbols without minus  (-).
-            r"-",  # Minus sign separately
-        ]
-
-        # IMPORTANT :: Handler patterns come first so that they match before base patterns
-        all_patterns = [range_pattern] + base_patterns
-
-        # Build final pattern string
-        pattern_str = "|".join(f"({p})" for p in all_patterns)
-
-        return re.compile(pattern_str, re.VERBOSE)
-
-    def _fix_hyphenated_tokens(self, tokens: list[str]) -> list[str]:
-        """
-        Recombine tokens that should be hyphenated terminals. for example turn-left
-        """
-        fixed = []
+        tokens = []
         i = 0
-        while i < len(tokens):
-            # Look for pattern: word, '-', word
-            if (
-                i + 2 < len(tokens)
-                and tokens[i + 1] == "-"
-                and re.match(r"^[a-zA-Z]+$", tokens[i])
-                and re.match(r"^[a-zA-Z]+$", tokens[i + 2])
-            ):
-                # Combine into hyphenated token
-                fixed.append(f"{tokens[i]}-{tokens[i + 2]}")
-                i += 3
-            else:
-                fixed.append(tokens[i])
+        n = len(rhs)
+
+        # first space in the RHS is not important remove that
+        if i < n and rhs[i].isspace():
+            i += 1
+
+        while i < n:
+            ch = rhs[i]
+            if ch == "|":
+                tokens.append("|")
                 i += 1
-        return fixed
+                continue
+            if ch == '"':
+                j = rhs.find('"', i + 1)
+                if j == -1:
+                    raise ValueError(f"Unclosed double quote at {i}")
+                tokens.append(rhs[i + 1 : j])  # strip quotes
+                i = j + 1
+                continue
+            if ch == "'":
+                j = rhs.find("'", i + 1)
+                if j == -1:
+                    raise ValueError(f"Unclosed single quote at {i}")
+                tokens.append(rhs[i + 1 : j])  # strip quotes
+                i = j + 1
+                continue
+            if ch == "<":
+                j = i + 1
+                while j < n and rhs[j] not in ("|", "\n"):
+                    if rhs[j] == ">":
+                        tokens.append(rhs[i : j + 1])
+                        i = j + 1
+                        break
+                    j += 1
+                else:
+                    # no matching '>', treat as plain terminal
+                    pass
+                if i > j:
+                    continue
+            # Plain terminal: collect until '|' or start of quote or non-terminal
+            start = i
+            while i < n and rhs[i] != "|":
+                if rhs[i] in ('"', "'"):
+                    break
+                if rhs[i] == "<":
+                    # check for valid non-terminal
+                    k = i + 1
+                    while k < n and rhs[k] not in ("|", "\n"):
+                        if rhs[k] == ">":
+                            break
+                        k += 1
+                    else:
+                        i += 1
+                        continue
+                    break
+                i += 1
+            token = rhs[start:i]
+            if token:
+                tokens.append(token)
+        return tokens
+
+    def _preprocess_ranges(self, rhs: str) -> tuple[str, dict[str, list[str]]]:
+        """
+        Until other symbols are handled we just use placeholders for the range handlers.
+        The ranges could be directly replaced in the beginning, if the ranges are placed only at the end of the grammar
+        To avoid worst case scenario in grammar design, replacing range constructs with placeholders.
+        Returns (modified_rhs, placeholder_map).
+        """
+        range_regex = self.range_registry.get_combined_pattern()
+        if not range_regex:
+            return rhs, {}
+
+        placeholders = {}
+        counter = 0
+
+        def replacer(match: re.Match[str]) -> str:
+            nonlocal counter
+            token: str = match.group(0)
+            expanded = self.range_registry.expand_token(token)
+            if expanded and expanded != [token]:
+                placeholder = f"__RANGE_{counter}__"
+                counter += 1
+                placeholders[placeholder] = expanded
+                return placeholder
+            return token
+
+        modified = re.sub(range_regex, replacer, rhs)
+        return modified, placeholders
 
     def parse(
         self,
@@ -232,35 +275,25 @@ class BNFGrammarParser(GrammarParser):
                 if not self.non_terminal_pattern.match(lhs):
                     raise ValueError(f"Value Error: Invalid non-terminal '{lhs}'")
 
-                # Validate RHS brackets
-                if rhs.count("<") != rhs.count(">"):
-                    raise ValueError(
-                        f"Syntax Error in RHS of '{lhs}': unmatched angle brackets in '{rhs}'"
-                    )
-
-                # Find all tokens in RHS
-                tokens = []
-                for match in self.symbol_pattern.finditer(rhs):
-                    token = match.group(0)
-                    if token:
-                        tokens.append(token)
-
-                #  Recombine hyphenated tokens
-                tokens = self._fix_hyphenated_tokens(tokens)
+                # first expand the ranges
+                rhs_processed, range_placeholders = self._preprocess_ranges(rhs)
+                tokens = self._scan_rhs(rhs_processed)
 
                 # Process tokens using the handler registry
-                processed_tokens = []
+                expanded_tokens = []
                 for token in tokens:
-                    # Use registry to expand token
-                    expanded = self.range_registry.expand_token(token)
-                    processed_tokens.extend(expanded)
+                    token_clean = token.strip()
+                    if token_clean in range_placeholders:
+                        expanded_tokens.extend(range_placeholders[token_clean])
+                    else:
+                        expanded_tokens.append(token)
 
                 # Store for later validation
-                rhs_tokens.append((lhs, processed_tokens))
+                rhs_tokens.append((lhs, expanded_tokens))
 
                 # Create rules
                 original_choices = split_choices(tokens)
-                expanded_choices = split_choices(processed_tokens)
+                expanded_choices = split_choices(expanded_tokens)
 
                 self.rules_original[lhs] = Rule(lhs, original_choices)
                 self.rules[lhs] = Rule(lhs, expanded_choices)
@@ -269,8 +302,8 @@ class BNFGrammarParser(GrammarParser):
         # Validate all non-terminals are defined
         all_defined_non_terminals = self.non_terminals
 
-        for lhs, tokens in rhs_tokens:
-            for token in tokens:
+        for lhs, tokens_ in rhs_tokens:
+            for token in tokens_:
                 if token == "|":
                     continue
 

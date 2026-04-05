@@ -73,15 +73,15 @@ class TestBNFGrammarParserBasic:
 
     def test_unmatched_brackets(self):
         """
-        Test that unmatched angle brackets raise ValueError.
-        bracket not closed
+        Test that unmatched angle brackets doesn't affect parsing
+        if bracket not closed it is treated as regular string
         """
         invalid_grammar = """
         <expr> ::= <unclosed
         """
         parser = BNFGrammarParser(invalid_grammar)
-        with pytest.raises(ValueError, match="unmatched angle brackets"):
-            parser.parse()
+        _, _, _, terminals, _ = parser.parse()
+        assert "<unclosed" in terminals
 
     def test_undefined_non_terminal(self):
         """
@@ -287,7 +287,7 @@ class TestBNFGrammarParserMultiLine:
         <factor> ::= <number>
             | '(' <expr> ')'
         <number> ::= [0-9]
-            | [0-9] [0-9]
+            | [0-9] | [0-9]
         """
         parser = BNFGrammarParser(grammar)
         rules, rules_expanded, start_rule, terminals, non_terminals = parser.parse()

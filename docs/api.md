@@ -141,6 +141,10 @@ The finchGE API consists of:
       members:
         - GEFitnessFunction
         - AccuracyFitness
+        - MAEFitness
+        - RMSEFitness
+        - RewardFitness
+        - StringMatchFitness
 
 ::: finchge.grammar.repair_strategy
     options:
@@ -176,6 +180,30 @@ The finchGE API consists of:
         - setup_logging
         - get_log_dir
 
+::: finchge.utils.random_mixin
+    options:
+      show_root_heading: true
+      show_source: false
+
+::: finchge.utils.results
+    options:
+      show_root_heading: true
+      show_source: false
+      members:
+        - ResultHelper
+        - StatsHelper
+
+::: finchge.runners
+    options:
+      show_root_heading: true
+      show_source: false
+      members:
+        - PhenotypeRunner
+        - SymbolicRegressionRunner
+        - ControlRunner
+        - LogicRunner
+        - MLModelRunner
+
 ::: finchge.utils.checkpoint
     options:
       show_root_heading: true
@@ -194,3 +222,73 @@ The finchGE API consists of:
     options:
       show_root_heading: true
       show_source: false
+
+::: finchge.benchmarks
+    options:
+      show_root_heading: true
+      show_source: false
+      members:
+        - Benchmark
+
+
+::: finchge.benchmarks.regression.nguyen
+    options:
+      show_root_heading: true
+      show_source: false
+      members:
+        - NguyenBenchmark
+
+
+::: finchge.benchmarks.regression.koza_quartic
+    options:
+      show_root_heading: true
+      show_source: false
+      members:
+        - KozaQuarticBenchmark
+
+::: finchge.benchmarks.regression.keijzer
+    options:
+      show_root_heading: true
+      show_source: false
+      members:
+        - KeijzerBenchmark
+
+::: finchge.benchmarks.logic.multiplexer
+    options:
+      show_root_heading: true
+      show_source: false
+      members:
+        - Multiplexer6Benchmark
+        - Multiplexer11Benchmark
+
+::: finchge.benchmarks.control.cartpole
+    options:
+      show_root_heading: true
+      show_source: false
+      members:
+        - CartPoleEnvironment
+        - CartPoleInterpreter
+        - CartPoleRunner
+        - CartPoleBenchmark
+
+::: finchge.benchmarks.control.maze
+    options:
+      show_root_heading: true
+      show_source: false
+      members:
+        - MazeEnvironment
+        - MazeInterpreter
+        - MazeRunner
+        - MazeSimpleBenchmark
+        - MazeMediumBenchmark
+        - MazeHardBenchmark
+
+::: finchge.benchmarks.control.santafe
+    options:
+      show_root_heading: true
+      show_source: false
+      members:
+        - SantaFeEnvironment
+        - SantaFeInterpreter
+        - SantaFeRunner
+        - SantaFeTrailBenchmark

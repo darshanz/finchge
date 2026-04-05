@@ -218,11 +218,6 @@ class SantaFeInterpreter:
     """
     Interpreter for Santa Fe ant programs using cleaner grammar.
 
-    Grammar:
-        <code> ::= <line> | <code> <line>
-        <line> ::= <condition> | <op>
-        <condition> ::= ifelse food-ahead (<line>) (<line>)
-        <op> ::= turn-left | turn-right | move
     """
 
     def __init__(self) -> None:

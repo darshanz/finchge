@@ -11,12 +11,18 @@ pipeline.
 ---
 ## Grammatical Evolution
 
-Grammatical Evolution is a type of genetic programming where solutions are generated and evolved using grammars (like BNF grammars). It is used primarily used for evolving programs or expressions in a structured way, guided by grammar rules and evolutionary operators. It’s often used in symbolic regression, automated programming, and other optimization tasks.
+Grammatical Evolution is a type of genetic programming where solutions are generated and evolved using grammars (like BNF grammars).
+It is primarily used for evolving programs or expressions in a structured way, guided by grammar rules and evolutionary operators.
+It is often used in symbolic regression, automated programming, and other optimization tasks.
 
 
 ## Grammar
 
-In Grammatical Evolution, the grammar defines the structure of valid solutions. Grammar, acts as a set of rules that maps genetic representations into syntactically correct programs or expressions, ensuring that evolution only produces valid and meanngful solutions.
+In Grammatical Evolution, the grammar defines the structure of valid solutions.
+Grammar serves as a set of mapping rules that translate genetic representations into syntactically correct programs or expressions.
+By enforcing these structural constraints, the grammar ensures that
+the evolutionary process generates only valid and meaningful solutions, preventing the formation of syntactically incorrect
+or nonsensical individuals.
 
 The grammar determines:
 
@@ -24,10 +30,8 @@ The grammar determines:
 - the structural bias of the search space
 - the expressiveness of evolved programs or solutions
 
-Importantly, grammars in finchGE are **problem-independent** and contain no information about
+Importantly, grammars are **problem-independent** and contain no information about
 fitness or optimization objectives.
-
-
 
 
 ### Context-free grammars
@@ -43,23 +47,25 @@ A context-free grammar consists of the following elements:
 
 In BNF-style notation, where alternative productions are separated by the | symbol and non-terminals are written using angle brackets. Terminals can be literals, character ranges, or numeric ranges
 
-Example grammar definition:
+In finchGE grammar is defined as a following:
 
 ```python
     grammar_str = """
-    <string> ::= <letter> | <letter> <string>
-    <letter> ::= _ | [a-z]
-    <num> ::= [1-4]
-    <number> ::= _ | 10..50 step 5
+     <expr> ::= <expr> <op> <expr>
+                    | <func> ( <expr> )
+                    | <var>
+                    | <const>
+    <op> ::= + | - | * | /
+    <func> ::= sin | cos | exp | plog | psqrt
+    <const> ::= 0.1 | 0.5 | 1.0 | 2.0 | 3.0 | 4.0 | 5.0 | 0.01 | 0.001
+    <var> ::= x0
     """
 ```
 
-In this example:
-
-- ```<string>``` recursively builds strings from letters
-- ```<letter>``` allows underscores or lowercase letters
-- ```<num>``` restricts digits to a fixed range
-- ```<number>``` supports symbolic values or numeric ranges with steps
+This grammar provides a set of production rules that map genetic representations into
+syntactically correct mathematical expressions. Starting from the `<expr>` nonterminal,
+the grammar recursively builds expressions by combining subexpressions with arithmetic operators,
+applying functions (e.g., `sin`, `cos`, `exp`, `plog`, `psqrt`), or terminating at variables (`x0`) or predefined constants.
 
 Once defined, the grammar is passed to the [`Grammar`][finchge.grammar.Grammar] class, which parses and manages these rules during evolution.
 
@@ -96,11 +102,10 @@ Each grammar rule follows the format:
 For example:
 
 ```bnf
-<expr> ::= <term> | <expr> "+" <term>
-<term> ::= <factor> | <term> "*" <factor>
-<factor> ::= <number> | "(" <expr> ")"
-<number> ::= [0-9] | <number> [0-9]
-
+<expr> ::= <term> | <expr> + <term>
+<term> ::= <factor> | <term> * <factor>
+<factor> ::= <number> | ( <expr> )
+<number> ::= 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7| 8 | 9
 ```
 
 #### Multi-line Rules
@@ -108,16 +113,16 @@ For example:
 Rules can span multiple lines. This grammar:
 ```bnf
 <expression> ::= <term>
-                 "+" <expression>
+                 + <expression>
                  | <term>
-                 "-" <expression>
+                 - <expression>
                  | <term>
 
 ```
 is processed exactly the same as:
 
 ```bnf
-<expression> ::= <term> "+" <expression> | <term> "-" <expression> | <term>
+<expression> ::= <term> + <expression> | <term> - <expression> | <term>
 ```
 
 ##### Grammar writing
@@ -133,8 +138,8 @@ Always begin a new rule on a line that contains the `::=` operator:
 ```bnf
 
 <arithmetic> ::= <expression>
-                 | <expression> "+" <term>
-                 | <expression> "-" <term>
+                 | <expression> + <term>
+                 | <expression> - <term>
 
 ```
 **Incorrect:** (Don't put `::=` in the middle of a line)
@@ -150,9 +155,9 @@ Some text <arithmetic> ::= <expression> | <expression> "+" <term>
 Lines without `::=` automatically continue the previous rule:
 
 ```bnf
-<complex> ::= "(" <expression> ")"
-              "*" <factor>
-              | <factor> "/"
+<complex> ::= ( <expression> )
+              * <factor>
+              | <factor> /
               <term>
               | <value>
 ```
@@ -165,16 +170,16 @@ Use blank lines to separate rules for better readability:
 ```bnf
 # Rule for expressions
 <expression> ::= <term>
-                 "+" <expression>
-                 | <term> "-" <expression>
+                 + <expression>
+                 | <term> - <expression>
                  | <term>
 
 # Blank line separates rules visually
 
 # Rule for terms
 <term> ::= <factor>
-           "*" <term>
-           | <factor> "/" <term>
+           * <term>
+           | <factor> / <term>
            | <factor>
 ```
 
@@ -193,8 +198,8 @@ Use blank lines to separate rules for better readability:
     Indent continuation lines to visually group them with their rule definition:
     ```bnf
         <polynomial> ::= <term>
-                     "+" <polynomial>
-                     | <term> "-" <polynomial>
+                     + <polynomial>
+                     | <term> - <polynomial>
                      | <term>
                      | ε  # empty string
     ```
@@ -232,10 +237,11 @@ Use blank lines to separate rules for better readability:
 
     ```bnf
     # Complex number operations
-    <complex_op> ::= <real> "+" <imaginary> "i"  # a + bi
-                     | <real> "-" <imaginary> "i"  # a - bi
-                     | <real>  # Pure real
-                     | <imaginary> "i"  # Pure imaginary
+    <complex_op> ::= <num> "+" <num> "i"  # a + bi
+                     | <num> "-" <num> "i"  # a - bi
+                     | <num>  # Pure real
+                     | <num> "i"  # Pure imaginary
+    <num> ::= 1 | 2
     ```
 
 
@@ -265,7 +271,7 @@ The parser comes with built-in handlers for common range types:
 <negative> ::= -5..5          # Negative to positive range
 <stepped> ::= 0..100 step 10  # Increment by 10: 0, 10, 20, ..., 100
 <reverse> ::= 10..1           # Descending range: 10, 9, 8, ..., 1
-<neg_step> ::= 10..1 step -1  # Explicit negative step
+<neg_step> ::= 10..1 step -1  # Negative step
 <float> ::= 0.0..1.0          # Floating point ranges
 ```
 
@@ -321,7 +327,7 @@ For example, the first column in the dataset is represented as  `x0`.
 
 ```
 
-#### Symbolic Variable Notation
+#### Symbolic Variable Range Notation
 To represent ranges of symbolic variables in grammars, FinchGE supports symbolic variable range notation,
 allowing evolved mathematical expressions to refer to multiple variables using a compact range syntax.
 For example, `x[0..4]` is alternative way to write the columns `x0 | x1 | x2 | x3 | x4`
@@ -483,7 +489,7 @@ the same tree when decoded with the same mapper configuration.
 
 This is essential for:
 
-- Tree-based initialisation (PI-Grow, RHH)
+- Tree-based initialisation methods (RHH, Pi-Grow, PTC2 etc.)
 - Subtree crossover and mutation
 - Hybrid genome-tree evolutionary workflows
 - Checkpointing and reproducibility
@@ -534,16 +540,51 @@ This round-trip check ensures that the mapper does not lose information when con
 
 ## Fitness Evaluation
 
+In finchGE fitness evaluation is handled by [```FitnessEvaluator```][finchge.fitness.FitnessEvaluator] class which allows
+flexible and convenient fitness evaluation especially for use cases where data and models are involved.
+The `FitnessEvaluator` is responsible for managing all aspects of fitness function evaluation.
+It coordinates key supporting components including the fitness functions themselves, a cache manager,
+parallel executors, and benchmark runners to handle the evaluation process efficiently.
+By decoupling fitness evaluation from the main evolutionary loop, FinchGE allows different evaluation strategies
+to be applied across diverse problem domains, all while exposing a consistent interface to the rest of the evolutionary machinery.
+
+A fitness evaluator can be created as following:
+
+
+```python
+fitness_evaluator = FitnessEvaluator(
+        runner=phenotype_runner,
+        fitness_functions=acc_fitness,
+        mapper=mapper,
+        parallel_config=ge_config.parallel
+    )
+```
+Fitness evaluator handles the [```PhenotypeRunner```][finchge.runners.PhenotypeRunner], fitness functions
+and parallel executors to evaluate the individuals. The phenotype runner instances such as
+ [`SymbolicRegressionRunner`][finchge.runners.SymbolicRegressionRunner],
+[`ControlRunner`][finchge.runners.ControlRunner], [`MLModelRunner`][finchge.runners.MLModelRunner] etc.,
+are responsible for running the phenotype against the data to
+output the solution or predictions which can be used to evaluate by the fitness functions.
+
+
+### Fitness Functions
+
 The **fitness function** defines how good a generated solution is by assigning it a numerical score based on the problem objectives.
 **Fitness evaluation** is the process of applying this function to each individual in the population,
 guiding evolution by favoring higher-quality solutions for selection and reproduction.
 
-In finchGE fitness evaluation is handled by [```FitnessEvaluator```][finchge.fitness.FitnessEvaluator] class which allows
-flexible and convenient fitness evaluation especially for use cases where data and models are involved.
-For example, in hyperparameter optimization or neural architecture search.
+FinchGE includes various fitness functions as shown below.
 
-This abstraction allows finchGE to be applied to a wide range of GE problems,
-including symbolic regression, program synthesis, and multi-objective evolution tasks.
+- [```AccuracyFitness```][finchge.fitness.AccuracyFitness] -  Computes accuracy using 'y_pred' and 'y_val' from the context.
+- [```MAEFitness```][finchge.fitness.MAEFitness] - Computes Mean Absolute Error using 'y_pred' and 'y_val' from the context.
+- [```RMSEFitness```][finchge.fitness.RMSEFitness]  - Computes Root Mean Square Error using 'y_pred' and 'y_val' from the context.
+- [```RewardFitness```][finchge.fitness.RewardFitness] -  Fitness function for control problems with reward maximization.
+
+
+To use custom fitness functions, FinchGE provides a common interface
+named [```GEFitnessFunction```][finchge.fitness.GEFitnessFunction].
+This standard interface lets users plug in their own evaluation logic without needing to modify any core evolutionary components.
+
 
 ---
 
@@ -672,9 +713,9 @@ Position-Independent Grow extends Grow Initialisation by expanding tree nodes in
 Probabilistic Tree Creation 2 (PTC2) is a stochastic tree generation algorithm
 designed to provide precise control over the size (number of expansions)
 and shape of initial solutions.
-Originally proposed for Genetic Programming by Luke (2000),
-it was adapted for Grammatical Evolution (GE) by Harper (2012)
-and further refined by Nicolau (2017).
+Originally proposed for Genetic Programming by [Luke (2000)](https://ieeexplore.ieee.org/abstract/document/873237),
+it was adapted for Grammatical Evolution (GE) by [Harper (2012)](https://ieeexplore.ieee.org/abstract/document/5586336)
+and further refined by [Nicolau (2017)](https://link.springer.com/article/10.1007/s10710-017-9309-9).
 
 Unlike traditional depth-based routines, PTC2 focuses on the number of grammar expansions performed.
 It maintains a **frontier** of active non-terminals and selects the next node to expand **uniformly at random**.
@@ -687,17 +728,17 @@ common in standard depth-first initialisation.
 
     === "Refined PTC2 (Unconstrained)"
 
-        Operates without a maximum tree depth limit. Research by Nicolau (2017) demonstrated that
-        this refined version consistently outperforms other routines.
+        Operates without a maximum tree depth limit. It has been demonstrated that
+        this refined version consistently outperforms other routines [Nicolau (2017)](https://link.springer.com/article/10.1007/s10710-017-9309-9).
         By removing depth constraints, the algorithm samples a wider variety of "skinnier"
         and more diverse tree shapes that are highly suited for the linear genetic operators used in GE.
 
     === "PTC2D (Depth-Limited)"
 
         Incorporates a strict maximum depth constraint. While this ensures trees remain within specific structural bounds,
-        it tends to produce "bushier," denser trees.
+        it tends to produce "bushier," denser trees [Nicolau (2017)](https://link.springer.com/article/10.1007/s10710-017-9309-9).
         This variant uses feasibility checks—based on the minimum number of expansions
-        required to terminate—to ensure every branch can close within both the size budget and the depth limit.
+        required to terminate. This ensures every branch can close within both the size budget and the depth limit.
 
 ---
 
@@ -708,7 +749,7 @@ common in standard depth-first initialisation.
 - Uses pre-calculated grammar analysis and minimum termination costs to ensure every generated individual is valid and satisfies all constraints.
 - Produces a more uniform distribution of tree shapes and solution lengths, leading to improved search efficiency and better generalization.
 
-> **Note:** "The best results were obtained by a refined version of the PTC2 algorithm... as it sampled a wider variety of tree shapes and solution lengths." (Nicolau, 2017).
+> **Note:** "The best results were obtained by a refined version of the PTC2 algorithm... as it sampled a wider variety of tree shapes and solution lengths." [Nicolau (2017)](https://link.springer.com/article/10.1007/s10710-017-9309-9).
 
 
 #### Ramped PTC2 Initialisation
@@ -802,14 +843,14 @@ ge:
 ```
 
 All the intialser support initialisation using config files through `from_config()` method.
-For example  `RandomGenomeInitialiser` can be used as following.
+For example  [`RandomGenomeInitialiser`][finchge.initialisation.RandomGenomeInitialiser] can be used as following.
 
 ```python
 from finchge.initialisation import  RandomGenomeInitialiser
 from finchge.config import  FinchConfig
 
 config = FinchConfig.from_yaml("config.yaml")
-initialiser = RandomGenomeInitialiser.from_config(ge_config=config)
+initialiser = RandomGenomeInitialiser.from_config(config=config)
 
 ```
 
@@ -855,8 +896,7 @@ as well as in interactive and exploratory evolutionary runs.
 ## Configuration
 
 FinchGE can be configured using **plain Python dictionaries** or **external configuration files** (INI or YAML).
-Configuration is intentionally kept explicit and lightweight: it is used to *wire components together*,
-not to hide algorithmic logic.
+FinchGE uses a **structured configuration system** to describe experiments in a clear, reproducible, and extensible way.
 
 !!! info "Principle"
     FinchGE follows these principles for project configuration:
@@ -869,20 +909,16 @@ not to hide algorithmic logic.
 
 ### Configuration Overview
 
-FinchGE uses a **structured configuration system** to describe experiments in a clear, reproducible, and extensible way.
-After refactoring, configuration is centered around **two top-level sections**:
+
+The configuration is centered around **three top-level sections**:
 
 - `experiment` - run-level concerns (how long, how big, logging, caching, randomness)
-- `ge` - *all* Grammatical Evolution-specific parameters (grammar, initialisation, operators)
+- `ge` - all Grammatical Evolution-specific parameters (grammar, initialisation, operators)
+- `parallel` - configuration related to parallelised fitness evaluation.
 
 This design avoids artificial separation between tightly coupled GE components (grammar, initialisation, operators) and ensures consistent parameter sharing.
 
----
-
-#### Configuration Sections
-
-**`experiment` section**
-Controls how an experiment is executed.
+The **`experiment`** section controls how an experiment is executed.
 
 Typical parameters include:
 
@@ -892,12 +928,11 @@ Typical parameters include:
 - `verbose` - logging verbosity
 - `cache_type`, `cache_size` - optional fitness caching
 
-**`ge` section**
-Defines the Grammatical Evolution system itself.
+The **`ge`** section defines the Grammatical Evolution system itself.
 
 Typical parameters include:
 
-- Grammar & mapping:
+- Grammar and mapping:
     - `grammar_file`
     - `codon_size`
     - `max_wraps`
@@ -914,59 +949,86 @@ Typical parameters include:
 
 All GE components (grammar, mapper, initialisers, operators) read from this same `ge` section, ensuring consistency.
 
+The **`parallel`** section defines the configuration related to parallelization of the fitness evaluation.
+
+The parameters include:
+
+  - `parallel_enabled` - flag to enable/disable parallel evaluation
+  - `executor_type` - `thread` or `process`
+  - `max_workers`
+  - `batch_size`
+
 ---
 
-#### Example Configuration (YAML)
 
-```yaml
-experiment:
-  random_seed: 42
-  population_size: 100
-  num_generations: 200
-  verbose: true
-  cache_type: lru
-  cache_size: 128
+??? note "Example Configuration in YAML and INI"
 
-ge:
-  grammar_file: grammar.bnf
-  codon_size: 127
-  max_wraps: 6
-  max_recursion_depth: 20
-  genome_length: 100
+    The algorithm supports two distinct operational modes based on the presence of structural constraints.
 
-  init_type: pi_grow
-  max_depth: 6
+    === "YAML"
 
-  mutation_probability: 0.01
-  crossover_probability: 0.5
-  elite_size: 1
-```
-The same structure applies to INI:
+        ```yaml
+            experiment:
+              random_seed: 42
+              num_generations: 200
+              verbose: true
+              cache_type: lru
+              cache_size: 128
 
-**Example (INI):**
+            ge:
+              population_size: 100
+              grammar_file: grammar.bnf
+              codon_size: 127
+              max_wraps: 6
+              max_recursion_depth: 20
+              genome_length: 100
 
-```ini
-[experiment]
-random_seed = 42
-population_size = 100
-num_generations = 200
-verbose = true
-cache_type = "lru"
-cache_size = 128
+              init_type: pi_grow
+              max_depth: 6
 
-[ge]
-grammar_file = grammar.bnf
-codon_size = 127
-max_wraps = 6
-max_recursion_depth = 20
-genome_length = 100
-init_type = "pi_grow"
-max_depth = 6
-mutation_probability = 0.01
-crossover_probability = 0.5
-elite_size = 1
+              mutation_probability: 0.01
+              crossover_probability: 0.5
+              elite_size: 1
 
-```
+            parallel:
+              parallel_enabled: true
+              executor_type: process
+              max_workers: 4
+              batch_size: 25
+
+        ```
+
+    === "INI"
+
+
+        ```ini
+            [experiment]
+            random_seed = 42
+            num_generations = 200
+            verbose = true
+            cache_type = "lru"
+            cache_size = 128
+
+            [ge]
+            population_size = 100
+            grammar_file = grammar.bnf
+            codon_size = 127
+            max_wraps = 6
+            max_recursion_depth = 20
+            genome_length = 100
+            init_type = pi_grow
+            max_depth = 6
+            mutation_probability = 0.01
+            crossover_probability = 0.5
+            elite_size = 1
+
+            [parallel]
+            parallel_enabled = true
+            executor_type = process
+            max_workers = 4
+            batch_size = 25
+
+        ```
 
 #### Required vs Optional Parameters
 
@@ -1025,13 +1087,13 @@ by creating configs in the form of dictionaries, as shown below.
 config = {
   "experiment": {
     "random_seed": 42,
-    "population_size": 100,
     "num_generations": 10,
     "verbose": True,
     "cache_type": "lru",
     "cache_size": 128,
   },
   "ge": {
+    "population_size": 100,
     "grammar_file": "grammar.bnf",
     "codon_size": 127,
     "max_wraps": 6,
@@ -1042,7 +1104,14 @@ config = {
     "crossover_probability": 0.5,
     "elite_size": 3,
   },
+  "parallel": {
+    "parallel_enabled": True,
+    "executor_type": "process",
+    "max_workers": 4,
+    "batch_size": 25,
+  },
 }
+
 ```
 Constructors and class factories consume these dictionaries directly.
 
@@ -1073,7 +1142,7 @@ For logging and debugging, configurations can be rendered in multiple formats:
 ```python
 print(cfg.to_json())
 print(cfg.to_table())
-cfg.display()   # Jupyter-friendly
+cfg.display()   # Jupyter notebook-friendly display
 ```
 This makes experiments easy to reproduce and compare.
 
@@ -1100,6 +1169,7 @@ supporting both lightweight monitoring and full experiment tracking.
 #### Runtime logging (Python logging)
 
 FinchGE uses Python’s built-in `logging` module for **runtime messages** such as:
+
 - progress updates
 - warnings and errors
 - timing information
@@ -1124,16 +1194,17 @@ Runtime logs are written to a `.log` file and optionally displayed in the consol
 Experiment loggers record **structured results** produced during evolution.
 They are independent of Python logging and operate through lifecycle callbacks.
 
-All experiment loggers implement the `BaseLogger` interface.
+All experiment loggers implement the [`BaseLogger`][finchge.utils.logger.BaseLogger] interface.
 
 ---
 
 #### Available experiment loggers
 
-#### `FileLogger` (lightweight)
+#### FileLogger (lightweight)
 
-`FileLogger` records **compact, append-only summaries** suitable for monitoring
+[`FileLogger`][finchge.utils.logger.FileLogger] records **compact, append-only summaries** suitable for monitoring
 and post-hoc analysis.
+Use `[`FileLogger`][finchge.utils.logger.FileLogger] when storage should be minimal,  only high-level metrics are needed, or long runs are monitored in real time.
 
 For each generation it logs:
 
@@ -1151,16 +1222,14 @@ logger = FileLogger()
 
 ```
 
-Use this logger when:
-
-- storage should be minimal
-- only high-level metrics are needed
-- long runs are monitored in real time
 
 #### ExperimentLogger (full experiment tracking)
 
-`ExperimentLogger` records complete experiment artifacts, enabling full
-reproducibility and detailed analysis.
+[`ExperimentLogger`][finchge.utils.logger.ExperimentLogger] records complete experiment artifacts, enabling full
+reproducibility and detailed analysis. Use [`ExperimentLogger`][finchge.utils.logger.ExperimentLogger]  when
+ detailed inspection is required,
+ experiments are intended for publication, or
+ derivation trees or full fronts must be preserved.
 
 Depending on the optimization mode, it may store:
 
@@ -1178,14 +1247,10 @@ from finchge.utils.logger import ExperimentLogger
 logger = ExperimentLogger(exclude=["trees"])
 ```
 
-Use this logger when:
-- detailed inspection is required
-- experiments are intended for publication
-- derivation trees or full fronts must be preserved
 
 #### Using experiment loggers
 
-Experiment loggers are passed to `GrammaticalEvolution` and are managed
+When using [`GrammaticalEvolution`][finchge.core.GrammaticalEvolution] for running project, loggers are managed
 automatically.
 
 ```python
@@ -1200,23 +1265,28 @@ result = ge.run()
 
 ```
 
+However, for more advanced usage or custom logging Experiment Loggers provide callbacks such as `on_run_start()` ,
+`on_generation_end()` and `on_run_end()`.
+
+
 #### Single-objective vs multi-objective logging
 
 - **Single-objective** runs log the best individual per generation.
-- **Multi-objective** runs log Pareto front summaries (FileLogger) or full fronts (ExperimentLogger).
+- **Multi-objective** runs log Pareto front summaries ([`FileLogger`][finchge.utils.logger.FileLogger]) or
+full fronts ([`ExperimentLogger`][finchge.utils.logger.ExperimentLogger]).
 
 The logging behavior adapts automatically based on the algorithm used.
 
-Design notes
-- Runtime logging and experiment logging are intentionally separate.
-- Experiment loggers never configure Python logging.
-- Checkpointing operates independently of logging.
-- Logging does not affect determinism or reproducibility.
 
-!!! info "Tip"
+!!! info "Note"
 
-    Use FileLogger during development and ExperimentLogger for
-    final experiments for detailed results analysis for publications.
+    - Runtime logging and experiment logging are intentionally separate.
+    - Experiment loggers never configure Python logging.
+    - Checkpointing operates independently of logging.
+    - Logging does not affect determinism or reproducibility.
+
+      Use [`FileLogger`][finchge.utils.logger.FileLogger] with minimal logging for quicker development and [`ExperimentLogger`][finchge.utils.logger.ExperimentLogger] for
+      final experiments for detailed results analysis.
 
 
 
@@ -1234,8 +1304,8 @@ This is especially useful for:
 
 #### Enabling checkpointing
 
-To enable checkpointing, create a `CheckpointManager` and pass it to
-`GrammaticalEvolution`.
+To enable checkpointing, create a [`CheckpointManager`][finchge.utils.checkpoint.CheckpointManager] and pass it to
+[`GrammaticalEvolution`][finchge.core.GrammaticalEvolution].
 
 ```python
 from finchge.utils.checkpoint import FileCheckpointManager
@@ -1308,23 +1378,25 @@ Each checkpoint stores:
 This guarantees exact reproducibility when resuming.
 
 
-!!! danger "IMPORTANT: Configuration Safety "
+!!! warning "IMPORTANT: Configuration Safety "
 
     If the experiment configuration changes between runs, FinchGE will refuse to
     resume from an incompatible checkpoint and raise an error.
 
 
     CAUTION: Although this configuration safety features prevents accidental misuse of checkpoints,
-    It may not be helpful in use cases where configuration itself is allowed to evolve.
+    **it may not be helpful in use cases where configuration itself is allowed to evolve.**
     Alternative ways of handling config is such situation is strongly recommended.
 
 
-### Result Aggregating and Visualization
+### Result Aggregation and Visualization
 
-FinchGE includes ExperimentLogger to log the results which can be aggregated using
-ResultHelper and StatsHelper utilities. At this point Result Aggregating and Visualization utils
+FinchGE includes [`ExperimentLogger`][finchge.utils.logger.ExperimentLogger] to log the results which can be aggregated using
+ [`ResultHelper`][finchge.utils.results.ResultHelper] and [`StatsHelper`][finchge.utils.results.StatsHelper] utilities.
+
+NOTE *At this point Result Aggregating and Visualization utils
 provide limited functionality to work with GrammaticalEvolution,
-for advanced usage, custom analysis and visualation is used based on the requirement.
+for advanced result analysis, custom analysis and visualation is used based on the requirement.*
 
 ---
 
@@ -1336,7 +1408,8 @@ for advanced usage, custom analysis and visualation is used based on the require
 validating, and evaluating symbolic mathematical expressions
 used in symbolic regression workflows.
 
-The class converts string-based mathematical expressions into SymPy symbolic objects and compiles them into efficient NumPy-based numerical evaluators. It supports multi-variable expressions, custom function sets, and automatic detection of required input features.
+The class converts string-based mathematical expressions into *SymPy* symbolic objects and compiles them into efficient
+*NumPy-based* numerical evaluators. It supports multi-variable expressions, custom function sets, and automatic detection of required input features.
 
 ##### Key Features
 
@@ -1368,7 +1441,7 @@ The estimator follows the familiar **`fit` / `predict`** interface used in sciki
 
 ##### How it works
 
-`GERegressor` evolves candidate expressions using a grammar that defines the space of valid mathematical programs.
+[`GERegressor`][finchge.symbolic.GERegressor] evolves candidate expressions using a grammar that defines the space of valid mathematical programs.
 Each individual in the population represents a genotype that is mapped to a symbolic expression (phenotype),
 which is then evaluated on the training data using one or more fitness functions.
 
@@ -1404,21 +1477,118 @@ or interpretability depending on their use case.
 
 
 
-### Benchmarks
+## Benchmarks
 
 FinchGE provides a collection of benchmark problems for genetic programming research,
 covering regression, logic, and symbolic regression tasks.
 
-#### Regression Benchmarks
 
-##### Nguyen Benchmark Suite
+
+### Benchmark Components
+
+Following are the key components used in FinchGE's benchmark suite.
+Understanding these pieces will make it easy to run experiments and extend the library.
+
+##### Benchmark Classes
+Every problem in FinchGE is represented by a [`Benchmark`][finchge.benchmarks.Benchmark] class.
+These classes know everything about a specific problem: its mathematical definition, data ranges,
+and how to evaluate solutions. Benchmarks are organized by categories such as regression, control, logic
+
+```python
+from finchge.benchmarks.regression import Nguyen1Benchmark, Keijzer4Benchmark
+from finchge.benchmarks.control import SantaFeTrailBenchmark
+from finchge.benchmarks.logic import Multiplexer6Benchmark
+```
+
+Each benchmark provides:
+
+- `metadata` - Information about the problem
+- `grammar()` - The BNF grammar for valid solutions
+- `create_runner()` - Creates a runner that can evaluate phenotypes eg. evaluating expressions, or training models etc.
+
+##### Runners
+
+A `PhenotypeRunner` is responsible for taking a program string and turning it into measurable results.
+Different problem types use different runners:
+
+- `SymbolicRegressionRunner` - Evaluates mathematical expressions on data
+- `ControlRunner` - Runs programs in simulated environments
+- `LogicRunner` - Tests logic circuits against truth tables
+
+Runners always return a tuple `(predictions, targets)` that fitness functions can work with.
+
+##### Environments
+
+For control problems, Environment classes simulate the world where agents operate.
+Each environment maintains state and provides observations:
+
+- [```SantaFeEnvironment```][finchge.benchmarks.control.santafe.SantaFeEnvironment] - The ant trail grid with food
+- [```MazeEnvironment```][finchge.benchmarks.control.maze.MazeEnvironment]  - Navigation with walls and goals
+- [```CartPoleEnvironment```][finchge.benchmarks.control.maze.CartPoleEnvironment] - Physics simulation for balancing
+
+Environments are created fresh for each evaluation using factory functions.
+
+##### Fitness Functions
+
+The [```GEFitnessFunction```][finchge.fitness.GEFitnessFunction] classes calculate how good a solution is:
+
+- [```MAEFitness```][finchge.fitness.MAEFitness] - For regression (lower is better)
+- [```RMSEFitness```][finchge.fitness.RMSEFitness] - For regression (lower is better)
+- [```RewardFitness```][finchge.fitness.RewardFitness] - For control problems (higher is better)
+- [```AccuracyFitness```][finchge.fitness.AccuracyFitness] - For logic problems (higher is better)
+
+Each fitness function receives a context dictionary mainly with `y_pred` and `y_true`. However, the context may include
+other problem-specific information required by the fitness function.
+
+##### Random State Management
+
+Reproducibility is handled through the [```RandomStateMixin```][finchge.utils.random_mixin.RandomStateMixin]. Any class that needs randomness accepts a `random_state` parameter:
+
+```python
+bench = Nguyen1Benchmark(random_state=42)
+```
+
+The mixin provides `self.rng` (Python random) and `self.np_rng` (NumPy RandomState) for all the random needs.
+Any custom cumponent requiring randomnes should use these RNGs instead of global `random` or `np.random` to ensure
+deterministic experiments.
+
+
+
+A typical experiment flows like this:
+
+```python
+benchmark = SantaFeTrailBenchmark(random_state=42)
+grammar = Grammar.from_string(benchmark.grammar())
+runner = benchmark.create_runner()
+fitness = RewardFitness(maximize=True)
+
+ge = GrammaticalEvolution(runner, fitness, grammar)
+result = ge.run()
+
+```
+
+
+??? Pro Tip  "Using Custom Benchmarks"
+
+    To add a new problem, implement:
+
+        1. An `Environment` class (for control problems)
+        2. A `Runner` that knows how to evaluate phenotypes
+        3. A `Benchmark` that brings it all together
+
+    The base classes handle the rest, including random state management and parallelization support.
+
+
+### Regression Benchmarks
+
+#### Nguyen Benchmark Suite
 12 symbolic regression problems of increasing complexity, from simple polynomials to trigonometric functions.
 
 Each benchmark provides:
 
-- generate_data(): Returns (X_train, y_train, X_test, y_test)
-- metadata: Information about the benchmark
-- grammar(): Appropriate grammar for the problem type
+- `generate_data()`: Returns (`X_train`, `y_train`, `X_test`, `y_test`)
+- `metadata`: Information about the benchmark
+- `grammar()`: Appropriate grammar for the problem type
 
 ??? info "Nguyen Benchmark Suite"
 
@@ -1438,7 +1608,7 @@ Each benchmark provides:
     | `"nguyen12"`| $x^4 - x^3 + \frac{1}{2}y^2 - y$ | $x, y \in [-1, 1]$, uniform (20 pts) | $x, y \in [-1, 1]$, grid (1000 pts) |
 
  **Reference:** Uy, N.Q., Hoai, N.X., O’Neill, M., McKay, R.I. and Galván-López, E., (2011).
-*Semantically-based crossover in genetic programming: application to real-valued symbolic regression. Genetic Programming and Evolvable Machines**
+*Semantically-based crossover in genetic programming: application to real-valued symbolic regression. Genetic Programming and Evolvable Machines*
 
 
 ```python
@@ -1450,7 +1620,7 @@ print(f"Training samples: {len(X_train)}")  # 20 points
 print(f"Test samples: {len(X_test)}")  # 1000 points
 
 ```
-##### Keijzer Benchmark Suite
+#### Keijzer Benchmark Suite
 
 15 functions including rational functions, harmonic series, and multi-dimensional problems.
 
@@ -1487,14 +1657,14 @@ X_train, y_train, X_test, y_test = bench.load_data()
 
 ```
 
-##### Koza Quartic
+#### Koza Quartic
 
 Classic quartic polynomial benchmark from Koza's 1992 GP book.
 
 
-#### Logic Benchmarks
+### Logic Benchmarks
 
-##### Multiplexer Problems
+#### Multiplexer Problems
 - 6-bit Multiplexer: 2 address bits + 4 data bits (64 cases)
 - 11-bit Multiplexer: 3 address bits + 8 data bits (2048 cases)
 
@@ -1505,97 +1675,61 @@ bench = Multiplexer6Benchmark()
 X, y, _, _ = bench.load_data()  # Complete truth table
 ```
 
+### Control Benchmarks
 
-#### Benchmark Components
+#### Cartpole Benchmark
 
-Following are the key components used in FinchGE's benchmark suite.
-Understanding these pieces will make it easy to run experiments and extend the library.
-
-##### Benchmark Classes
-Every problem in FinchGE is represented by a `Benchmark` class.
-These classes know everything about a specific problem: its mathematical definition, data ranges,
-and how to evaluate solutions. Benchmarks are organized by categories such as regression, control, logic
+A classic control problem where a pole is attached to a cart moving along a frictionless track.
+The goal is to apply forces to keep the pole upright as long as possible.
+The environment is stochastic (random initial state) and rewards +1 per step the pole remains balanced.
 
 ```python
-from finchge.benchmarks.regression import Nguyen1Benchmark, Keijzer4Benchmark
-from finchge.benchmarks.control import SantaFeTrailBenchmark
-from finchge.benchmarks.logic import Multiplexer6Benchmark
+from finchge.benchmarks.control.cartpole import CartPoleBenchmark
+
+benchmark = CartPoleBenchmark(random_state=None, max_steps=500, n_episodes=1)
 ```
 
-Each benchmark provides:
+#### Maze Benchmark
 
-- `metadata` - Information about the problem
-- `grammar()` - The BNF grammar for valid solutions
-- `create_runner()` - Creates a runner that can evaluate phenotypes eg. evaluating expressions, or training models etc.
+A navigation benchmark where an agent must find its way from a start position to a goal in a grid-based maze.
+Walls block movement, and the agent receives sensor inputs indicating whether walls are present ahead,
+to the left, or to the right.
 
-##### Runners
+##### Available Mazes:
 
-A `PhenotypeRunner` is responsible for taking a program string and turning it into measurable results.
-Different problem types use different runners:
-
-- `SymbolicRegressionRunner` - Evaluates mathematical expressions on data
-- `ControlRunner` - Runs programs in simulated environments
-- `LogicRunner` - Tests logic circuits against truth tables
-
-Runners always return a tuple `(predictions, targets)` that fitness functions can work with.
-
-##### Environments
-
-For control problems, `Environment` classes simulate the world where agents operate.
-Each environment maintains state and provides observations:
-
-- `SantaFeEnvironment` - The ant trail grid with food
-- `MazeEnvironment` - Navigation with walls and goals
-- `CartPoleEnvironment` - Physics simulation for balancing
-
-Environments are created fresh for each evaluation using factory functions.
-
-##### Fitness Functions
-
-The `GEFitnessFunction` classes calculate how good a solution is:
-
-- `MAEFitness` - For regression (lower is better)
-- `RMSEFitness` - For regression (lower is better)
-- `RewardFitness` - For control problems (higher is better)
-- `AccuracyFitness` - For logic problems (higher is better)
-
-Each fitness function receives a context dictionary mainly with `y_pred` and `y_true`. However, the context may include
-other problem-specific information required by the fitness function.
-
-##### Random State Management
-
-Reproducibility is handled through the `RandomStateMixin`. Any class that needs randomness accepts a `random_state` parameter:
+- MAZE_SIMPLE: 5×5 grid (start=2, goal=3)
+- MAZE_MEDIUM: 8×8 grid (classic Koza maze)
+- MAZE_HARD: 11×11 grid (more complex layout)
 
 ```python
-bench = Nguyen1Benchmark(random_state=42)
-```
+# Simple Maze
+from finchge.benchmarks.control.maze import MazeSimpleBenchmark
+benchmark = MazeSimpleBenchmark(random_state=None, max_steps=100, n_episodes=1)
 
-The mixin provides `self.rng` (Python random) and `self.np_rng` (NumPy RandomState) for all the random needs.
-Any custom cumponent requiring randomnes should use these RNGs instead of global `random` or `np.random` to ensure
-deterministic experiments.
+# Medium Maze
+from finchge.benchmarks.control.maze import MazeMediumBenchmark
+benchmark = MazeMediumBenchmark(random_state=None, max_steps=200, n_episodes=1)
 
-
-
-A typical experiment flows like this:
-
-```python
-benchmark = SantaFeTrailBenchmark(random_state=42)
-grammar = Grammar.from_string(benchmark.grammar())
-runner = benchmark.create_runner()
-fitness = RewardFitness(maximize=True)
-
-ge = GrammaticalEvolution(runner, fitness, grammar)
-result = ge.run()
+# Hard Maze
+from finchge.benchmarks.control.maze import MazeHardBenchmark
+benchmark = MazeHardBenchmark(random_state=None, max_steps=500, n_episodes=1)
 
 ```
 
 
-??? Pro Tip  "Using Custom Benchmarks"
 
-    To add a new problem, implement:
 
-        1. An `Environment` class (for control problems)
-        2. A `Runner` that knows how to evaluate phenotypes
-        3. A `Benchmark` that brings it all together
+#### SantaFe Trail (Artificial Ant) Benchmark
 
-    The base classes handle the rest, including random state management and parallelization support.
+The Santa Fe Trail is a classic genetic programming benchmark where an ant must navigate
+a 32×32 toroidal grid to collect 89 food pellets arranged along a winding trail.
+The ant starts at position (20, 0) facing east and has a maximum of 600 steps per episode.
+
+SantaFeEnvironment environment provides the control simulation of the Santa Fe Trail Problem with,
+
+
+```python
+from finchge.benchmarks.control.santafe import SantaFeTrailBenchmark
+
+benchmark = SantaFeTrailBenchmark(random_state=None, max_steps=600)
+```

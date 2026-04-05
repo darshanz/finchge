@@ -77,7 +77,7 @@ at [finchge.readthedocs.io](https://finchge.readthedocs.io/), including [Getting
 
 
 ## Development Status
-Note: This is version ```1.0.1-beta.6``` - an beta release. Expect breaking changes and bugs.
+Note: This is version ```1.0.1-beta.7``` - a beta release. Expect breaking changes and bugs.
 
 What to expect:
 
