@@ -61,6 +61,10 @@ class GeneticAlgorithm(BaseAlgorithm):
                 f"Not enough valid individuals. Valid count: {len(valid_individuals)}"
             )
 
+        # before selection check if case data is required. if individual has case-wise data then appropriate seleciton
+        # selection method like LexicaseSeleciton must be provided
+        self._validate_selection_requirements(valid_individuals)
+
         # Selection
         selected_individuals = self.selection.select(
             population_size=population.population_size, individuals=valid_individuals
@@ -138,6 +142,25 @@ class GeneticAlgorithm(BaseAlgorithm):
             key=lambda ind: ind.fitness if ind.fitness is not None else float("-inf"),
             reverse=reverse,
         )
+
+    def _validate_selection_requirements(self, individuals: list[Individual]) -> None:
+        if not getattr(self.selection, "requires_case_data", False):
+            return
+
+        required_keys = getattr(self.selection, "required_case_keys", ())
+        for ind in individuals:
+            if not ind.has_meta(Individual.CASE_DATA_META_KEY):
+                raise ValueError(
+                    f"{type(self.selection).__name__} requires casewise evaluation data. "
+                    "Use a fitness function that returns Fitness(case_data=...)."
+                )
+            case_store = ind.get_meta(Individual.CASE_DATA_META_KEY, dict)
+            for key in required_keys:
+                if key not in case_store:
+                    raise ValueError(
+                        f"{type(self.selection).__name__} requires case key '{key}', "
+                        f"but it was not present on the individual."
+                    )
 
     def inject_operator_rng(self) -> None:
         operators = [

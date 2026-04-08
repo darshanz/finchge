@@ -452,3 +452,104 @@ class NSGA3TournamentSelection(GESelectionStrategy):
         best_rank = min(ind.get_meta("rank", int) for ind in tournament)
         best = [ind for ind in tournament if ind.get_meta("rank", int) == best_rank]
         return self.rng.choice(best)
+
+
+class LexicaseSelection(GESelectionStrategy):
+    requires_case_data = True
+
+    def __init__(
+            self,
+            case_key: str = "errors",
+            case_max_best: bool = False,
+            random_state: Optional[int] = None,
+    ) -> None:
+        super().__init__(max_best=case_max_best, random_state=random_state)
+        self.case_key = case_key
+        self.required_case_keys = (case_key,)
+
+    def _get_case_vector(self, ind: Individual) -> list[float]:
+        case_store = ind.get_meta(Individual.CASE_DATA_META_KEY, dict)
+        if case_store is None:
+            raise ValueError("Missing casewise evaluation data")
+        if self.case_key not in case_store:
+            raise ValueError(f"Missing case key '{self.case_key}'")
+        return case_store[self.case_key]
+
+    def _select_one(self, individuals: list[Individual]) -> Individual:
+        if not individuals:
+            raise ValueError("No individuals available for selection")
+
+        num_cases = len(self._get_case_vector(individuals[0]))
+        case_order = list(range(num_cases))
+        self.rng.shuffle(case_order)
+
+        survivors = individuals[:]
+
+        for case_idx in case_order:
+            values = [self._get_case_vector(ind)[case_idx] for ind in survivors]
+            best = max(values) if self.max_best else min(values)
+
+            survivors = [
+                ind for ind in survivors
+                if self._get_case_vector(ind)[case_idx] == best
+            ]
+
+            if len(survivors) <= 1:
+                break
+
+        return self.rng.choice(survivors)
+
+    def select(
+            self,
+            population_size: int,
+            individuals: list[Individual],
+    ) -> list[Individual]:
+        return [self._select_one(individuals) for _ in range(population_size)]
+
+class EpsilonLexicaseSelection(LexicaseSelection):
+    def __init__(
+            self,
+            case_key: str = "errors",
+            epsilon: float = 0.0,
+            case_max_best: bool = False,
+            random_state: Optional[int] = None,
+    ) -> None:
+        super().__init__(
+            case_key=case_key,
+            case_max_best=case_max_best,
+            random_state=random_state,
+        )
+        self.epsilon = epsilon
+
+    def _passes(self, value: float, best: float) -> bool:
+        if self.max_best:
+            return value >= best - self.epsilon
+        return value <= best + self.epsilon
+
+    def _select_one(self, individuals: list[Individual]) -> Individual:
+        if not individuals:
+            raise ValueError("No individuals available for selection")
+
+        num_cases = len(self._get_case_vector(individuals[0]))
+        case_order = list(range(num_cases))
+        self.rng.shuffle(case_order)
+
+        survivors = individuals[:]
+
+        for case_idx in case_order:
+            values = [self._get_case_vector(ind)[case_idx] for ind in survivors]
+            best = max(values) if self.max_best else min(values)
+
+            survivors = [
+                ind for ind in survivors
+                if self._passes(self._get_case_vector(ind)[case_idx], best)
+            ]
+
+            if len(survivors) <= 1:
+                break
+
+        return self.rng.choice(survivors)
+
+
+
+

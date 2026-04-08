@@ -54,6 +54,8 @@ class Individual:
             such as Pareto rank, crowding distance, or dominance information.
     """
 
+    CASE_DATA_META_KEY = "_selection_case_data"
+
     def __init__(
         self,
         *,
@@ -203,6 +205,15 @@ class Individual:
                 f"Individual.meta['{key}'] must be of type {expected_type.__name__}"
             )
         return value
+
+    def set_meta(self, key: str, value: Any) -> None:
+        self.meta[key] = value
+
+    def has_meta(self, key: str) -> bool:
+        return key in self.meta
+
+    def remove_meta(self, key: str) -> None:
+        self.meta.pop(key, None)
 
     def __str__(self) -> str:
         """

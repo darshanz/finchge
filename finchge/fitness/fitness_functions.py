@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Any, Optional
-
+from finchge.fitness.fitness_types import Fitness
 import numpy as np
 
 
@@ -16,9 +16,14 @@ class GEFitnessFunction(ABC):
                          or minimize (False) the fitness score.
     """
 
-    def __init__(self, maximize: bool = False):
+    def __init__(self, maximize: bool = False,
+                 provides_case_data: bool = False,  # for lexicase support
+                 case_keys: tuple[str, ...] = (),  # for lexicase support
+                 ):
         self.maximize = maximize
         self.default_fitness = np.nan  # Use if evaluation fails or is not computable
+        self.provides_case_data = provides_case_data
+        self.case_keys = case_keys
 
     @property
     def required_context_keys(self) -> set[str]:
@@ -29,7 +34,7 @@ class GEFitnessFunction(ABC):
         return {"y_pred", "y_true"}
 
     @abstractmethod
-    def evaluate(self, context: dict[str, Any]) -> float:
+    def evaluate(self, context: dict[str, Any]) -> Fitness:
         """
         Evaluate the fitness score using the provided context.
 
@@ -38,7 +43,7 @@ class GEFitnessFunction(ABC):
                             such as 'y_pred', 'y_val', 'x_val', etc.
 
         Returns:
-            float: The computed fitness score.
+            Fitness: The computed fitness.
         """
         pass
 
@@ -61,7 +66,7 @@ class AccuracyFitness(GEFitnessFunction):
     def __init__(self) -> None:
         super().__init__(maximize=True)
 
-    def evaluate(self, context: dict[str, Any]) -> float:
+    def evaluate(self, context: dict[str, Any]) -> Fitness:
         """
         Evaluates the accuracy of the model's predictions.
 
@@ -105,7 +110,7 @@ class AccuracyFitness(GEFitnessFunction):
         correct_predictions = np.sum(y_test_arr == y_pred_arr)
         total_predictions = y_test_arr.size
 
-        return float(correct_predictions / total_predictions)
+        return Fitness(value=float(correct_predictions / total_predictions))
 
 
 class MAEFitness(GEFitnessFunction):
@@ -121,7 +126,7 @@ class MAEFitness(GEFitnessFunction):
     def required_context_keys(self) -> set[str]:
         return {"y_true", "y_pred"}
 
-    def evaluate(self, context: dict[str, Any]) -> float:
+    def evaluate(self, context: dict[str, Any]) -> Fitness:
         """
         Calculate Mean Absolute Error between true and predicted values.
 
@@ -143,10 +148,10 @@ class MAEFitness(GEFitnessFunction):
             raise ValueError("Cannot compute MAE on empty arrays")
 
         if np.isnan(y_pred).any():
-            return np.inf
+            return Fitness(value=np.inf)
 
         mae = np.mean(np.abs(y_true - y_pred))
-        return float(mae)
+        return Fitness(value=float(mae))
 
 
 class RewardFitness(GEFitnessFunction):
@@ -168,7 +173,7 @@ class RewardFitness(GEFitnessFunction):
         self.optimal_fitness = optimal_fitness
         self.name = "RewardFitness"
 
-    def evaluate(self, context: dict[str, Any]) -> float:
+    def evaluate(self, context: dict[str, Any]) -> Fitness:
         """
         Evaluate fitness from context.
 
@@ -187,7 +192,7 @@ class RewardFitness(GEFitnessFunction):
         # Sum rewards across episodes
         total_reward = float(np.sum(y_pred))
 
-        return total_reward
+        return Fitness(value=total_reward)
 
     def __repr__(self) -> str:
         direction = "maximize" if self.maximize else "minimize"
@@ -198,19 +203,19 @@ class RMSEFitness(GEFitnessFunction):
     def __init__(self) -> None:
         super().__init__(maximize=False)
 
-    def evaluate(self, context: dict[str, Any]) -> float:
+    def evaluate(self, context: dict[str, Any]) -> Fitness:
         y_true = context["y_true"]
         y_pred = context["y_pred"]
         if np.isnan(y_pred).any():
             # Check for NaN set very high RMSE for discarded ones.
-            return np.inf
+            return Fitness(value=np.inf)
 
         # To fix RuntimeWarning: overflow encountered in square
         # Clip predictions to keep RMSE stable.
         y_pred = np.clip(y_pred, -1e10, 1e10)
         rmse: np.float64 = np.sqrt(np.mean((y_true - y_pred) ** 2))
         fitness = np.inf if np.isnan(rmse) else rmse  # Return Inf if rmse is NaN
-        return float(fitness)
+        return Fitness(value=float(fitness))
 
 
 class StringMatchFitness(GEFitnessFunction):
@@ -219,7 +224,7 @@ class StringMatchFitness(GEFitnessFunction):
         self.target = target
         self.target_len: int = len(target)
 
-    def evaluate(self, context: dict[str, Any]) -> int:
+    def evaluate(self, context: dict[str, Any]) -> Fitness:
         phenotype = context["phenotype"]
 
         max_len = max(self.target_len, len(phenotype))
@@ -229,4 +234,4 @@ class StringMatchFitness(GEFitnessFunction):
             t == g for t, g in zip(self.target[:min_len], phenotype[:min_len])
         )
 
-        return max_len - matches
+        return Fitness(value=(max_len - matches))

@@ -240,7 +240,17 @@ class GrammaticalEvolution(RandomStateMixin):
 
             start_generation = state.generation  # checkpoint
             population = state.population
-            self.algorithm = state.algorithm
+            algorithm = state.algorithm
+
+            if getattr(algorithm.selection, "requires_case_data", False):
+                for ind in population.individuals:
+                    if ind.fitness and not ind.has_meta(Individual.CASE_DATA_META_KEY):
+                        raise RuntimeError(
+                            "Checkpoint contains evaluated individuals without required casewise metadata "
+                            "for lexicase selection."
+                        )
+
+            self.algorithm = algorithm
 
             self._inject_rng()  # share it with all components
 

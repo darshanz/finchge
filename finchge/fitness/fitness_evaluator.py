@@ -15,7 +15,7 @@ from finchge.grammar.mapper import MappingResult
 from finchge.parallel.base import BaseParallelBackend
 from finchge.runners.base import PhenotypeRunner
 from finchge.utils.cache import CacheManager
-
+from finchge.fitness.fitness_types import Fitness, EvaluationRecord, merge_fitness_results
 
 class FitnessEvaluator:
     """
@@ -182,7 +182,7 @@ class FitnessEvaluator:
                     env_version=self.get_env_version(),
                 )
                 if cached is not None:
-                    ind.fitness = cached
+                    self._apply_evaluation_record(ind, cached)
                     continue
             # Group by phenotype for duplicate detection
             if ind.phenotype not in phenotype_to_indices:
@@ -231,34 +231,32 @@ class FitnessEvaluator:
         )
 
         if isinstance(self._parallel_backend, ThreadPoolBackend):
-            unique_fitness_values = await self._parallel_backend.evaluate_batch(
+            unique_records = await self._parallel_backend.evaluate_batch(
                 contexts=contexts,  # List of dicts with runner, phenotype, seed
                 fitness_functions=self.fitness_functions,  # Direct list
             )
         else:
             # For process backend - still need pickling
-            unique_fitness_values = await self._parallel_backend.evaluate_batch(
+            unique_records = await self._parallel_backend.evaluate_batch(
                 cloudpickle.dumps(contexts), cloudpickle.dumps(self.fitness_functions)
             )
 
         # Map results back to phenotypes
-        phenotype_to_fitness = {
-            phen: fitness for phen, fitness in zip(phenotypes, unique_fitness_values)
-        }
+        phenotype_to_record = dict(zip(phenotypes, unique_records))
         # Propagate fitness to all individuals (including duplicates)
-        for phenotype, indices in phenotype_to_indices.items():
-            fitness = phenotype_to_fitness[phenotype]
+        for phenotype, idxs in phenotype_to_indices.items():
+            record = phenotype_to_record[phenotype]
 
-            for idx in indices:
+            for idx in idxs:
                 ind = population.individuals[idx]
-                ind.fitness = fitness
+                self._apply_evaluation_record(ind, record)
 
                 # Update cache
                 if self.cache_manager is not None:
                     self.cache_manager.set_fitness(
                         phenotype=ind.phenotype,
                         env_version=self.get_env_version(),
-                        fitness=fitness,
+                        fitness=record,
                     )
 
     def evaluate_individual(self, individual: "Individual") -> None:
@@ -281,21 +279,21 @@ class FitnessEvaluator:
                 env_version=self.get_env_version(),
             )
             if cached is not None:
-                individual.fitness = cached
+                self._apply_evaluation_record(individual, cached)
                 return
 
-        fitness = self._evaluate_in_context(individual)
-        individual.fitness = fitness
+        record = self._evaluate_in_context(individual)
+        self._apply_evaluation_record(individual, record)
 
         # Store in cache
         if self.cache_manager is not None:
             self.cache_manager.set_fitness(
                 phenotype=individual.phenotype,
                 env_version=self.get_env_version(),
-                fitness=fitness,
+                fitness=record,
             )
 
-    def _evaluate_in_context(self, individual: "Individual") -> list[Any]:
+    def _evaluate_in_context(self, individual: "Individual") -> EvaluationRecord:
         # Keys required by the fitness function
         required_keys = self._get_required_keys()
 
@@ -307,7 +305,8 @@ class FitnessEvaluator:
             )
             eval_context.update(result_context)
             # Compute fitness and return
-        return [fn.evaluate(eval_context) for fn in self.fitness_functions]
+        results = [fn.evaluate(eval_context) for fn in self.fitness_functions]
+        return merge_fitness_results(results)
 
     def _create_parallel_backend(self) -> BaseParallelBackend:
         """Create parallel backend from config dictionary"""
@@ -387,3 +386,19 @@ class FitnessEvaluator:
         # Convert digest to an integer seed in [0, 2**32-1]
         seed64 = int.from_bytes(h.digest(), byteorder="big", signed=False)
         return seed64 % (2**32)
+
+
+    def _apply_evaluation_record(
+        self,
+        individual: Individual,
+        record: EvaluationRecord,
+    ) -> None:
+        individual.fitness = record.fitness
+
+        if record.case_data:
+            individual.set_meta(Individual.CASE_DATA_META_KEY, record.case_data)
+        else:
+            individual.remove_meta(Individual.CASE_DATA_META_KEY)
+
+        for key, value in record.meta.items():
+            individual.set_meta(key, value)
