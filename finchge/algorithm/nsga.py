@@ -60,15 +60,17 @@ class NSGA2(BaseAlgorithm):
         Returns:
             Population: The evolved population.
         """
-        valid_individuals = [ind for ind in population.individuals if not ind.invalid]
-        if len(valid_individuals) < 2:
+
+        selectable_individuals = self._get_selectable_individuals(population)
+        if len(selectable_individuals) < 2:
             raise Exception(
-                f"Not enough valid individuals. Valid count: {len(valid_individuals)}"
+                f"Not enough valid individuals. Valid count: {len(selectable_individuals)}"
             )
 
         # Selection
         selected_individuals = self.selection.select(
-            population_size=population.population_size, individuals=valid_individuals
+            population_size=population.population_size,
+            individuals=selectable_individuals,
         )
 
         # CROSSOVER
@@ -198,15 +200,16 @@ class NSGA3(BaseAlgorithm):
         Returns:
             Population: The evolved population.
         """
-        valid_individuals = [ind for ind in population.individuals if not ind.invalid]
-        if len(valid_individuals) < 2:
+        selectable_individuals = self._get_selectable_individuals(population)
+
+        if len(selectable_individuals) < 2:
             raise Exception(
-                f"Not enough valid individuals. Valid count: {len(valid_individuals)}"
+                f"Not enough valid individuals. Valid count: {len(selectable_individuals)}"
             )
 
         # Selection
         selected_individuals = self.selection.select(
-            population.population_size, valid_individuals
+            population.population_size, selectable_individuals
         )
 
         # CROSSOVER

@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import Any, Optional
-from finchge.fitness.fitness_types import Fitness
+
 import numpy as np
+
+from finchge.fitness.fitness_types import Fitness
 
 
 class GEFitnessFunction(ABC):
@@ -16,14 +18,16 @@ class GEFitnessFunction(ABC):
                          or minimize (False) the fitness score.
     """
 
-    def __init__(self, maximize: bool = False,
-                 provides_case_data: bool = False,  # for lexicase support
-                 case_keys: tuple[str, ...] = (),  # for lexicase support
-                 ):
+    def __init__(
+        self,
+        maximize: bool = False,
+        case_data_key: str | None = None,  # for lexicase support
+    ):
         self.maximize = maximize
         self.default_fitness = np.nan  # Use if evaluation fails or is not computable
-        self.provides_case_data = provides_case_data
-        self.case_keys = case_keys
+        self.case_data_key = (
+            case_data_key  # case keys should be set to support Lexicase selection
+        )
 
     @property
     def required_context_keys(self) -> set[str]:
@@ -48,6 +52,9 @@ class GEFitnessFunction(ABC):
         pass
 
 
+# Classification
+
+
 class AccuracyFitness(GEFitnessFunction):
     """
     Fitness function that evaluates model accuracy on a validation set.
@@ -64,7 +71,10 @@ class AccuracyFitness(GEFitnessFunction):
     """
 
     def __init__(self) -> None:
-        super().__init__(maximize=True)
+        super().__init__(
+            maximize=True,
+            case_data_key="errors",
+        )
 
     def evaluate(self, context: dict[str, Any]) -> Fitness:
         """
@@ -81,38 +91,163 @@ class AccuracyFitness(GEFitnessFunction):
         Raises:
             ValueError: If y_test and y_pred have different shapes or are empty
         """
-        y_test = context["y_true"]
-        y_pred = context["y_pred"]
+        y_true = np.asarray(context["y_true"])
+        y_pred = np.asarray(context["y_pred"])
 
-        # Ensure we have numpy arrays
-        if not isinstance(y_test, np.ndarray):
-            y_test_arr = np.array(y_test)
-        else:
-            y_test_arr = y_test
-
-        if not isinstance(y_pred, np.ndarray):
-            y_pred_arr = np.array(y_pred)
-        else:
-            y_pred_arr = y_pred
-
-        # Check shapes match
-        if y_test_arr.shape != y_pred_arr.shape:
+        if y_true.shape != y_pred.shape:
             raise ValueError(
-                f"Shapes of y_test ({y_test_arr.shape}) and y_pred ({y_pred_arr.shape}) "
-                f"do not match"
+                f"Shape mismatch: y_true {y_true.shape} vs y_pred {y_pred.shape}"
             )
 
-        # Check for empty arrays
-        if y_test_arr.size == 0:
-            raise ValueError("Input arrays cannot be empty")
+        if y_true.size == 0:
+            raise ValueError("Cannot compute accuracy on empty arrays")
 
-        # Calculate accuracy
-        correct_predictions = np.sum(y_test_arr == y_pred_arr)
-        total_predictions = y_test_arr.size
+        require_case_data = context.get("require_case_data", False)
 
-        return Fitness(value=float(correct_predictions / total_predictions))
+        # Convert to boolean correctness
+        correct = y_true == y_pred
+
+        accuracy = float(np.mean(correct))
+
+        if require_case_data:
+            # error = 1 if wrong, 0 if correct
+            errors = (~correct).astype(float)
+            return Fitness(
+                value=accuracy,
+                case_data={"errors": errors.tolist()},
+            )
+
+        return Fitness(value=accuracy)
 
 
+class CrossEntropyFitness(GEFitnessFunction):
+    """
+    CrossEntropy (log loss) fitness for classification.
+
+    Lower values are better (minimize).
+    Requires predicted probabilities.
+    """
+
+    def __init__(self, eps: float = 1e-12) -> None:
+        super().__init__(
+            maximize=False,
+            case_data_key="errors",
+        )
+        self.eps = eps
+
+    @property
+    def required_context_keys(self) -> set[str]:
+        return {"y_true", "y_pred_proba"}
+
+    def evaluate(self, context: dict[str, Any]) -> Fitness:
+        y_true = np.asarray(context["y_true"])
+        y_proba = np.asarray(context["y_pred_proba"])
+
+        if y_true.shape[0] != y_proba.shape[0]:
+            raise ValueError(
+                f"Mismatch: y_true len {len(y_true)} vs y_proba {y_proba.shape}"
+            )
+
+        if y_true.size == 0:
+            raise ValueError("Cannot compute log loss on empty arrays")
+
+        require_case_data = context.get("require_case_data", False)
+
+        # Clip probabilities for numerical stability
+        y_proba = np.clip(y_proba, self.eps, 1 - self.eps)
+
+        # Binary classification
+        if y_proba.ndim == 1 or y_proba.shape[1] == 1:
+            p = y_proba.reshape(-1)
+            errors = -(y_true * np.log(p) + (1 - y_true) * np.log(1 - p))
+
+        else:
+            # Multi-class case
+            # y_true assumed to be class indices
+            probs = y_proba[np.arange(len(y_true)), y_true]
+            errors = -np.log(probs)
+
+        loss_ = float(np.mean(errors))
+
+        if require_case_data:
+            return Fitness(
+                value=loss_,
+                case_data={"errors": errors.tolist()},
+            )
+
+        return Fitness(value=loss_)
+
+
+class HingeLossFitness(GEFitnessFunction):
+    """
+    Mean Hinge Loss fitness for binary classification problems. This fitness evaluates how well a model separates
+    two classes by measuring the margin between predictions and true labels. Hinge loss is calculated as
+    hinge_i = max(0, 1 - y_true_i * y_pred_score_i)  Should be used only for margin-based classifiers.
+    The ground truth should be encoded between -1 and 1 ,
+    not 0/1. Similarly, the prediction scores should be raw model outputs (real-valued scores),
+    representing the model’s confidence or margin, not class labels.
+    The overall fitness value is the mean hinge loss across all samples.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(
+            maximize=False,
+            case_data_key="errors",
+        )
+
+    @property
+    def required_context_keys(self) -> set[str]:
+        return {"y_true", "y_pred_score"}
+
+    def evaluate(self, context: dict[str, Any]) -> Fitness:
+        """
+
+        Args:
+            context: Context should contain y_true(ground truth labels, encoded as -1 or +1) and  y_pred_score containing
+            raw model outputs, representing the model’s confidence or margin.
+
+        Returns: Fitness
+
+        """
+        y_true = np.asarray(context["y_true"])
+        y_score = np.asarray(context["y_pred_score"])
+
+        if y_true.shape != y_score.shape:
+            raise ValueError(
+                f"Shape mismatch: y_true {y_true.shape} vs y_pred_score {y_score.shape}"
+            )
+
+        if y_true.size == 0:
+            raise ValueError("Cannot compute hinge loss on empty arrays")
+
+        unique_labels = set(np.unique(y_true).tolist())
+        if not unique_labels.issubset({-1, 1}):
+            raise ValueError("HingeLossFitness requires y_true labels in {-1, +1}")
+
+        require_case_data = context.get("require_case_data", False)
+
+        if np.isnan(y_score).any():
+            infs = [float("inf")] * len(y_true)
+            if require_case_data:
+                return Fitness(
+                    value=float("inf"),
+                    case_data={"errors": infs},
+                )
+            return Fitness(value=float("inf"))
+
+        errors = np.maximum(0.0, 1.0 - y_true * y_score)
+        mean_hinge = float(np.mean(errors))
+
+        if require_case_data:
+            return Fitness(
+                value=mean_hinge,
+                case_data={"errors": errors.tolist()},
+            )
+
+        return Fitness(value=mean_hinge)
+
+
+# Regression
 class MAEFitness(GEFitnessFunction):
     """
     Mean Absolute Error fitness for regression problems.
@@ -120,7 +255,10 @@ class MAEFitness(GEFitnessFunction):
     """
 
     def __init__(self) -> None:
-        super().__init__(maximize=False)
+        super().__init__(
+            maximize=False,
+            case_data_key="errors",
+        )
 
     @property
     def required_context_keys(self) -> set[str]:
@@ -148,10 +286,95 @@ class MAEFitness(GEFitnessFunction):
             raise ValueError("Cannot compute MAE on empty arrays")
 
         if np.isnan(y_pred).any():
+            if context.get("require_case_data", False):
+                return Fitness(
+                    value=float("inf"),
+                    case_data={"errors": [float("inf")] * len(y_true)},
+                )
+            return Fitness(value=float("inf"))
+
+        abs_errors = np.abs(y_true - y_pred)
+        mae = float(np.mean(abs_errors))
+
+        if context.get("require_case_data", False):
+            return Fitness(
+                value=mae,
+                case_data={"errors": abs_errors.tolist()},
+            )
+
+        return Fitness(value=mae)
+
+
+class MSEFitness(GEFitnessFunction):
+    def __init__(self) -> None:
+        super().__init__(maximize=False, case_data_key="errors")
+
+    @property
+    def required_context_keys(self) -> set[str]:
+        return {"y_true", "y_pred"}
+
+    def evaluate(self, context: dict[str, Any]) -> Fitness:
+        y_true = np.asarray(context["y_true"])
+        y_pred = np.asarray(context["y_pred"])
+
+        if y_true.shape != y_pred.shape:
+            raise ValueError(
+                f"Shape mismatch: y_true {y_true.shape} vs y_pred {y_pred.shape}"
+            )
+        if y_true.size == 0:
+            raise ValueError("Cannot compute MSE on empty arrays")
+
+        require_case_data = context.get("require_case_data", False)
+
+        if np.isnan(y_pred).any():
+            if require_case_data:
+                return Fitness(
+                    value=float("inf"),
+                    case_data={"errors": [float("inf")] * len(y_true)},
+                )
+            return Fitness(value=float("inf"))
+
+        squared_errors = (y_true - y_pred) ** 2
+        mse = float(np.mean(squared_errors))
+
+        if require_case_data:
+            return Fitness(
+                value=mse,
+                case_data={"errors": squared_errors.tolist()},
+            )
+
+        return Fitness(value=mse)
+
+
+class RMSEFitness(GEFitnessFunction):
+    def __init__(self) -> None:
+        super().__init__(
+            maximize=False,
+            case_data_key="errors",
+        )
+
+    def evaluate(self, context: dict[str, Any]) -> Fitness:
+        y_true = context["y_true"]
+        y_pred = context["y_pred"]
+        if np.isnan(y_pred).any():
+            # Check for NaN set very high RMSE for discarded ones.
             return Fitness(value=np.inf)
 
-        mae = np.mean(np.abs(y_true - y_pred))
-        return Fitness(value=float(mae))
+        # To fix RuntimeWarning: overflow encountered in square
+        # Clip predictions to keep RMSE stable.
+        y_pred = np.clip(y_pred, -1e10, 1e10)
+        residuals = y_true - y_pred
+        squared_errors = residuals**2
+        rmse: np.float64 = np.sqrt(np.mean(squared_errors))
+
+        # When Lexicase Selection is used
+        if context.get("require_case_data", False):
+            return Fitness(
+                value=rmse,
+                case_data={"errors": np.abs(residuals).tolist()},
+            )
+
+        return Fitness(value=rmse)
 
 
 class RewardFitness(GEFitnessFunction):
@@ -197,25 +420,6 @@ class RewardFitness(GEFitnessFunction):
     def __repr__(self) -> str:
         direction = "maximize" if self.maximize else "minimize"
         return f"RewardFitness({direction})"
-
-
-class RMSEFitness(GEFitnessFunction):
-    def __init__(self) -> None:
-        super().__init__(maximize=False)
-
-    def evaluate(self, context: dict[str, Any]) -> Fitness:
-        y_true = context["y_true"]
-        y_pred = context["y_pred"]
-        if np.isnan(y_pred).any():
-            # Check for NaN set very high RMSE for discarded ones.
-            return Fitness(value=np.inf)
-
-        # To fix RuntimeWarning: overflow encountered in square
-        # Clip predictions to keep RMSE stable.
-        y_pred = np.clip(y_pred, -1e10, 1e10)
-        rmse: np.float64 = np.sqrt(np.mean((y_true - y_pred) ** 2))
-        fitness = np.inf if np.isnan(rmse) else rmse  # Return Inf if rmse is NaN
-        return Fitness(value=float(fitness))
 
 
 class StringMatchFitness(GEFitnessFunction):

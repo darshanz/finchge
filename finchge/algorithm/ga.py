@@ -1,3 +1,4 @@
+import warnings
 from typing import Optional
 
 from finchge.algorithm.base import BaseAlgorithm
@@ -45,6 +46,26 @@ class GeneticAlgorithm(BaseAlgorithm):
 
         self.inject_operator_rng()
 
+        # Quick Check for evaluation and selection compatiblity
+        # Fitness evaluator must have require_case_data=False
+        if (
+            self.selection.requires_case_data
+            and not self.fitness_evaluator.require_case_data
+        ):
+            raise ValueError(
+                f"{type(self.selection).__name__} requires case data, "
+                f"but FitnessEvaluator is not configured to produce it. require_case_data must be set to True for {type(self.selection).__name__} "
+            )
+
+        if (
+            self.fitness_evaluator.require_case_data
+            and not self.selection.requires_case_data
+        ):
+            warnings.warn(
+                "FitnessEvaluator is configured to compute case data, but the selected "
+                "selection strategy does not use it."
+            )
+
     def evolve_one_generation(self, population: Population) -> Population:
         """
         Perform one generation of evolution on the given population.
@@ -55,19 +76,21 @@ class GeneticAlgorithm(BaseAlgorithm):
         Returns:
             Population: The evolved population.
         """
-        valid_individuals = [ind for ind in population.individuals if not ind.invalid]
-        if len(valid_individuals) < 2:
+
+        selectable_individuals = self._get_selectable_individuals(population)
+        if len(selectable_individuals) < 2:
             raise Exception(
-                f"Not enough valid individuals. Valid count: {len(valid_individuals)}"
+                f"Not enough valid individuals. Valid count: {len(selectable_individuals)}"
             )
 
-        # before selection check if case data is required. if individual has case-wise data then appropriate seleciton
-        # selection method like LexicaseSeleciton must be provided
-        self._validate_selection_requirements(valid_individuals)
+        # before selection check if case data is required. if individual has case-wise data then appropriate selection
+        # selection method like Lexicase Selection must be provided
+        self._validate_selection_requirements(selectable_individuals)
 
         # Selection
         selected_individuals = self.selection.select(
-            population_size=population.population_size, individuals=valid_individuals
+            population_size=population.population_size,
+            individuals=selectable_individuals,
         )
 
         # CROSSOVER
@@ -151,8 +174,8 @@ class GeneticAlgorithm(BaseAlgorithm):
         for ind in individuals:
             if not ind.has_meta(Individual.CASE_DATA_META_KEY):
                 raise ValueError(
-                    f"{type(self.selection).__name__} requires casewise evaluation data. "
-                    "Use a fitness function that returns Fitness(case_data=...)."
+                    f"{type(self.selection).__name__} requires casewise evaluation data, "
+                    "but an evaluated individual is missing it."
                 )
             case_store = ind.get_meta(Individual.CASE_DATA_META_KEY, dict)
             for key in required_keys:

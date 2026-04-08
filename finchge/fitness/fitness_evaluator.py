@@ -9,13 +9,14 @@ from finchge.config import Keys
 from finchge.core.individual import Individual
 from finchge.core.population import Population
 from finchge.fitness.fitness_functions import GEFitnessFunction
+from finchge.fitness.fitness_types import EvaluationRecord, merge_fitness_results
 from finchge.grammar import GenotypeMapper
 from finchge.grammar.derivation_tree import TreeNode
 from finchge.grammar.mapper import MappingResult
 from finchge.parallel.base import BaseParallelBackend
 from finchge.runners.base import PhenotypeRunner
 from finchge.utils.cache import CacheManager
-from finchge.fitness.fitness_types import Fitness, EvaluationRecord, merge_fitness_results
+
 
 class FitnessEvaluator:
     """
@@ -34,6 +35,7 @@ class FitnessEvaluator:
         runner (PhenotypeRunner) : Runner for running (evaluating) the phenotype models on data
         encode_trees (bool) : whether to encode trees in tree based method, generally genotype not needed
         parallel_config (dict) : parallel section of config
+        require_case_data (book) : determines whether case based evaluation is required. eg.True when using Lexicase
     """
 
     def __init__(
@@ -43,6 +45,7 @@ class FitnessEvaluator:
         runner: PhenotypeRunner | None = None,
         encode_trees: bool = False,
         parallel_config: dict[str, Any] | None = None,
+        require_case_data: bool = False,
     ):
         if not isinstance(fitness_functions, list):
             fitness_functions = [fitness_functions]
@@ -51,6 +54,8 @@ class FitnessEvaluator:
         self.cache_manager: CacheManager[Any] | None = None
         self.ecode_trees = encode_trees
         self.runner = runner
+        # require_case_data flag determines whether case wise evaluation is required. It will be set True for lexicase
+        self.require_case_data = require_case_data
 
         # included to avoid collision in cache from different utils or if the data  environment changes
         # Not sure if this is the most efficient . More research required to make how to make caching more efficient
@@ -66,6 +71,8 @@ class FitnessEvaluator:
             else False
         )
         self._parallel_backend: BaseParallelBackend | None = None
+
+        self._validate_case_data_support()
 
     def is_multi_objective(self) -> bool:
         """
@@ -216,12 +223,14 @@ class FitnessEvaluator:
                     "runner": self.runner,
                     "seed": eval_seed,
                     "required_keys": required_keys,
+                    "require_case_data": self.require_case_data,
                 }
             else:
                 context = {
                     "phenotype": phenotype,
                     "seed": eval_seed,
                     "required_keys": required_keys,
+                    "require_case_data": self.require_case_data,
                 }
             contexts.append(context)
 
@@ -298,7 +307,10 @@ class FitnessEvaluator:
         required_keys = self._get_required_keys()
 
         # prepare context for evaluation
-        eval_context: dict[str, Any] = {"phenotype": individual.phenotype}
+        eval_context: dict[str, Any] = {
+            "phenotype": individual.phenotype,
+            "require_case_data": self.require_case_data,
+        }
         if self.runner:
             result_context = self.runner.run(
                 phenotype=individual.phenotype, context_hints=required_keys
@@ -387,6 +399,15 @@ class FitnessEvaluator:
         seed64 = int.from_bytes(h.digest(), byteorder="big", signed=False)
         return seed64 % (2**32)
 
+    def _validate_case_data_support(self) -> None:
+        if not self.require_case_data:
+            return
+
+        for fn in self.fitness_functions:
+            if getattr(fn, "case_data_key", None) is None:
+                raise ValueError(
+                    f"{type(fn).__name__} does not support case data required for lexicase selection."
+                )
 
     def _apply_evaluation_record(
         self,
