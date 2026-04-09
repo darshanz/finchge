@@ -1,7 +1,12 @@
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from finchge.runners.base import PhenotypeRunner
+    from finchge.runners.base import (
+        DataAwareRunner,
+        DirectEvalRunner,
+        PhenotypeRunner,
+        TrainEvalRunner,
+    )
     from finchge.runners.control import ControlRunner
     from finchge.runners.logic import LogicRunner
     from finchge.runners.ml import MLModelRunner
@@ -9,8 +14,18 @@ if TYPE_CHECKING:
 
 
 def __getattr__(name: str) -> Any:
-    if name in {"PhenotypeRunner"}:
-        from finchge.runners.base import PhenotypeRunner
+    if name in {
+        "PhenotypeRunner",
+        "DataAwareRunner",
+        "DirectEvalRunner",
+        "TrainEvalRunner",
+    }:
+        from finchge.runners.base import (
+            DataAwareRunner,
+            DirectEvalRunner,
+            PhenotypeRunner,
+            TrainEvalRunner,
+        )
 
         return locals()[name]
     if name in {"ControlRunner"}:
@@ -34,6 +49,9 @@ def __getattr__(name: str) -> Any:
 
 __all__ = [
     "PhenotypeRunner",
+    "DataAwareRunner",
+    "DirectEvalRunner",
+    "TrainEvalRunner",
     "ControlRunner",
     "LogicRunner",
     "MLModelRunner",
