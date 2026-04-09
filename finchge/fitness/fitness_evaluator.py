@@ -73,6 +73,7 @@ class FitnessEvaluator:
         self._parallel_backend: BaseParallelBackend | None = None
 
         self._validate_case_data_support()
+        self._validate_context_compatibility()
 
     def is_multi_objective(self) -> bool:
         """
@@ -317,6 +318,9 @@ class FitnessEvaluator:
             )
             eval_context.update(result_context)
             # Compute fitness and return
+
+        self._validate_context_keys(eval_context, required_keys, individual)
+
         results = [fn.evaluate(eval_context) for fn in self.fitness_functions]
         return merge_fitness_results(results)
 
@@ -414,6 +418,7 @@ class FitnessEvaluator:
         individual: Individual,
         record: EvaluationRecord,
     ) -> None:
+        # set fitness and case metadata to the individual
         individual.fitness = record.fitness
 
         if record.case_data:
@@ -423,3 +428,50 @@ class FitnessEvaluator:
 
         for key, value in record.meta.items():
             individual.set_meta(key, value)
+
+    def _validate_context_compatibility(self) -> None:
+        # Validate the runner-fitness combination to make sure runner can
+        # provide the keys required by fitness function
+
+        # if there is no runner we don't need to validate. for example in stringmatch problem the runner is not needed
+        if not self.runner:
+            return
+
+        required_keys = self._get_required_keys()
+        builtin_keys = {"phenotype", "require_case_data"}
+
+        runner_keys = set()
+        if self.runner is not None:
+            runner_keys = getattr(self.runner, "provided_context_keys", set())
+
+        available_keys = builtin_keys | runner_keys
+        missing_keys = required_keys - available_keys
+
+        if missing_keys:
+            runner_name = (
+                type(self.runner).__name__ if self.runner is not None else "None"
+            )
+            raise ValueError(
+                f"FitnessEvaluator context contract is invalid."
+                f"Required context keys {sorted(missing_keys)} are not provided by "
+                f"runner {runner_name}"
+            )
+
+    def _validate_context_keys(
+        self,
+        eval_context: dict[str, Any],
+        required_keys: set[str],
+        individual: "Individual",
+    ) -> None:
+        # if there is no runner we don't need to validate. for example in stringmatch problem the runner is not needed
+        if not self.runner:
+            return
+
+        # validate context keys to avoid failing when wrong runner is provided.
+        missing = sorted(key for key in required_keys if key not in eval_context)
+        if missing:
+            raise ValueError(
+                f"Evaluation context for phenotype {individual.phenotype!r} is missing "
+                f"required keys: {missing}. "
+                f"Ensure the required keys are provided by the runner: ({type(self.runner).__name__}) "
+            )

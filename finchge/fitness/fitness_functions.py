@@ -76,6 +76,10 @@ class AccuracyFitness(GEFitnessFunction):
             case_data_key="errors",
         )
 
+    @property
+    def required_context_keys(self) -> set[str]:
+        return {"y_true", "y_pred_proba"}
+
     def evaluate(self, context: dict[str, Any]) -> Fitness:
         """
         Evaluates the accuracy of the model's predictions.
