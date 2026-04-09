@@ -105,3 +105,7 @@ class ControlRunner(PhenotypeRunner, ABC, Generic[T]):
         # But we can add post-processing if needed
         if not hasattr(self, "_last_rewards"):
             self._last_rewards = []
+
+    @property
+    def provided_context_keys(self) -> set[str]:
+        return super().provided_context_keys

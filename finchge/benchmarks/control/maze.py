@@ -379,6 +379,10 @@ class MazeRunner(ControlRunner[MazeEnvironment]):
     def __setstate__(self, state: Dict[str, Any]) -> None:
         self.__dict__.update(state)
 
+    @property
+    def provided_context_keys(self) -> set[str]:
+        return super().provided_context_keys | {"y_pred"}
+
 
 # Maze Benchmark
 def create_maze_environment(

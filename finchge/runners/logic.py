@@ -84,3 +84,7 @@ class LogicRunner(PhenotypeRunner):
             "n_bits": self.X.shape[1],
             "problem": "multiplexer",
         }
+
+    @property
+    def provided_context_keys(self) -> set[str]:
+        return super().provided_context_keys | {"y_pred", "y_true"}

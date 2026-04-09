@@ -353,6 +353,10 @@ class CartPoleRunner(ControlRunner[CartPoleEnvironment]):
     def __setstate__(self, state: dict[str, Any]) -> None:
         self.__dict__.update(state)
 
+    @property
+    def provided_context_keys(self) -> set[str]:
+        return super().provided_context_keys | {"y_pred"}
+
 
 # Cart-Pole Benchmark
 def create_cartpole_environment(

@@ -404,6 +404,10 @@ class SantaFeRunner(ControlRunner[SantaFeEnvironment]):
         env = self.env_factory()
         return self._run_episode(phenotype, env)
 
+    @property
+    def provided_context_keys(self) -> set[str]:
+        return super().provided_context_keys | {"y_pred"}
+
 
 @register("santafe_trail", "control")
 class SantaFeTrailBenchmark(Benchmark):

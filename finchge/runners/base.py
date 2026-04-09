@@ -70,6 +70,10 @@ class PhenotypeRunner(RandomStateMixin, ABC):
         """
         return {}
 
+    @property
+    def provided_context_keys(self) -> set[str]:
+        return set()
+
 
 class DataAwareRunner(PhenotypeRunner, ABC):
     """

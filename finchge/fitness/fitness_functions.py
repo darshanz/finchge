@@ -67,7 +67,7 @@ class AccuracyFitness(GEFitnessFunction):
         GEFitnessFunction (maximize=True)
 
     Methods:
-        evaluate(context): Computes accuracy using 'y_pred' and 'y_val' from the context.
+        evaluate(context): Computes accuracy using 'y_pred' and 'y_true' from the context.
     """
 
     def __init__(self) -> None:
@@ -78,7 +78,7 @@ class AccuracyFitness(GEFitnessFunction):
 
     @property
     def required_context_keys(self) -> set[str]:
-        return {"y_true", "y_pred_proba"}
+        return {"y_true", "y_pred"}
 
     def evaluate(self, context: dict[str, Any]) -> Fitness:
         """
@@ -400,16 +400,20 @@ class RewardFitness(GEFitnessFunction):
         self.optimal_fitness = optimal_fitness
         self.name = "RewardFitness"
 
+    @property
+    def required_context_keys(self) -> set[str]:
+        # only needs y_pred
+        return {"y_pred"}
+
     def evaluate(self, context: dict[str, Any]) -> Fitness:
         """
         Evaluate fitness from context.
 
         Expected context keys:
-            - y_pred: Array of rewards from runner
-            - y_true: Target values (usually zeros)
+            y_pred: Array of rewards from runner
 
         Args:
-            context: Dictionary with evaluation results
+            context: context with y_pred
 
         Returns:
             Total reward (sum across episodes)
