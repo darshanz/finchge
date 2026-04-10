@@ -299,7 +299,6 @@ class ExperimentLogger(FileLogger):
         print(f"[ExperimentLogger] Objectives: {obj_names}")
 
     def _init_dirs(self) -> None:
-        """Create directory structure for organized logging."""
         if not self.log_dir:
             raise AttributeError("Log directory is not set")
 
@@ -308,7 +307,6 @@ class ExperimentLogger(FileLogger):
             (self.log_dir / "population_samples").mkdir(exist_ok=True)
 
     def _init_single_objective_csv(self) -> None:
-        """Initialize CSV file for single-objective logging."""
         if not self.log_dir:
             raise AttributeError("Log directory is not set")
 
@@ -400,7 +398,6 @@ class ExperimentLogger(FileLogger):
         if "trees" not in self.exclude:
             (self.log_dir / "trees").mkdir(exist_ok=True)
 
-        # Your existing best individual logging
         if best.phenotype and "phenotypes" not in self.exclude:
             phenotype_path = self.log_dir / "phenotypes" / f"{generation}.txt"
             phenotype_path.write_text(best.phenotype)

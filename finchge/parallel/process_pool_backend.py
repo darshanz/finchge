@@ -10,8 +10,13 @@ from cloudpickle import cloudpickle
 
 from finchge.config import Keys
 from finchge.fitness.fitness_functions import GEFitnessFunction
-from finchge.fitness.fitness_types import EvaluationRecord, merge_fitness_results, Fitness
+from finchge.fitness.fitness_types import (
+    EvaluationRecord,
+    Fitness,
+    merge_fitness_results,
+)
 from finchge.parallel.base import BaseParallelBackend
+
 
 def seed_everything(seed: int, use_torch: bool = False) -> None:
     """Set seeds for reproducibility."""
@@ -64,7 +69,9 @@ def process_train_and_evaluate(
             }
 
         # Calculate fitness
-        results = [fitness_fn.evaluate(eval_context) for fitness_fn in fitness_functions]
+        results = [
+            fitness_fn.evaluate(eval_context) for fitness_fn in fitness_functions
+        ]
         return merge_fitness_results(results)
 
     except Exception as e:
@@ -102,7 +109,7 @@ class ProcessPoolBackend(BaseParallelBackend):
                 max_workers=self.max_workers
             )
 
-        all_results: list[list[float]] = []
+        all_results: list[EvaluationRecord] = []
 
         # Process in batches
         for batch_start in range(0, len(contexts), self.batch_size):
@@ -123,10 +130,12 @@ class ProcessPoolBackend(BaseParallelBackend):
             for future in futures:
                 try:
                     result = future.result(timeout=60)
-                    # Ensure result is a list of floats
+                    # Ensure result is a list of EvaluationRecords
                     if not isinstance(result, EvaluationRecord):
                         fallback = [
-                            Fitness(value=float("-inf") if fn.maximize else float("inf"))
+                            Fitness(
+                                value=float("-inf") if fn.maximize else float("inf")
+                            )
                             for fn in fitness_funcs
                         ]
                         result = merge_fitness_results(fallback)
@@ -148,7 +157,6 @@ class ProcessPoolBackend(BaseParallelBackend):
                 all_results.append(result)
 
         return all_results
-
 
     async def shutdown(self) -> None:
         """Shutdown the process pool gracefully."""

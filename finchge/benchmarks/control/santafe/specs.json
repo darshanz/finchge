@@ -1,0 +1,7 @@
+{
+  "name": "Santa-Fe-Trail",
+  "max_steps": 600,
+  "total_food": 89,
+  "start_pos": [20, 0],
+  "start_dir": 1
+}

@@ -1,0 +1,137 @@
+{
+  "1": {
+    "name": "Keijzer-1",
+    "expr": "0.3 * x0 * sin(2.0 * pi * x0)",
+    "dim": 1,
+    "train_range": [-1.0, 1.0],
+    "test_range": [-1.0, 1.0],
+    "train_step": 0.1,
+    "test_step": 0.01
+  },
+  "2": {
+    "name": "Keijzer-2",
+    "expr": "0.3 * x0 * sin(2.0 * pi * x0)",
+    "dim": 1,
+    "train_range": [-2.0, 2.0],
+    "test_range": [-2.0, 2.0],
+    "train_step": 0.1,
+    "test_step": 0.01
+  },
+  "3": {
+    "name": "Keijzer-3",
+    "expr": "0.3 * x0 * sin(2.0 * pi * x0)",
+    "dim": 1,
+    "train_range": [-3.0, 3.0],
+    "test_range": [-3.0, 3.0],
+    "train_step": 0.1,
+    "test_step": 0.01
+  },
+  "4": {
+    "name": "Keijzer-4",
+    "expr": "x0**3 * exp(-x0) * cos(x0) * sin(x0) * (sin(x0)**2 * cos(x0) - 1.0)",
+    "dim": 1,
+    "train_range": [0.0, 10.0],
+    "test_range": [0.05, 10.05],
+    "train_step": 0.05,
+    "test_step": 0.05
+  },
+  "5": {
+    "name": "Keijzer-5",
+    "expr": "30.0 * (x0 - 1.0) * (x0 - 3.0) / (x0 - 2.0)**2",
+    "dim": 1,
+    "train_range": [0.05, 2.0],
+    "test_range": [0.05, 2.0],
+    "train_step": 0.05,
+    "test_step": 0.05
+  },
+  "6": {
+    "name": "Keijzer-6",
+    "expr": "x0 + sin(x0)",
+    "dim": 1,
+    "train_range": [-1.0, 1.0],
+    "test_range": [-1.0, 1.0],
+    "train_step": 0.1,
+    "test_step": 0.01
+  },
+  "7": {
+    "name": "Keijzer-7",
+    "expr": "log(x0)",
+    "dim": 1,
+    "train_range": [1.0, 100.0],
+    "test_range": [1.0, 100.0],
+    "train_step": 1.0,
+    "test_step": 0.1
+  },
+  "8": {
+    "name": "Keijzer-8",
+    "expr": "sqrt(x0)",
+    "dim": 1,
+    "train_range": [0.0, 100.0],
+    "test_range": [0.0, 100.0],
+    "train_step": 1.0,
+    "test_step": 0.1
+  },
+  "9": {
+    "name": "Keijzer-9",
+    "expr": "asinh(x0)",
+    "dim": 1,
+    "train_range": [0.0, 100.0],
+    "test_range": [0.0, 100.0],
+    "train_step": 1.0,
+    "test_step": 0.1
+  },
+  "10": {
+    "name": "Keijzer-10",
+    "expr": "x0**x1",
+    "dim": 2,
+    "train_range": [0.0, 1.0],
+    "test_range": [0.0, 1.0],
+    "train_step": null,
+    "test_step": null
+  },
+  "11": {
+    "name": "Keijzer-11",
+    "expr": "x0 * x1 + sin((x0 - 1.0) * (x1 - 1.0))",
+    "dim": 2,
+    "train_range": [-3.0, 3.0],
+    "test_range": [-3.0, 3.0],
+    "train_step": null,
+    "test_step": null
+  },
+  "12": {
+    "name": "Keijzer-12",
+    "expr": "x0**4 - x0**3 + 0.5 * x1**2 - x1",
+    "dim": 2,
+    "train_range": [-3.0, 3.0],
+    "test_range": [-3.0, 3.0],
+    "train_step": null,
+    "test_step": null
+  },
+  "13": {
+    "name": "Keijzer-13",
+    "expr": "6.0 * sin(x0) * cos(x1)",
+    "dim": 2,
+    "train_range": [-3.0, 3.0],
+    "test_range": [-3.0, 3.0],
+    "train_step": null,
+    "test_step": null
+  },
+  "14": {
+    "name": "Keijzer-14",
+    "expr": "8.0 / (2.0 + x0**2 + x1**2)",
+    "dim": 2,
+    "train_range": [-3.0, 3.0],
+    "test_range": [-3.0, 3.0],
+    "train_step": null,
+    "test_step": null
+  },
+  "15": {
+    "name": "Keijzer-15",
+    "expr": "x0**3 / 5.0 + x1**3 / 2.0 - x1 - x0",
+    "dim": 2,
+    "train_range": [-3.0, 3.0],
+    "test_range": [-3.0, 3.0],
+    "train_step": null,
+    "test_step": null
+  }
+}

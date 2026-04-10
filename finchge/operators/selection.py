@@ -1,5 +1,5 @@
 import warnings
-from typing import Optional
+from typing import Optional, cast
 
 from finchge.core.individual import Individual
 from finchge.operators.base import GESelectionStrategy
@@ -455,27 +455,59 @@ class NSGA3TournamentSelection(GESelectionStrategy):
 
 
 class LexicaseSelection(GESelectionStrategy):
+    """
+    Implements Lexicase Selection for parent selection in Genetic Programming.
+
+    This strategy filters a population by evaluating individuals against one case at
+    a time in a randomized order. This is particularly effective for problems where
+    different individuals might excel at different parts of the fitness landscape,
+    as it preserves diversity better than standard tournament selection.
+
+    Attributes:
+        case_key (str): The key used to retrieve the per-case fitness vector from an
+            individual's metadata.
+        required_case_keys (tuple): A tuple containing the primary case key needed
+            for evaluation.
+    """
+
     requires_case_data = True
 
     def __init__(
-            self,
-            case_key: str = "errors",
-            case_max_best: bool = False,
-            random_state: Optional[int] = None,
+        self,
+        case_key: str = "errors",
+        case_max_best: bool = False,
+        random_state: Optional[int] = None,
     ) -> None:
+        """
+        Initializes the selection strategy.
+
+        Args:
+            case_key: Metadata key where the casewise error/fitness list is stored.
+            case_max_best: Set to True if higher values in the case vector are
+                better (e.g., accuracy). Defaults to False (e.g., error/loss).
+            random_state: Seed for the random number generator.
+        """
         super().__init__(max_best=case_max_best, random_state=random_state)
         self.case_key = case_key
         self.required_case_keys = (case_key,)
 
     def _get_case_vector(self, ind: Individual) -> list[float]:
+        """Retrieves the fitness vector for an individual from its metadata."""
         case_store = ind.get_meta(Individual.CASE_DATA_META_KEY, dict)
         if case_store is None:
             raise ValueError("Missing casewise evaluation data")
         if self.case_key not in case_store:
             raise ValueError(f"Missing case key '{self.case_key}'")
-        return case_store[self.case_key]
+        return cast(list[float], case_store[self.case_key])
 
     def _select_one(self, individuals: list[Individual]) -> Individual:
+        """
+        Performs a single round of Lexicase selection.
+
+        Iterates through test cases in random order, keeping only the 'best'
+        performers for each case until only one individual (or a set of tied
+        individuals) remains.
+        """
         if not individuals:
             raise ValueError("No individuals available for selection")
 
@@ -490,8 +522,7 @@ class LexicaseSelection(GESelectionStrategy):
             best = max(values) if self.max_best else min(values)
 
             survivors = [
-                ind for ind in survivors
-                if self._get_case_vector(ind)[case_idx] == best
+                ind for ind in survivors if self._get_case_vector(ind)[case_idx] == best
             ]
 
             if len(survivors) <= 1:
@@ -500,20 +531,40 @@ class LexicaseSelection(GESelectionStrategy):
         return self.rng.choice(survivors)
 
     def select(
-            self,
-            population_size: int,
-            individuals: list[Individual],
+        self,
+        population_size: int,
+        individuals: list[Individual],
     ) -> list[Individual]:
+        """Selects parents using Lexicase selection."""
         return [self._select_one(individuals) for _ in range(population_size)]
 
+
 class EpsilonLexicaseSelection(LexicaseSelection):
+    """
+    A variant of Lexicase Selection that uses a margin of error (epsilon).
+
+    Instead of requiring individuals to exactly match the 'best' performance on a
+    given case, this strategy allows individuals to survive if they are within
+    a specified distance (epsilon) of the best performer. This helps prevent
+    premature convergence caused by tiny differences in floating-point fitness values.
+    """
+
     def __init__(
-            self,
-            case_key: str = "errors",
-            epsilon: float = 0.0,
-            case_max_best: bool = False,
-            random_state: Optional[int] = None,
+        self,
+        case_key: str = "errors",
+        epsilon: float = 0.0,
+        case_max_best: bool = False,
+        random_state: Optional[int] = None,
     ) -> None:
+        """
+        Initializes the Epsilon Lexicase strategy.
+
+        Args:
+            case_key: Metadata key for the casewise fitness vector.
+            epsilon: The buffer allowed when comparing fitness values.
+            case_max_best: True if higher values are better.
+            random_state: Seed for the random number generator.
+        """
         super().__init__(
             case_key=case_key,
             case_max_best=case_max_best,
@@ -522,11 +573,18 @@ class EpsilonLexicaseSelection(LexicaseSelection):
         self.epsilon = epsilon
 
     def _passes(self, value: float, best: float) -> bool:
+        """Checks if a value is within the epsilon range of the best value."""
         if self.max_best:
             return value >= best - self.epsilon
         return value <= best + self.epsilon
 
     def _select_one(self, individuals: list[Individual]) -> Individual:
+        """
+        Performs a single round of Epsilon Lexicase selection.
+
+        Similar to standard Lexicase, but uses the epsilon threshold to determine
+        which individuals survive to the next case.
+        """
         if not individuals:
             raise ValueError("No individuals available for selection")
 
@@ -541,7 +599,8 @@ class EpsilonLexicaseSelection(LexicaseSelection):
             best = max(values) if self.max_best else min(values)
 
             survivors = [
-                ind for ind in survivors
+                ind
+                for ind in survivors
                 if self._passes(self._get_case_vector(ind)[case_idx], best)
             ]
 
@@ -549,7 +608,3 @@ class EpsilonLexicaseSelection(LexicaseSelection):
                 break
 
         return self.rng.choice(survivors)
-
-
-
-

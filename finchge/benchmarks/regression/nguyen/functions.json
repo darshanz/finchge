@@ -1,0 +1,72 @@
+{
+  "1": {
+    "name": "Nguyen-1",
+    "expr": "x0**3 + x0**2 + x0",
+    "range": [-1.0, 1.0],
+    "dim": 1,
+    "train_samples": 20
+  },
+  "2": {
+    "name": "Nguyen-2",
+    "expr": "x0**4 + x0**3 + x0**2 + x0",
+    "range": [-1.0, 1.0],
+    "dim": 1,
+    "train_samples": 20
+  },
+  "3": {
+    "name": "Nguyen-3",
+    "expr": "x0**5 + x0**4 + x0**3 + x0**2 + x0",
+    "range": [-1.0, 1.0],
+    "dim": 1,
+    "train_samples": 20
+  },
+  "4": {
+    "name": "Nguyen-4",
+    "expr": "x0**6 + x0**5 + x0**4 + x0**3 + x0**2 + x0",
+    "range": [-1.0, 1.0],
+    "dim": 1,
+    "train_samples": 20
+  },
+  "5": {
+    "name": "Nguyen-5",
+    "expr": "sin(x0**2) * cos(x0) - 1.0",
+    "range": [-1.0, 1.0],
+    "dim": 1,
+    "train_samples": 20
+  },
+  "6": {
+    "name": "Nguyen-6",
+    "expr": "sin(x0) + sin(x0 + x0**2)",
+    "range": [-1.0, 1.0],
+    "dim": 1,
+    "train_samples": 20
+  },
+  "7": {
+    "name": "Nguyen-7",
+    "expr": "log(x0 + 1.0) + log(x0**2 + 1.0)",
+    "range": [0.0, 2.0],
+    "dim": 1,
+    "train_samples": 20
+  },
+  "8": {
+    "name": "Nguyen-8",
+    "expr": "sqrt(x0)",
+    "range": [0.0, 4.0],
+    "dim": 1,
+    "train_samples": 20
+  },
+  "9": {
+    "name": "Nguyen-9",
+    "expr": "sin(x0) + sin(x1**2)",
+    "range": [[-1.0, 1.0], [-1.0, 1.0]],
+    "dim": 2,
+    "train_samples": 100
+  },
+  "10": {
+    "name": "Nguyen-10",
+    "expr": "2.0 * sin(x0) * cos(x1)",
+    "range": [[-1.0, 1.0], [-1.0, 1.0]],
+    "dim": 2,
+    "train_samples": 100
+  }
+}

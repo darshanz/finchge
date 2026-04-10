@@ -22,6 +22,7 @@ class SymbolicRegressionRunner(DirectEvalRunner):
     ) -> NDArray[np.float64]:
         try:
             symbolic_expression = SymbolicExpression(phenotype)
+
             y_pred = symbolic_expression.eval(X=X_eval)
             if not isinstance(y_pred, np.ndarray):
                 y_pred = np.array(y_pred, dtype=np.float64)

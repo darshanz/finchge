@@ -99,6 +99,8 @@ The finchGE API consists of:
         - RouletteWheelSelection
         - RankSelection
         - TruncationSelection
+        - LexicaseSelection
+        - EpsilonLexicaseSelection
         - NSGA2TournamentSelection
         - NSGA3TournamentSelection
 
@@ -230,65 +232,34 @@ The finchGE API consists of:
       members:
         - Benchmark
 
-
-::: finchge.benchmarks.regression.nguyen
-    options:
-      show_root_heading: true
-      show_source: false
-      members:
-        - NguyenBenchmark
-
-
-::: finchge.benchmarks.regression.koza_quartic
+::: finchge.benchmarks.regression
     options:
       show_root_heading: true
       show_source: false
       members:
         - KozaQuarticBenchmark
-
-::: finchge.benchmarks.regression.keijzer
-    options:
-      show_root_heading: true
-      show_source: false
-      members:
         - KeijzerBenchmark
+        - NguyenBenchmark
+        - VladislavlevaBenchmark
 
-::: finchge.benchmarks.logic.multiplexer
+::: finchge.benchmarks.logic
     options:
       show_root_heading: true
       show_source: false
       members:
-        - Multiplexer6Benchmark
-        - Multiplexer11Benchmark
+        - MultiplexerBenchmark
 
-::: finchge.benchmarks.control.cartpole
+::: finchge.benchmarks.control
     options:
       show_root_heading: true
       show_source: false
       members:
-        - CartPoleEnvironment
-        - CartPoleInterpreter
-        - CartPoleRunner
-        - CartPoleBenchmark
-
-::: finchge.benchmarks.control.maze
-    options:
-      show_root_heading: true
-      show_source: false
-      members:
+        - MazeBenchmark
         - MazeEnvironment
         - MazeInterpreter
-        - MazeRunner
-        - MazeSimpleBenchmark
-        - MazeMediumBenchmark
-        - MazeHardBenchmark
-
-::: finchge.benchmarks.control.santafe
-    options:
-      show_root_heading: true
-      show_source: false
-      members:
+        - SantaFeTrailBenchmark
         - SantaFeEnvironment
         - SantaFeInterpreter
-        - SantaFeRunner
-        - SantaFeTrailBenchmark
+        - CartPoleBenchmark
+        - CartPoleEnvironment
+        - CartPoleInterpreter

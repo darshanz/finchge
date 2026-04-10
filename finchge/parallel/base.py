@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
+from finchge.fitness.fitness_types import EvaluationRecord
+
 if TYPE_CHECKING:
     from finchge.fitness import GEFitnessFunction
 
@@ -13,7 +15,7 @@ class BaseParallelBackend(ABC):
         self,
         contexts: list[dict[str, Any]],
         fitness_functions: list["GEFitnessFunction"],
-    ) -> list[list[float]]:
+    ) -> list[EvaluationRecord]:
         """Evaluate batch of individuals"""
         pass
 

@@ -242,7 +242,9 @@ class GrammaticalEvolution(RandomStateMixin):
             population = state.population
             algorithm = state.algorithm
 
-            if getattr(algorithm.selection, "requires_case_data", False):
+            if hasattr(algorithm, "selection") and getattr(
+                algorithm.selection, "requires_case_data", False
+            ):
                 for ind in population.individuals:
                     if ind.fitness and not ind.has_meta(Individual.CASE_DATA_META_KEY):
                         raise RuntimeError(

@@ -440,7 +440,7 @@ class FitnessEvaluator:
         required_keys = self._get_required_keys()
         builtin_keys = {"phenotype", "require_case_data"}
 
-        runner_keys = set()
+        runner_keys: set[str] = set()
         if self.runner is not None:
             runner_keys = getattr(self.runner, "provided_context_keys", set())
 

@@ -9,13 +9,11 @@ class Fitness:
     meta: dict[str, Any] = field(default_factory=dict)
 
 
-
 @dataclass
 class EvaluationRecord:
     fitness: list[float]
     case_data: dict[str, list[float]] = field(default_factory=dict)
     meta: dict[str, Any] = field(default_factory=dict)
-
 
 
 def merge_fitness_results(results: list[Fitness]) -> EvaluationRecord:

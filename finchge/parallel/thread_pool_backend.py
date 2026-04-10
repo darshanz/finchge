@@ -7,9 +7,13 @@ from typing import Any, Dict, Optional
 import numpy as np
 
 from finchge.config import Keys
-from finchge.fitness.fitness_functions import GEFitnessFunction, Fitness
+from finchge.fitness.fitness_functions import GEFitnessFunction
+from finchge.fitness.fitness_types import (
+    EvaluationRecord,
+    Fitness,
+    merge_fitness_results,
+)
 from finchge.parallel.base import BaseParallelBackend
-from finchge.fitness.fitness_types import EvaluationRecord, merge_fitness_results
 
 
 def seed_everything(seed: int, use_torch: bool = False) -> None:
@@ -63,9 +67,9 @@ class ThreadPoolBackend(BaseParallelBackend):
             if runner is not None:
                 # Run the phenotype
                 runner_context = runner.run(
-                    phenotype=phenotype,
-                    context_hints=required_keys
+                    phenotype=phenotype, context_hints=required_keys
                 )
+
                 eval_context.update(runner_context)
 
                 if hasattr(runner, "get_context"):
@@ -74,6 +78,7 @@ class ThreadPoolBackend(BaseParallelBackend):
                         eval_context.update(extra_context)
 
             results = [fn.evaluate(eval_context) for fn in fitness_functions]
+
             return merge_fitness_results(results)
 
         except Exception as e:
@@ -109,7 +114,7 @@ class ThreadPoolBackend(BaseParallelBackend):
                 max_workers=self.max_workers, thread_name_prefix="FinchGE_Thread"
             )
 
-        all_results: list[list[float]] = []
+        all_results: list[EvaluationRecord] = []
         total_items = len(contexts)
 
         # Process in batches
@@ -133,24 +138,34 @@ class ThreadPoolBackend(BaseParallelBackend):
             for future in batch_futures:
                 try:
                     result = future.result(timeout=60)
-                    # Ensure result is list[float]
+                    # Ensure result is EvaluationRecord
+
                     if not isinstance(result, EvaluationRecord):
                         fallback = [
-                            Fitness(value=float("-inf") if fn.maximize else float("inf"))
+                            Fitness(
+                                value=float("-inf") if fn.maximize else float("inf")
+                            )
                             for fn in fitness_functions
                         ]
                         result = merge_fitness_results(fallback)
                 except concurrent.futures.TimeoutError:
                     logging.warning("Thread task timed out")
-                    result = [float("-inf")] * len(fitness_functions)
+                    fallback = [
+                        Fitness(value=float("-inf") if fn.maximize else float("inf"))
+                        for fn in fitness_functions
+                    ]
+                    result = merge_fitness_results(fallback)
                 except Exception as e:
                     logging.error(f"Thread worker failed: {e}")
-                    result = [float("-inf")] * len(fitness_functions)
+                    fallback = [
+                        Fitness(value=float("-inf") if fn.maximize else float("inf"))
+                        for fn in fitness_functions
+                    ]
+                    result = merge_fitness_results(fallback)
 
                 all_results.append(result)
 
         return all_results
-
 
     async def shutdown(self) -> None:
         """Shutdown the thread pool gracefully."""

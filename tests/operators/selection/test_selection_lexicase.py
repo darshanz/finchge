@@ -1,10 +1,12 @@
 import pytest
 
 from finchge.core.individual import Individual
-from finchge.operators.selection import LexicaseSelection, EpsilonLexicaseSelection
+from finchge.operators.selection import EpsilonLexicaseSelection, LexicaseSelection
 
 
-def make_individual(name: str, case_values: list[float], fitness: float = 0.0) -> Individual:
+def make_individual(
+    name: str, case_values: list[float], fitness: float = 0.0
+) -> Individual:
     ind = Individual(phenotype=name)
     ind.fitness = [fitness]
     ind.set_meta(Individual.CASE_DATA_META_KEY, {"errors": case_values})
@@ -13,7 +15,9 @@ def make_individual(name: str, case_values: list[float], fitness: float = 0.0) -
 
 def test_lexicase_selects_case_elite_individual():
     # selects only elites from the first surviving cases
-    selector = LexicaseSelection(case_key="errors", case_max_best=False, random_state=123)
+    selector = LexicaseSelection(
+        case_key="errors", case_max_best=False, random_state=123
+    )
 
     a = make_individual("a", [0.0, 10.0])
     b = make_individual("b", [1.0, 0.0])
@@ -26,10 +30,11 @@ def test_lexicase_selects_case_elite_individual():
     assert all(ind.phenotype != "c" for ind in selected)
 
 
-
 def test_lexicase_returns_requested_number_of_individuals():
     # returns multiple parents with correct population size
-    selector = LexicaseSelection(case_key="errors", case_max_best=False, random_state=42)
+    selector = LexicaseSelection(
+        case_key="errors", case_max_best=False, random_state=42
+    )
 
     individuals = [
         make_individual("a", [0.0, 1.0]),
@@ -41,9 +46,12 @@ def test_lexicase_returns_requested_number_of_individuals():
 
     assert len(selected) == 7
 
+
 def test_lexicase_supports_case_maximization():
     # supports maximization mode
-    selector = LexicaseSelection(case_key="errors", case_max_best=True, random_state=123)
+    selector = LexicaseSelection(
+        case_key="errors", case_max_best=True, random_state=123
+    )
 
     a = make_individual("a", [10.0, 0.0])
     b = make_individual("b", [0.0, 10.0])
@@ -65,7 +73,6 @@ def test_lexicase_raises_when_case_data_missing():
 
     with pytest.raises(ValueError, match="errors|case"):
         selector.select(population_size=1, individuals=[ind])
-
 
 
 def test_epsilon_lexicase_with_zero_epsilon_matches_standard_behavior():
@@ -100,8 +107,8 @@ def test_epsilon_lexicase_allows_near_best_individuals():
     )
 
     a = make_individual("a", [0.0, 10.0])
-    b = make_individual("b", [0.1, 0.0])   # within epsilon on first case
-    c = make_individual("c", [1.0, 1.0])   # outside epsilon
+    b = make_individual("b", [0.1, 0.0])  # within epsilon on first case
+    c = make_individual("c", [1.0, 1.0])  # outside epsilon
 
     selected = selector.select(population_size=30, individuals=[a, b, c])
 
@@ -119,7 +126,7 @@ def test_epsilon_lexicase_supports_maximization():
     )
 
     a = make_individual("a", [10.0, 0.0])
-    b = make_individual("b", [9.9, 10.0])   # within epsilon of case-0 best
+    b = make_individual("b", [9.9, 10.0])  # within epsilon of case-0 best
     c = make_individual("c", [5.0, 5.0])
 
     selected = selector.select(population_size=30, individuals=[a, b, c])
