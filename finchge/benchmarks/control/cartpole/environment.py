@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
+from numpy.typing import NDArray
 
 from finchge.benchmarks.control.base import ControlEnvironment
 
@@ -89,6 +90,9 @@ class CartPoleEnvironment(ControlEnvironment):
             self.done,
             {"x": self.x, "theta": self.theta},
         )
+
+    def get_raw_state(self) -> NDArray[np.float64]:
+        return np.array([self.x, self.x_dot, self.theta, self.theta_dot])
 
     def get_observation(self) -> Dict[str, float]:
         return {
