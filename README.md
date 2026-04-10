@@ -54,7 +54,7 @@ Step 2. Define a Fitness Evaluator ; `fitness_evaluator`
 ```python
 
 fitness_evaluator = FitnessEvaluator(
-    fitness_functions=StringMatchFitness("hello"),
+    fitness_functions=StringMatchFitness(target="hello"),
     mapper=GenotypeMapper(grammar=grammar)
 )
 
@@ -77,7 +77,7 @@ at [finchge.readthedocs.io](https://finchge.readthedocs.io/), including [Getting
 
 
 ## Development Status
-Note: This is version ```1.0.1-beta.7``` - a beta release. Expect breaking changes and bugs.
+Note: This is version ```1.0.1-beta.8``` - a beta release. Expect breaking changes and bugs.
 
 What to expect:
 
