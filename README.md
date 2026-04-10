@@ -4,7 +4,7 @@
 [![Python](https://img.shields.io/pypi/pyversions/finchge?t=1234567890&color=blue)](https://pypi.org/project/finchge/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Docs](https://img.shields.io/readthedocs/finchge?color=blue)](https://finchge.readthedocs.io/)
-[![Status](https://img.shields.io/badge/status-alpha-orange)](https://github.com/finchGE/finchge)
+[![Status](https://img.shields.io/badge/status-beta-orange)](https://github.com/finchGE/finchge)
 [![Tests](https://github.com/finchGE/finchge/actions/workflows/tests.yml/badge.svg)](https://github.com/finchGE/finchge/actions)
 
 
