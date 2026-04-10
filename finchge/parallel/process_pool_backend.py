@@ -9,7 +9,12 @@ import numpy as np
 from cloudpickle import cloudpickle
 
 from finchge.config import Keys
-from finchge.fitness import GEFitnessFunction
+from finchge.fitness.fitness_functions import GEFitnessFunction
+from finchge.fitness.fitness_types import (
+    EvaluationRecord,
+    Fitness,
+    merge_fitness_results,
+)
 from finchge.parallel.base import BaseParallelBackend
 
 
@@ -30,11 +35,11 @@ def seed_everything(seed: int, use_torch: bool = False) -> None:
 
 def process_train_and_evaluate(
     context: dict[str, Any], fitness_functions: list[GEFitnessFunction]
-) -> list[float]:
+) -> EvaluationRecord:
     """Process a single individual in a process pool."""
     try:
         phenotype = context.get("phenotype", "")
-        seed = context.get("eval_seed", 0)
+        seed = context.get("seed", 0)
 
         # Set seed for reproducibility
         use_torch = False
@@ -64,7 +69,10 @@ def process_train_and_evaluate(
             }
 
         # Calculate fitness
-        return [fitness_fn.evaluate(eval_context) for fitness_fn in fitness_functions]
+        results = [
+            fitness_fn.evaluate(eval_context) for fitness_fn in fitness_functions
+        ]
+        return merge_fitness_results(results)
 
     except Exception as e:
         logging.error(f"Exception in worker: {e}", exc_info=True)
@@ -72,9 +80,11 @@ def process_train_and_evaluate(
 
         traceback.print_exc()
         # Return worst possible fitness
-        return [
-            float("inf") if fn.maximize else float("-inf") for fn in fitness_functions
+        fallback = [
+            Fitness(value=float("-inf") if fn.maximize else float("inf"))
+            for fn in fitness_functions
         ]
+        return merge_fitness_results(fallback)
 
 
 class ProcessPoolBackend(BaseParallelBackend):
@@ -89,7 +99,7 @@ class ProcessPoolBackend(BaseParallelBackend):
         self,
         contexts_: list[dict[str, Any]],
         fitness_functions: list[GEFitnessFunction],
-    ) -> list[list[float]]:
+    ) -> list[EvaluationRecord]:
         """Evaluate a batch of individuals using process pool."""
         contexts: list[dict[str, Any]] = cloudpickle.loads(contexts_)
         fitness_funcs: list[GEFitnessFunction] = cloudpickle.loads(fitness_functions)
@@ -99,7 +109,7 @@ class ProcessPoolBackend(BaseParallelBackend):
                 max_workers=self.max_workers
             )
 
-        all_results: list[list[float]] = []
+        all_results: list[EvaluationRecord] = []
 
         # Process in batches
         for batch_start in range(0, len(contexts), self.batch_size):
@@ -120,15 +130,29 @@ class ProcessPoolBackend(BaseParallelBackend):
             for future in futures:
                 try:
                     result = future.result(timeout=60)
-                    # Ensure result is a list of floats
-                    if not isinstance(result, list):
-                        result = [float("-inf")] * len(fitness_funcs)
+                    # Ensure result is a list of EvaluationRecords
+                    if not isinstance(result, EvaluationRecord):
+                        fallback = [
+                            Fitness(
+                                value=float("-inf") if fn.maximize else float("inf")
+                            )
+                            for fn in fitness_funcs
+                        ]
+                        result = merge_fitness_results(fallback)
                 except concurrent.futures.TimeoutError:
                     logging.warning("Process task timed out")
-                    result = [float("-inf")] * len(fitness_funcs)
+                    fallback = [
+                        Fitness(value=float("-inf") if fn.maximize else float("inf"))
+                        for fn in fitness_funcs
+                    ]
+                    result = merge_fitness_results(fallback)
                 except Exception as e:
                     logging.error(f"Worker failed: {e}")
-                    result = [float("-inf")] * len(fitness_funcs)
+                    fallback = [
+                        Fitness(value=float("-inf") if fn.maximize else float("inf"))
+                        for fn in fitness_funcs
+                    ]
+                    result = merge_fitness_results(fallback)
 
                 all_results.append(result)
 

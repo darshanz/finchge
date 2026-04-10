@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Tuple, TypeAlias, TypedDict
+from typing import Callable, Tuple, TypeAlias, TypedDict, Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -34,3 +34,10 @@ class BenchmarkFunctionInfoBase(TypedDict, total=False):
     test_step: float
     test_n_points: int
     note: str
+
+
+class BenchmarkSpec(TypedDict):
+    dim: int
+    range: Union[Tuple[float, float], Tuple[Tuple[float, float], ...]]
+    func: Callable[[FloatArray], FloatArray]
+    name: str

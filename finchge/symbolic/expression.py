@@ -75,7 +75,7 @@ class SymbolicExpression:
         if expression is None or not str(expression).strip():
             raise ValueError("Expression string is empty.")
 
-        # Slice array pattern is also supported by FinchGE parser, however we use sympy style notation internally.
+        # Slice array pattern is also supported by FinchGE parser, however sympy style notation is used internally.
         self.original_expression = expression
         self.expression = self._replace_slice_array_pattern(expression)
 
@@ -106,7 +106,7 @@ class SymbolicExpression:
         # NUMERICAL functions for lambdify, provide safety
         self.numerical_modules = self._create_numerical_modules()
 
-        # Parse expression
+        # Parse expression  with TimeOut
         self._parse_expression(variables)
 
         self._validate_symbols()
@@ -141,8 +141,8 @@ class SymbolicExpression:
             "acos": self._safe_acos,
             "atan": np.arctan,
             "sqrt": self._safe_sqrt,
-            "sin": np.sin,
-            "cos": np.cos,
+            "sin": self._safe_sin,
+            "cos": self._safe_cos,
             "abs": np.abs,
             "sign": np.sign,
             "pdiv": self._safe_div,
@@ -158,15 +158,23 @@ class SymbolicExpression:
         """
         # Temporary symbols for parsing
         local_dict = dict(self.symbolic_functions)
+        try:
+            if variables is not None:
+                self.symbols = tuple(sp.Symbol(v) for v in variables)
+                local_dict.update({v: s for v, s in zip(variables, self.symbols)})
+                self.expr = self.safe_sympify(self.expression, local_dict=local_dict)
+            else:
+                # Infer variables from expression
+                self.expr = self.safe_sympify(self.expression, local_dict=local_dict)
+                self.symbols = tuple(sorted(self.expr.free_symbols, key=str))
+        except (RecursionError, RuntimeError, ValueError) as e:
+            raise ValueError(
+                f"Failed to parse expression: {e}. Expression: {self.expression[:100]}"
+            )
 
-        if variables is not None:
-            self.symbols = tuple(sp.Symbol(v) for v in variables)
-            local_dict.update({v: s for v, s in zip(variables, self.symbols)})
-            self.expr = self.safe_sympify(self.expression, local_dict=local_dict)
-        else:
-            # Infer variables from expression
-            self.expr = self.safe_sympify(self.expression, local_dict=local_dict)
-            self.symbols = tuple(sorted(self.expr.free_symbols, key=str))
+        if hasattr(self.expr, "doit"):
+            # avoid doit() :: it can trigger evaluation
+            pass
 
     def safe_sympify(
         self,
@@ -175,13 +183,45 @@ class SymbolicExpression:
         max_length: int = 200,
     ) -> sp.Expr:
         """Safe sympify with length limit."""
+
+        #  Hard limit on expression length Before the max length
+        if len(expression) > 500:  # Hard limit :: max_length is checked later
+            raise ValueError(f"Expression too long: {len(expression)} > 500")
+
+        # numeric constants that are too large
+        import re
+
+        large_numbers = re.findall(
+            r"\b\d{6,}\b", expression
+        )  # Numbers with more than 6 digits
+        if large_numbers:
+            raise ValueError(f"Expression contains huge constants: {large_numbers[:3]}")
+
+        # patterns like cos(999999)
+        huge_trig_args = re.findall(r"(sin|cos|tan)\((\d{6,})\)", expression)
+        if huge_trig_args:
+            raise ValueError(f"Huge constant in trig function: {huge_trig_args[0]}")
+
         if len(expression) > max_length:
             raise ValueError(f"Expression too long: {len(expression)} > {max_length}")
+
+        trig_count = sum(expression.count(func) for func in ["sin", "cos", "tan"])
+        if trig_count > 15:  # Adjust threshold as needed
+            raise ValueError(f"Too many trig functions: {trig_count}")
+
+        # avoiding nested trig patterns
+        if (
+            "sin(sin" in expression
+            or "cos(cos" in expression
+            or "tan(tan" in expression
+        ):
+            raise ValueError("Deeply nested trig functions detected")
+
         # avoiding nested exp explosions
         if expression.count("exp") > 2:
             raise ValueError("Too many nested exp functions")
 
-        return sp.sympify(expression, locals=local_dict)
+        return sp.sympify(expression, locals=local_dict, evaluate=False)
 
     def _replace_slice_array_pattern(self, expr_with_slice_notation: str) -> str:
         """
@@ -264,7 +304,7 @@ class SymbolicExpression:
             Simplification is intended primarily for display, reporting, and
             post-evolution analysis. It is not required for numerical evaluation.
         """
-        simplified = sp.trigsimp(self.expr)
+        simplified = sp.trigsimp(str(self.expr))
         return SymbolicExpression(
             str(simplified),
             variables=[str(v) for v in self.symbols],
@@ -275,6 +315,8 @@ class SymbolicExpression:
         """
         Evaluates the symbolic expression numerically with safety protections.
         """
+        # LARGE_NUM_FILLER = 10e10
+        LARGE_NUM_FILLER = np.inf
         X_arr = np.asarray(X, dtype=np.float64)
 
         if X_arr.ndim == 1:
@@ -297,9 +339,8 @@ class SymbolicExpression:
                     value = self._numeric_func()  # no args
                 except Exception as e:
                     logging.error(f"Exception in worker: {e}", exc_info=True)
-
                     # Fallback to large constant on error
-                    return np.full(n_samples, 1e10, dtype=np.float64)
+                    return np.full(n_samples, LARGE_NUM_FILLER, dtype=np.float64)
 
                 # Broadcast scalar to (n_samples,)
                 return np.full(n_samples, float(np.asarray(value)), dtype=np.float64)
@@ -328,19 +369,33 @@ class SymbolicExpression:
 
             try:
                 result = self._numeric_func(*selected_columns)
+
+                # this line  sometimes triggers the TypeError.
+                # Perhaps if the lambdified functions returns a complex result,
+                # So, using .real on the result of the numeric function call.
+                if isinstance(result, np.ndarray) and np.iscomplexobj(result):
+                    result = result.real
+                elif isinstance(result, complex):
+                    result = result.real
+
                 result_arr = np.asarray(result, dtype=np.float64)
 
-                # Final safety check for NaN/Inf
-                if np.any(np.isnan(result_arr)) or np.any(np.isinf(result_arr)):
-                    return np.full(n_samples, 1e10, dtype=np.float64)
+                # Final safety check for NaN
+                if np.any(np.isnan(result_arr)):
+                    result_arr = np.where(
+                        np.isnan(result_arr), LARGE_NUM_FILLER, result_arr
+                    )
 
                 return result_arr
+            except RecursionError as e:  # recursion protection
+                logging.error(f"Recursion error in evaluation: {e}")
+                return np.full(n_samples, LARGE_NUM_FILLER, dtype=np.float64)
 
             except Exception as e:
                 logging.error(f"Exception in worker: {e}", exc_info=True)
 
                 # Return large constant on any evaluation error
-                return np.full(n_samples, 1e10, dtype=np.float64)
+                return np.full(n_samples, LARGE_NUM_FILLER, dtype=np.float64)
 
     def _symbol_to_index(self, sym: sp.Symbol) -> int:
         # get required column indices from variables
@@ -366,7 +421,7 @@ class SymbolicExpression:
         Returns:
             int: Total number of nodes in the expression tree.
         """
-        expr = sp.trigsimp(self.expr) if simplify else self.expr
+        expr = sp.trigsimp(str(self.expr)) if simplify else self.expr
         return sum(1 for _ in sp.preorder_traversal(expr))
 
     def max_depth(self) -> int:
@@ -424,8 +479,12 @@ class SymbolicExpression:
         a_arr = np.asarray(a, dtype=np.float64)
         b_arr = np.asarray(b, dtype=np.float64)
 
-        # Handle negative base with fractional exponent
+        # np.abs --- to prevent complex results from negative bases
         result: NDArray[np.float64] = np.power(np.abs(a_arr), b_arr)
+
+        # If the result becomes complex, just real part should be used
+        if np.iscomplexobj(result):
+            result = result.real
 
         # Preserve sign for integer exponents
         if np.ndim(b_arr) == 0:
@@ -445,13 +504,21 @@ class SymbolicExpression:
     @staticmethod
     def _safe_exp(x: Union[float, NDArray[np.float64]]) -> NDArray[np.float64]:
         """Safe exponential."""
+        # if x is compplex object just take the real part.
+        if np.iscomplexobj(x):
+            x = x.real
+        elif isinstance(x, complex):
+            x = x.real
+
         x_arr = np.asarray(x, dtype=np.float64)
+
         clipped: NDArray[np.float64] = np.clip(x_arr, -700, 700)
         return np.asarray(np.exp(clipped), dtype=np.float64)
 
     @staticmethod
     def _safe_log(x: Union[float, NDArray[np.float64]]) -> NDArray[np.float64]:
         """Safe logarithm."""
+
         x_arr = np.asarray(x, dtype=np.float64)
         return np.asarray(np.log(np.abs(x_arr) + 1e-10), dtype=np.float64)
 
@@ -465,6 +532,24 @@ class SymbolicExpression:
         result: NDArray[np.float64] = np.tan(x_shifted)
         result = np.where(np.isfinite(result), result, 0.0)
         return result
+
+    @staticmethod
+    def _safe_cos(x: Union[float, NDArray[np.float64]]) -> NDArray[np.float64]:
+        """Safe cosine with argument reduction to prevent recursion."""
+        x_arr = np.asarray(x, dtype=np.float64)
+        # Reduce large arguments modulo 2*PI to prevent SymPy recursion
+        x_arr = np.where(np.abs(x_arr) > 1e6, np.mod(x_arr, 2 * np.pi), x_arr)
+        result = np.cos(x_arr)
+        return np.where(np.isfinite(result), result, 0.0)
+
+    @staticmethod
+    def _safe_sin(x: Union[float, NDArray[np.float64]]) -> NDArray[np.float64]:
+        """Safe sine with argument reduction to prevent recursion."""
+        x_arr = np.asarray(x, dtype=np.float64)
+        # Reduce large arguments modulo 2* PI to prevent SymPy recursion
+        x_arr = np.where(np.abs(x_arr) > 1e6, np.mod(x_arr, 2 * np.pi), x_arr)
+        result = np.sin(x_arr)
+        return np.where(np.isfinite(result), result, 0.0)
 
     @staticmethod
     def _safe_cot(x: Union[float, NDArray[np.float64]]) -> NDArray[np.float64]:

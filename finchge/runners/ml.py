@@ -1,33 +1,29 @@
-from typing import Any, Dict, Optional, Set, Tuple, Union
+from typing import Any, Optional, Tuple, Union
 
 import numpy as np
 from numpy.typing import NDArray
 
-from finchge.runners.base import DataAwareRunner, DatasetProtocol
+from finchge.runners.base import DatasetProtocol, TrainEvalRunner
 
 
-class MLModelRunner(DataAwareRunner):
+class MLModelRunner(TrainEvalRunner):
     """
-    Runner for problems where phenotype builds/trains a model.
+    Runner for problems where phenotype builds and trains a model.
+    This runner can be used in problems such as hyperparameter optimization
+    and architecture search etc.
+
+    The phenotype is parsed into a trainable model or configuration,
+    fitted on the training split, and evaluated on the active evaluation split.
     """
 
     def __init__(
         self,
         data_train: Union[Tuple[Any, Any], DatasetProtocol],
         data_val: Union[Tuple[Any, Any], DatasetProtocol],
-        model_parser: Any,  # Should be BaseModelParser type
+        model_parser: Any,
         data_test: Optional[Union[Tuple[Any, Any], DatasetProtocol]] = None,
         random_state: Optional[Any] = None,
     ) -> None:
-        """
-        Initialize model-building runner.
-
-        Args:
-            data_train: Training data for model fitting
-            data_val: Validation data for fitness evaluation
-            model_parser: Parser that converts phenotype to model
-            data_test: Test data (optional)
-        """
         super().__init__(
             random_state=random_state,
             data_train=data_train,
@@ -36,83 +32,70 @@ class MLModelRunner(DataAwareRunner):
         )
         self.model_parser = model_parser
 
-    def run(
-        self, phenotype: str, context_hints: Optional[Set[str]] = None
-    ) -> Dict[str, Any]:
-        """
-        Build model, train on training data, predict on validation data.
+    def build_model(self, phenotype: str) -> Any:
+        return self.model_parser.parse(phenotype)
 
-        Args:
-            phenotype: phenotype string that can be parsed as a ML model.
-            context_hints: What context keys the fitness functions need.
-                          None means assume minimal (y_pred/y_true only).
-
-        Returns:
-            dict with context having y_pred, y_true and other context info as requested.
-        """
-        X_train: Optional[NDArray[np.float64]] = None
-        y_train: Optional[NDArray[np.float64]] = None
-        X_val: Optional[NDArray[np.float64]] = None
-        y_val: Optional[NDArray[np.float64]] = None
-        model: Any = None
-        y_pred: NDArray[np.float64]
-
+    def fit_model(
+        self,
+        model: Any,
+        X_train: Optional[NDArray[np.float64]],
+        y_train: Optional[NDArray[np.float64]],
+    ) -> Any:
         if self.data_info.get("X_type") == "torch":
-            from finchge.model.model import Model
-
-            net_ = self.model_parser.parse(phenotype)
-            model = Model(net=net_)
-            model.fit(train_dataset=self.data_train, val_dataset=self.data_test)
-            # For torch path, predict returns (y_pred, y_true)
-            y_pred, y_val = model.predict(self.data_test)
-            # Ensure both are numpy arrays
-            if not isinstance(y_pred, np.ndarray):
-                y_pred = np.array(y_pred, dtype=np.float64)
-            if y_val is not None and not isinstance(y_val, np.ndarray):
-                y_val = np.array(y_val, dtype=np.float64)
+            # Assumes torch-compatible model wrapper handles dataset objects
+            model.fit(train_dataset=self.data_train, val_dataset=self.data_val)
         else:
-            # Convert data to numpy
-            X_train, y_train = self._convert_to_numpy(self.data_train)
-            X_val, y_val = self._convert_to_numpy(self.data_val)
-
-            model = self.model_parser.parse(phenotype)
+            if X_train is None or y_train is None:
+                raise ValueError(
+                    "X_train and y_train must be provided for non-torch models"
+                )
             model.fit(X_train, y_train)
-            y_pred = model.predict(X_val)
+        return model
 
-            # Ensure y_pred is numpy array
-            if not isinstance(y_pred, np.ndarray):
-                y_pred = np.array(y_pred, dtype=np.float64)
+    def predict_eval(
+        self,
+        model: Any,
+        X_eval: Optional[NDArray[np.float64]],
+    ) -> NDArray[np.float64]:
+        if self.data_info.get("X_type") == "torch":
+            if self.eval_split == "train":
+                dataset = self.data_train
+            elif self.eval_split == "val":
+                dataset = self.data_val
+            else:
+                dataset = self.data_test
 
-        # Build base context
-        context: Dict[str, Any] = {
-            "y_pred": y_pred,
-            "phenotype": phenotype,
-        }
+            y_pred, _ = model.predict(dataset)
+            return np.array(y_pred, dtype=np.float64)
 
-        # Add y_true if available
-        if y_val is not None:
-            context["y_true"] = y_val
+        if X_eval is None:
+            raise ValueError("X_eval must be provided for non-torch models")
 
-        # If no hints, return minimal context
-        if context_hints is None:
-            return context
+        y_pred = model.predict(X_eval)
+        return np.array(y_pred, dtype=np.float64)
 
-        # Add requested items
-        if "model" in context_hints and model is not None:
-            context["model"] = model
+    def predict_eval_proba(
+        self,
+        model: Any,
+        X_eval: Optional[NDArray[np.float64]],
+    ) -> Optional[NDArray[np.float64]]:
+        if self.data_info.get("X_type") == "torch":
+            return None
 
-        if "X_train" in context_hints and X_train is not None:
-            context["X_train"] = X_train
+        if X_eval is not None and hasattr(model, "predict_proba"):
+            return np.array(model.predict_proba(X_eval), dtype=np.float64)
 
-        if "y_train" in context_hints and y_train is not None:
-            context["y_train"] = y_train
+        return None
 
-        if "X_val" in context_hints and X_val is not None:
-            context["X_val"] = X_val
+    def predict_eval_score(
+        self,
+        model: Any,
+        X_eval: Optional[NDArray[np.float64]],
+    ) -> Optional[NDArray[np.float64]]:
+        if self.data_info.get("X_type") == "torch":
+            return None
 
-        if "feature_importance" in context_hints and hasattr(
-            model, "feature_importances_"
-        ):
-            context["feature_importance"] = model.feature_importances_
+        if X_eval is not None and hasattr(model, "decision_function"):
+            return np.array(model.decision_function(X_eval), dtype=np.float64)
 
-        return context
+        return None

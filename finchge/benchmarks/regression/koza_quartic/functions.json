@@ -1,0 +1,10 @@
+{
+  "quartic": {
+    "name": "Koza-Quartic",
+    "expr": "x0**4 + x0**3 + x0**2 + x0",
+    "dim": 1,
+    "range": [-1.0, 1.0],
+    "train_samples": 100,
+    "test_samples": 1000
+  }
+}

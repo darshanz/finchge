@@ -3,6 +3,7 @@ import random
 import pytest
 
 from finchge.fitness.fitness_functions import GEFitnessFunction
+from finchge.fitness.fitness_types import Fitness
 from finchge.grammar import GenotypeMapper, Grammar
 from finchge.utils.checkpoint import FileCheckpointManager, stable_config_hash
 from finchge.utils.logger import ExperimentLogger
@@ -31,7 +32,7 @@ class LengthFitness(GEFitnessFunction):
 
     def evaluate(self, phenotype: str):
         # Deterministic, cheap
-        return len(phenotype)
+        return Fitness(len(phenotype))
 
 
 @pytest.fixture
@@ -71,6 +72,7 @@ def ge_config():
 
 @pytest.fixture
 def checkpoint_manager(tmp_path):
+    print(tmp_path)
     return FileCheckpointManager(
         directory=tmp_path / "checkpoints",
         every=5,

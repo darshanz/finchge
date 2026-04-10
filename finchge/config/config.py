@@ -77,9 +77,6 @@ class FinchConfig:
     Attributes:
         _data: Internal storage for configuration data as nested dictionaries.
 
-    Example:
-        >>> config = FinchConfig.from_file("ge_config.yaml")
-        >>> ge_config = config.ge
     """
 
     def __init__(self, data: dict[str, dict[str, Any]]) -> None:
@@ -88,7 +85,10 @@ class FinchConfig:
         Args:
             data: Nested dictionary where outer keys are section names and inner
                 dictionaries contain section key-value pairs.
-                Example: {"eperiment": {"start_symbol": "<expr>"}, ...}
+                Example:
+                ```
+                    {"eperiment": {"start_symbol": "<expr>"}, ...}
+                ```
 
         Note:
             Prefer using the class methods `from_file`, `from_yaml`, or `from_ini`
@@ -165,6 +165,7 @@ class FinchConfig:
             configparser.Error: If the INI file is malformed.
 
         Example INI format:
+            ```
             [grammar]
             start_symbol = "<expr>"
             max_depth = 10
@@ -172,6 +173,7 @@ class FinchConfig:
             [initialisation]
             population_size = 100
             method = "ramped_half_and_half"
+            ```
         """
         parser = configparser.ConfigParser()
         parser.read(path)
@@ -216,12 +218,14 @@ class FinchConfig:
             ValueError: If the top-level YAML structure is not a dictionary.
 
         Example YAML format:
+        ```
             grammar:
                 start_symbol: "<expr>"
                 max_depth: 10
             initialisation:
                 population_size: 100
                 method: "ramped_half_and_half"
+        ```
         """
         with open(path, "r") as f:
             data: dict[str, dict[str, Any]] = yaml.safe_load(f)
@@ -293,10 +297,12 @@ class FinchConfig:
             A new FinchConfig instance with the copied (and optionally updated) data.
 
         Example:
+            ```
             >>> new_config = config.copy({
             ...     "experiment": {"num_generations": 500},
             ...     "new_section": {"key": "value"}
             ... })
+            ```
         """
         data = copy.deepcopy(self._data)
         if update:
@@ -511,11 +517,13 @@ def validate_config(config: "FinchConfig") -> Tuple[list[str], list[str]]:
         exceptions, allowing the caller to decide how to handle them.
 
     Example:
+        ```
         >>> issues, warnings = validate_config(config)
         >>> if issues:
         ...     raise ConfigError("\\n".join(issues))
         >>> for w in warnings:
         ...     logger.warning(w)
+        ```
     """
 
     issues: list[str] = []

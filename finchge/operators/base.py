@@ -10,6 +10,9 @@ if TYPE_CHECKING:
 
 
 class GESelectionStrategy(RandomStateMixin, ABC):
+    requires_case_data: bool = False
+    required_case_keys: tuple[str, ...] = ()
+
     def __init__(self, max_best: bool, random_state: Optional[int] = None) -> None:
         super().__init__(random_state=random_state)
         if max_best is None:

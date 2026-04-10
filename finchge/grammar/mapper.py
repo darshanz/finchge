@@ -28,15 +28,15 @@ class GenotypeMapper(RandomStateMixin):
     `GenotypeMapper` implements the core mapping logic of Grammatical Evolution (GE),
     providing:
 
-    - **Decoding (map)**: genotype >>> derivation tree >>> phenotype
-    - **Encoding (reverse_map)**: derivation tree >>> genotype (that reproduces the same tree)
+    - Decoding (map): genotype >>> derivation tree >>> phenotype
+    - Encoding (reverse_map): derivation tree >>> genotype (that reproduces the same tree)
 
-    The mapper follows classical GE semantics:
-    - Stack-based depth-first expansion
-    - Modulo-based production selection
-    - Rightmost-first expansion (LIFO stack)
-    - Codon wrapping with a configurable limit
-    - Explicit recursion depth control
+    Follows classic GE semantics:
+        - Stack-based depth-first expansion
+        - Modulo-based production selection
+        - Rightmost-first expansion (LIFO stack)
+        - Codon wrapping with a configurable limit
+        - Explicit recursion depth control
 
     This class is grammar-aware but grammar-agnostic: all syntactic structure
     comes from the provided `Grammar` instance.
@@ -72,7 +72,6 @@ class GenotypeMapper(RandomStateMixin):
         Initialize a GenotypeMapper with grammar and mapping constraints.
 
         Args:
-
             grammar (Grammar):
                 Grammar defining production rules and non-terminals used for mapping.
             max_recursion_depth (int, optional):
@@ -100,21 +99,20 @@ class GenotypeMapper(RandomStateMixin):
     def map(self, genotype: list[int]) -> MappingResult:
         """
         Decode a genotype into a derivation tree and phenotype using
-        standard Grammatical Evolution (GE) mapping.
+        standard Grammatical Evolution (GE) mapping. This implementation performs stack-based depth-first expansion
+        using leftmost derivation semantics.
 
-        This implementation performs stack-based depth-first expansion
-        using leftmost derivation semantics:
-
-        • Children are attached to the tree in left-to-right order
-        • Children are pushed onto the stack in reverse order
-          - ensures leftmost child expands first (canonical GE behavior)
+        Follows leftmost derivation sematnics:
+            - Children are attached to the tree in left-to-right order
+            - Children are pushed onto the stack in reverse order ensuring leftmost child expands first
 
         Codons are consumed sequentially and mapped to grammar productions
         using modulo selection.
 
         Wrapping is supported when the genotype is exhausted, up to
-        `max_wraps` times. Mapping is aborted and marked invalid if:
+        `max_wraps` times.
 
+        Mapping is aborted and marked invalid if:
             - wrapping limit is exceeded
             - recursion depth exceeds `max_recursion_depth`
             - the final tree contains unresolved non-terminals
@@ -126,12 +124,14 @@ class GenotypeMapper(RandomStateMixin):
         Returns:
             MappingResult:
                 Object containing:
-                    phenotype (str): Generated phenotype string.
-                    used_genome (list[int]): Codons actually consumed.
-                    used_codon_count (int): Number of codons consumed.
-                    invalid (bool): Whether mapping failed.
-                    tree (TreeNode): Root of the derivation tree.
-                    tree_json (str): Serialized tree representation.
+                    ```
+                        - phenotype (str): Generated phenotype string.
+                        - used_genome (list[int]): Codons actually consumed.
+                        - used_codon_count (int): Number of codons consumed.
+                        - invalid (bool): Whether mapping failed.
+                        - tree (TreeNode): Root of the derivation tree.
+                        - tree_json (str): Serialized tree representation.
+                    ```
         """
 
         if not self.start_rule:

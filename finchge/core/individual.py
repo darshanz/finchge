@@ -1,5 +1,6 @@
 from typing import Any, Dict, Optional, Type, TypeVar
 
+import numpy as np
 from tabulate import tabulate
 
 from finchge.grammar.derivation_tree import TreeNode
@@ -53,6 +54,8 @@ class Individual:
             Algorithm-specific metadata managed by the evolutionary algorithm,
             such as Pareto rank, crowding distance, or dominance information.
     """
+
+    CASE_DATA_META_KEY = "_selection_case_data"
 
     def __init__(
         self,
@@ -179,7 +182,7 @@ class Individual:
         clone.meta = self.meta.copy()
         return clone
 
-    def get_meta(self, key: str, expected_type: Type[T]) -> T:
+    def get_meta(self, key: str, expected_type: Type[T] | None = None) -> Any:
         """
         Retrieve algorithm-specific metadata stored on the individual.
 
@@ -188,7 +191,7 @@ class Individual:
                 Metadata key to retrieve.
 
             expected_type:
-                Expected type of the metadata value.
+                Expected type of the metadata value if being strict.
 
         Raises:
             ValueError:
@@ -197,12 +200,34 @@ class Individual:
         Returns:
             The metadata value associated with the given key.
         """
+        if key not in self.meta:
+            raise ValueError(f"Missing meta key '{key}'")
+
         value = self.meta.get(key)
-        if not isinstance(value, expected_type):
+        if expected_type is not None and not isinstance(value, expected_type):
             raise ValueError(
                 f"Individual.meta['{key}'] must be of type {expected_type.__name__}"
             )
         return value
+
+    def set_meta(self, key: str, value: Any) -> None:
+        self.meta[key] = value
+
+    def has_meta(self, key: str) -> bool:
+        return key in self.meta
+
+    def remove_meta(self, key: str) -> None:
+        self.meta.pop(key, None)
+
+    def has_fitness(self) -> bool:
+        return bool(self.fitness)
+
+    def has_finite_fitness(self) -> bool:
+        return self.has_fitness() and all(np.isfinite(v) for v in self.fitness)
+
+    def has_case_data(self, key: str) -> bool:
+        case_store = self.meta.get(self.CASE_DATA_META_KEY)
+        return isinstance(case_store, dict) and key in case_store
 
     def __str__(self) -> str:
         """

@@ -6,82 +6,55 @@ import numpy as np
 import pytest
 from numpy.testing import assert_array_almost_equal
 
-from finchge.benchmarks.regression.koza_quartic import KozaQuarticBenchmark
+from finchge.benchmarks.regression import KozaQuarticBenchmark
 
 
 class TestKozaQuarticFunction:
-    """Test the mathematical correctness of the Koza Quartic function."""
-
     def test_function_values(self):
-        """Test function at known points."""
         bench = KozaQuarticBenchmark()
-
-        # Test points
         test_inputs = np.array([[-2.0], [-1.0], [-0.5], [0.0], [0.5], [1.0], [2.0]])
-
-        # Expected values: x^4 + x^3 + x^2 + x
-        # Calculate manually to verify
         expected = []
         for x in test_inputs.flatten():
             val = x**4 + x**3 + x**2 + x
             expected.append(val)
         expected = np.array(expected)
-
-        # Get actual values
-        actual = bench._quartic_function(test_inputs)
+        actual = bench.func(test_inputs)
 
         assert_array_almost_equal(actual, expected, decimal=10)
 
     def test_function_at_boundaries(self):
-        """Test function at range boundaries."""
         bench = KozaQuarticBenchmark(x_range=(-2, 2))
-
-        # Test at boundaries
         X = np.array([[-2.0], [2.0]])
-        y = bench._quartic_function(X)
-
-        # Expected: (-2)^4 + (-2)^3 + (-2)^2 + (-2) = 16 - 8 + 4 - 2 = 10
-        # Expected: 2^4 + 2^3 + 2^2 + 2 = 16 + 8 + 4 + 2 = 30
+        y = bench.func(X)
         expected = np.array([10.0, 30.0])
-
         assert_array_almost_equal(y, expected)
 
     def test_function_symmetry(self):
-        """Test that function is not symmetric (should be different for x and -x except at 0)."""
         bench = KozaQuarticBenchmark()
-
         X = np.array([[0.5], [-0.5]])
-        y = bench._quartic_function(X)
+        y = bench.func(X)
 
-        # Values should be different
         assert y[0] != y[1]
-
-        # For small x, the odd terms dominate the asymmetry
-        assert y[0] > y[1]  # 0.5 gives positive, -0.5 gives negative
+        assert y[0] > y[1]
 
 
 class TestKozaQuarticInitialization:
-    """Test benchmark initialization and parameter handling."""
-
     def test_default_initialization(self):
-        """Test default parameters."""
         bench = KozaQuarticBenchmark()
-
         assert bench.train_samples == 100
         assert bench.test_samples == 1000
-        assert bench.x_range == (-1, 1)
+        assert bench.x_range == [-1.0, 1.0]
         assert bench.train_type == "uniform"
         assert bench.test_type == "grid"
 
         # Test metadata
-        assert bench.metadata.name == "Koza Quartic"
+        assert bench.metadata.name == "Koza-Quartic"
         assert bench.metadata.input_dim == 1
         assert bench.metadata.output_dim == 1
         assert bench.metadata.train_size == 100
         assert bench.metadata.test_size == 1000
 
     def test_custom_parameters(self):
-        """Test custom parameter initialization."""
         bench = KozaQuarticBenchmark(
             random_state=42,
             train_samples=50,
@@ -120,15 +93,12 @@ class TestKozaQuarticInitialization:
 
 
 class TestKozaQuarticDataGeneration:
-    """Test data generation for Koza Quartic."""
-
     def test_reproducibility(self):
-        """Test that same random state produces identical data."""
         bench1 = KozaQuarticBenchmark(random_state=42)
         bench2 = KozaQuarticBenchmark(random_state=42)
 
-        X1_train, y1_train, X1_test, y1_test = bench1._generate_data()
-        X2_train, y2_train, X2_test, y2_test = bench2._generate_data()
+        X1_train, y1_train, X1_test, y1_test = bench1.load_data()
+        X2_train, y2_train, X2_test, y2_test = bench2.load_data()
 
         assert_array_almost_equal(X1_train, X2_train)
         assert_array_almost_equal(y1_train, y2_train)
@@ -136,24 +106,21 @@ class TestKozaQuarticDataGeneration:
         assert_array_almost_equal(y1_test, y2_test)
 
     def test_different_random_states(self):
-        """Test that different random states produce different data."""
         bench1 = KozaQuarticBenchmark(random_state=42)
         bench2 = KozaQuarticBenchmark(random_state=24)
 
-        X1_train, y1_train, _, _ = bench1._generate_data()
-        X2_train, y2_train, _, _ = bench2._generate_data()
+        X1_train, y1_train, _, _ = bench1.load_data()
+        X2_train, y2_train, _, _ = bench2.load_data()
 
-        # They should be different (very low probability of being equal)
         assert not np.array_equal(X1_train, X2_train)
 
     @pytest.mark.parametrize("sample_type", ["uniform", "grid", "random"])
     def test_sample_types_train(self, sample_type):
-        """Test different training sampling methods."""
         bench = KozaQuarticBenchmark(
             random_state=42, train_samples=50, train_type=sample_type
         )
 
-        X_train, y_train, _, _ = bench._generate_data()
+        X_train, y_train, _, _ = bench.load_data()
 
         assert len(X_train) == 50
         assert len(y_train) == 50
@@ -169,12 +136,11 @@ class TestKozaQuarticDataGeneration:
 
     @pytest.mark.parametrize("sample_type", ["uniform", "grid", "random"])
     def test_sample_types_test(self, sample_type):
-        """Test different test sampling methods."""
         bench = KozaQuarticBenchmark(
             random_state=42, test_samples=100, test_type=sample_type
         )
 
-        _, _, X_test, y_test = bench._generate_data()
+        _, _, X_test, y_test = bench.load_data()
 
         assert len(X_test) == 100
         assert len(y_test) == 100
@@ -184,9 +150,8 @@ class TestKozaQuarticDataGeneration:
         assert np.all((X_test >= low) & (X_test <= high))
 
     def test_data_shapes(self):
-        """Test that data shapes are correct."""
         bench = KozaQuarticBenchmark(train_samples=30, test_samples=200)
-        X_train, y_train, X_test, y_test = bench._generate_data()
+        X_train, y_train, X_test, y_test = bench.load_data()
 
         assert X_train.shape == (30, 1)
         assert y_train.shape == (30,)
@@ -194,21 +159,19 @@ class TestKozaQuarticDataGeneration:
         assert y_test.shape == (200,)
 
     def test_data_consistency(self):
-        """Test that y values are correctly computed from X."""
         bench = KozaQuarticBenchmark(random_state=42)
-        X_train, y_train, X_test, y_test = bench._generate_data()
+        X_train, y_train, X_test, y_test = bench.load_data()
 
         # Recompute y from X
-        y_train_computed = bench._quartic_function(X_train)
-        y_test_computed = bench._quartic_function(X_test)
+        y_train_computed = bench.func(X_train)
+        y_test_computed = bench.func(X_test)
 
         assert_array_almost_equal(y_train, y_train_computed)
         assert_array_almost_equal(y_test, y_test_computed)
 
     def test_train_test_independence(self):
-        """Test that train and test sets are independent."""
         bench = KozaQuarticBenchmark(random_state=42)
-        X_train, _, X_test, _ = bench._generate_data()
+        X_train, _, X_test, _ = bench.load_data()
 
         # For random sampling, there should be no exact duplicates
         # (very low probability of overlap with these sample sizes)
@@ -221,10 +184,7 @@ class TestKozaQuarticDataGeneration:
 
 
 class TestKozaQuarticGrammar:
-    """Test the grammar for Koza Quartic."""
-
     def test_grammar_content(self):
-        """Test that grammar contains expected elements."""
         bench = KozaQuarticBenchmark()
         grammar = bench.grammar_str()
 
@@ -280,40 +240,27 @@ class TestKozaQuarticGrammar:
 
 
 class TestKozaQuarticMetadata:
-    """Test metadata for Koza Quartic."""
-
     def test_metadata_fields(self):
-        """Test that all metadata fields are present and correct."""
         bench = KozaQuarticBenchmark(train_samples=50, test_samples=200)
         meta = bench.metadata
 
-        assert meta.name == "Koza Quartic"
+        assert meta.name == "Koza-Quartic"
         assert meta.category == "regression"
-        assert "quartic polynomial" in meta.description.lower()
-        assert "Koza" in meta.reference
         assert meta.input_dim == 1
         assert meta.output_dim == 1
         assert meta.train_size == 50
         assert meta.test_size == 200
 
     def test_metadata_update_with_parameters(self):
-        """Test that metadata updates with custom parameters."""
         bench = KozaQuarticBenchmark(train_samples=75, test_samples=150)
-
         assert bench.metadata.train_size == 75
         assert bench.metadata.test_size == 150
 
 
 class TestKozaQuarticSerialization:
-    """
-    Test that benchmark can be serialized.
-    Uses rng which cannot be pickled :; need to reset later
-    """
-
     def test_pickle_roundtrip(self):
-        """Test that benchmark can be pickled and unpickled."""
         bench = KozaQuarticBenchmark(random_state=42, train_samples=30)
-        X_train_original, y_train_original, _, _ = bench._generate_data()
+        X_train_original, y_train_original, _, _ = bench.load_data()
 
         # Pickle and unpickle
         with tempfile.NamedTemporaryFile() as f:
@@ -334,7 +281,7 @@ class TestKozaQuarticSerialization:
             bench_loaded._rng = np.random.default_rng(random_state)
 
         # Check that loaded benchmark produces same data
-        X_train_loaded, y_train_loaded, _, _ = bench_loaded._generate_data()
+        X_train_loaded, y_train_loaded, _, _ = bench_loaded.load_data()
 
         assert_array_almost_equal(X_train_original, X_train_loaded)
         assert_array_almost_equal(y_train_original, y_train_loaded)
@@ -371,10 +318,7 @@ class TestKozaQuarticSerialization:
 
 
 class TestKozaQuarticReproducibility:
-    """Test reproducibility across runs."""
-
     def test_reproducibility(self):
-        """Test that same random state produces same data ACROSS INSTANCES."""
         bench1 = KozaQuarticBenchmark(random_state=123)
         bench2 = KozaQuarticBenchmark(random_state=123)
 
@@ -388,8 +332,8 @@ class TestKozaQuarticReproducibility:
         assert_array_almost_equal(y1_test_1, y2_test_1)
 
         # Second call - should also match across instances
-        X1_2, y1_2, X1_test_2, y1_test_2 = bench1._generate_data()
-        X2_2, y2_2, X2_test_2, y2_test_2 = bench2._generate_data()
+        X1_2, y1_2, X1_test_2, y1_test_2 = bench1.load_data()
+        X2_2, y2_2, X2_test_2, y2_test_2 = bench2.load_data()
 
         assert_array_almost_equal(X1_2, X2_2)
         assert_array_almost_equal(y1_2, y2_2)
@@ -401,10 +345,9 @@ class TestKozaQuarticReproducibility:
         assert not np.array_equal(y1_1, y1_2)
 
     def test_hash_consistency(self):
-        """Test that data hashes are consistent (for regression testing)."""
         # Known good hashes for Koza Quartic with seed 42
         bench = KozaQuarticBenchmark(random_state=42)
-        X_train, y_train, X_test, y_test = bench._generate_data()
+        X_train, y_train, X_test, y_test = bench.load_data()
 
         # Create hashes of the data
         train_hash = hashlib.md5(X_train.tobytes()).hexdigest()
@@ -419,12 +362,9 @@ class TestKozaQuarticReproducibility:
 
 
 class TestKozaQuarticEdgeCases:
-    """Test edge cases and boundary conditions."""
-
     def test_single_sample(self):
-        """Test with single sample."""
         bench = KozaQuarticBenchmark(train_samples=1, test_samples=1)
-        X_train, y_train, X_test, y_test = bench._generate_data()
+        X_train, y_train, X_test, y_test = bench.load_data()
 
         assert X_train.shape == (1, 1)
         assert y_train.shape == (1,)
@@ -432,9 +372,8 @@ class TestKozaQuarticEdgeCases:
         assert y_test.shape == (1,)
 
     def test_large_sample_size(self):
-        """Test with large sample sizes."""
         bench = KozaQuarticBenchmark(train_samples=10000, test_samples=10000)
-        X_train, y_train, X_test, y_test = bench._generate_data()
+        X_train, y_train, X_test, y_test = bench.load_data()
 
         assert len(X_train) == 10000
         assert len(y_train) == 10000
@@ -442,9 +381,8 @@ class TestKozaQuarticEdgeCases:
         assert len(y_test) == 10000
 
     def test_extreme_ranges(self):
-        """Test with extreme input ranges."""
         bench = KozaQuarticBenchmark(x_range=(-1e6, 1e6))
-        X_train, y_train, _, _ = bench._generate_data()
+        X_train, y_train, _, _ = bench.load_data()
 
         assert np.all((X_train >= -1e6) & (X_train <= 1e6))
 
@@ -452,7 +390,6 @@ class TestKozaQuarticEdgeCases:
         assert np.all(np.isfinite(y_train))
 
     def test_summary_method(self):
-        """Test summary method if implemented."""
         bench = KozaQuarticBenchmark(random_state=42, train_samples=75)
 
         # Check if summary method exists (optional)
@@ -464,15 +401,12 @@ class TestKozaQuarticEdgeCases:
 
 
 class TestKozaQuarticScientificValidity:
-    """Tests to ensure benchmark is scientifically sound."""
-
     def test_function_continuity(self):
-        """Test that function is continuous in its domain."""
         bench = KozaQuarticBenchmark()
 
         # Generate dense sampling
         X = np.linspace(-1, 1, 1000).reshape(-1, 1)
-        y = bench._quartic_function(X)
+        y = bench.func(X)
 
         # Check for discontinuities (large jumps)
         diffs = np.abs(np.diff(y))
@@ -487,24 +421,22 @@ class TestKozaQuarticScientificValidity:
         assert np.all(second_diffs < 1.0)
 
     def test_function_monotonicity(self):
-        """Test function behavior in different regions."""
         bench = KozaQuarticBenchmark()
 
         # Function should be decreasing for x < -0.5, increasing for x > 0
         X_decreasing = np.linspace(-1, -0.6, 10).reshape(-1, 1)
-        y_decreasing = bench._quartic_function(X_decreasing)
+        y_decreasing = bench.func(X_decreasing)
 
         X_increasing = np.linspace(0, 1, 10).reshape(-1, 1)
-        y_increasing = bench._quartic_function(X_increasing)
+        y_increasing = bench.func(X_increasing)
 
         # Check monotonicity
         assert np.all(np.diff(y_decreasing) < 0)  # Strictly decreasing
         assert np.all(np.diff(y_increasing) > 0)  # Strictly increasing
 
     def test_training_coverage(self):
-        """Test that training data provides good coverage of the domain."""
         bench = KozaQuarticBenchmark(train_samples=100, train_type="uniform")
-        X_train, _, _, _ = bench._generate_data()
+        X_train, _, _, _ = bench.load_data()
 
         # Flatten if needed
         if X_train.ndim > 1:
@@ -535,7 +467,6 @@ class TestKozaQuarticScientificValidity:
         ), f"Max {X_train.max():.3f} not near upper bound"
 
     def test_koza_quartic_reproducibility(self):
-        """Test that Koza Quartic generates same data with same seed."""
         # First instance
         b1 = KozaQuarticBenchmark(random_state=42)
         X1_train, y1_train, X1_test, y1_test = b1.load_data()

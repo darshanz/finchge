@@ -7,12 +7,6 @@ class RepairStrategy(ABC):
     @abstractmethod
     def repair(self, phenotype: str) -> str:
         """
-        Repair the given phenotype.
-
-        Args:
-            phenotype (str): The phenotype string to repair.
-
-        Returns:
-            str: The repaired phenotype string.
+        Repair the given phenotype and return repaired phenotype
         """
         pass

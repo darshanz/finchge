@@ -1,0 +1,12 @@
+{
+  "6": {
+    "name": "6-bit Multiplexer",
+    "bits": 6,
+    "address_bits": 2
+  },
+  "11": {
+    "name": "11-bit Multiplexer",
+    "bits": 11,
+    "address_bits": 3
+  }
+}

@@ -13,11 +13,12 @@ FinchGE is a modern, modular, and user-friendly Python library for Grammatical E
 ## Features
 
 - Define grammars using BNF-style syntax
-- Supports standard genetic operations: mutation, crossover, selection
-- Flexible fitness evaluation for any problem domain
-- Modular and extensible design allowing conveniently plugin custom Algorithms and Operators
+- Supports standard genetic operations: selection, crossover, mutation, replacement
+- Flexible fitness evaluation for various problem domains
+- Modular and extensible design allowing conveniently plugin custom components
 - Easy-to-read in-built logging and visualization
 - Intuitive API with extensive documentation and examples
+- Benchmark suite for regression, logic and control problems
 
 
 ## Why finchGE
@@ -54,7 +55,7 @@ Step 2. Define a Fitness Evaluator ; `fitness_evaluator`
 ```python
 
 fitness_evaluator = FitnessEvaluator(
-    fitness_functions=StringMatchFitness("hello"),
+    fitness_functions=StringMatchFitness(target="hello"),
     mapper=GenotypeMapper(grammar=grammar)
 )
 
@@ -77,7 +78,7 @@ at [finchge.readthedocs.io](https://finchge.readthedocs.io/), including [Getting
 
 
 ## Development Status
-Note: This is version ```1.0.1-beta.7``` - a beta release. Expect breaking changes and bugs.
+Note: This is version ```1.0.1-beta.8``` - a beta release. Expect breaking changes and bugs.
 
 What to expect:
 

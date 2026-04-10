@@ -1,5 +1,3 @@
-"""Abstract base classes for all benchmarks."""
-
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Optional, Tuple
@@ -12,12 +10,8 @@ from finchge.utils.random_mixin import RandomStateMixin
 
 @dataclass
 class BenchmarkMetadata:
-    """Metadata for a benchmark problem."""
-
     name: str
     category: str
-    description: str
-    reference: str
     input_dim: int
     output_dim: int
     train_size: Optional[int] = None
@@ -27,13 +21,6 @@ class BenchmarkMetadata:
 class Benchmark(RandomStateMixin, ABC):
     """
     Abstract base class for all benchmarks.
-
-    A benchmark defines:
-    1. The grammar for the problem
-    2. The data (training and test) - optional for control problems
-    3. How to evaluate fitness
-
-    All benchmarks must be reproducible - same seed = same results.
     """
 
     def __init__(self, random_state: Optional[Any] = None) -> None:
@@ -51,17 +38,14 @@ class Benchmark(RandomStateMixin, ABC):
     @property
     @abstractmethod
     def metadata(self) -> BenchmarkMetadata:
-        """Return metadata about this benchmark."""
         pass
 
     @abstractmethod
     def grammar_str(self) -> str:
-        """Return the BNF grammar string for this problem."""
         pass
 
     @abstractmethod
     def grammar(self) -> Grammar:
-        """Return the BNF Grammar for this problem."""
         pass
 
     def _generate_data(
@@ -69,12 +53,8 @@ class Benchmark(RandomStateMixin, ABC):
     ) -> Tuple[NDArray[Any], NDArray[Any], NDArray[Any], NDArray[Any]]:
         """
         Generate or load the dataset.
-
-        This method is optional. Control problems that don't use traditional
+        This method is optional for control problems. Control problems that don't use traditional
         data should override this to return dummy data or raise a clear error.
-
-        Returns:
-            Tuple of (X_train, y_train, X_test, y_test)
 
         Raises:
             NotImplementedError: If the benchmark doesn't implement this method
@@ -88,7 +68,6 @@ class Benchmark(RandomStateMixin, ABC):
     def load_data(
         self,
     ) -> Tuple[NDArray[Any], NDArray[Any], NDArray[Any], NDArray[Any]]:
-        """Load data (with caching)."""
         if self._train_data is None or self._test_data is None:
             X_train, y_train, X_test, y_test = self._generate_data()
             self._train_data = (X_train, y_train)

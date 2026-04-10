@@ -9,6 +9,7 @@ from finchge.config import Keys
 from finchge.core.individual import Individual
 from finchge.core.population import Population
 from finchge.fitness.fitness_functions import GEFitnessFunction
+from finchge.fitness.fitness_types import EvaluationRecord, merge_fitness_results
 from finchge.grammar import GenotypeMapper
 from finchge.grammar.derivation_tree import TreeNode
 from finchge.grammar.mapper import MappingResult
@@ -34,6 +35,7 @@ class FitnessEvaluator:
         runner (PhenotypeRunner) : Runner for running (evaluating) the phenotype models on data
         encode_trees (bool) : whether to encode trees in tree based method, generally genotype not needed
         parallel_config (dict) : parallel section of config
+        require_case_data (book) : determines whether case based evaluation is required. eg.True when using Lexicase
     """
 
     def __init__(
@@ -43,6 +45,7 @@ class FitnessEvaluator:
         runner: PhenotypeRunner | None = None,
         encode_trees: bool = False,
         parallel_config: dict[str, Any] | None = None,
+        require_case_data: bool = False,
     ):
         if not isinstance(fitness_functions, list):
             fitness_functions = [fitness_functions]
@@ -51,6 +54,8 @@ class FitnessEvaluator:
         self.cache_manager: CacheManager[Any] | None = None
         self.ecode_trees = encode_trees
         self.runner = runner
+        # require_case_data flag determines whether case wise evaluation is required. It will be set True for lexicase
+        self.require_case_data = require_case_data
 
         # included to avoid collision in cache from different utils or if the data  environment changes
         # Not sure if this is the most efficient . More research required to make how to make caching more efficient
@@ -66,6 +71,9 @@ class FitnessEvaluator:
             else False
         )
         self._parallel_backend: BaseParallelBackend | None = None
+
+        self._validate_case_data_support()
+        self._validate_context_compatibility()
 
     def is_multi_objective(self) -> bool:
         """
@@ -182,7 +190,7 @@ class FitnessEvaluator:
                     env_version=self.get_env_version(),
                 )
                 if cached is not None:
-                    ind.fitness = cached
+                    self._apply_evaluation_record(ind, cached)
                     continue
             # Group by phenotype for duplicate detection
             if ind.phenotype not in phenotype_to_indices:
@@ -216,12 +224,14 @@ class FitnessEvaluator:
                     "runner": self.runner,
                     "seed": eval_seed,
                     "required_keys": required_keys,
+                    "require_case_data": self.require_case_data,
                 }
             else:
                 context = {
                     "phenotype": phenotype,
                     "seed": eval_seed,
                     "required_keys": required_keys,
+                    "require_case_data": self.require_case_data,
                 }
             contexts.append(context)
 
@@ -231,34 +241,32 @@ class FitnessEvaluator:
         )
 
         if isinstance(self._parallel_backend, ThreadPoolBackend):
-            unique_fitness_values = await self._parallel_backend.evaluate_batch(
+            unique_records = await self._parallel_backend.evaluate_batch(
                 contexts=contexts,  # List of dicts with runner, phenotype, seed
                 fitness_functions=self.fitness_functions,  # Direct list
             )
         else:
             # For process backend - still need pickling
-            unique_fitness_values = await self._parallel_backend.evaluate_batch(
+            unique_records = await self._parallel_backend.evaluate_batch(
                 cloudpickle.dumps(contexts), cloudpickle.dumps(self.fitness_functions)
             )
 
         # Map results back to phenotypes
-        phenotype_to_fitness = {
-            phen: fitness for phen, fitness in zip(phenotypes, unique_fitness_values)
-        }
+        phenotype_to_record = dict(zip(phenotypes, unique_records))
         # Propagate fitness to all individuals (including duplicates)
-        for phenotype, indices in phenotype_to_indices.items():
-            fitness = phenotype_to_fitness[phenotype]
+        for phenotype, idxs in phenotype_to_indices.items():
+            record = phenotype_to_record[phenotype]
 
-            for idx in indices:
+            for idx in idxs:
                 ind = population.individuals[idx]
-                ind.fitness = fitness
+                self._apply_evaluation_record(ind, record)
 
                 # Update cache
                 if self.cache_manager is not None:
                     self.cache_manager.set_fitness(
                         phenotype=ind.phenotype,
                         env_version=self.get_env_version(),
-                        fitness=fitness,
+                        fitness=record,
                     )
 
     def evaluate_individual(self, individual: "Individual") -> None:
@@ -281,33 +289,40 @@ class FitnessEvaluator:
                 env_version=self.get_env_version(),
             )
             if cached is not None:
-                individual.fitness = cached
+                self._apply_evaluation_record(individual, cached)
                 return
 
-        fitness = self._evaluate_in_context(individual)
-        individual.fitness = fitness
+        record = self._evaluate_in_context(individual)
+        self._apply_evaluation_record(individual, record)
 
         # Store in cache
         if self.cache_manager is not None:
             self.cache_manager.set_fitness(
                 phenotype=individual.phenotype,
                 env_version=self.get_env_version(),
-                fitness=fitness,
+                fitness=record,
             )
 
-    def _evaluate_in_context(self, individual: "Individual") -> list[Any]:
+    def _evaluate_in_context(self, individual: "Individual") -> EvaluationRecord:
         # Keys required by the fitness function
         required_keys = self._get_required_keys()
 
         # prepare context for evaluation
-        eval_context: dict[str, Any] = {"phenotype": individual.phenotype}
+        eval_context: dict[str, Any] = {
+            "phenotype": individual.phenotype,
+            "require_case_data": self.require_case_data,
+        }
         if self.runner:
             result_context = self.runner.run(
                 phenotype=individual.phenotype, context_hints=required_keys
             )
             eval_context.update(result_context)
             # Compute fitness and return
-        return [fn.evaluate(eval_context) for fn in self.fitness_functions]
+
+        self._validate_context_keys(eval_context, required_keys, individual)
+
+        results = [fn.evaluate(eval_context) for fn in self.fitness_functions]
+        return merge_fitness_results(results)
 
     def _create_parallel_backend(self) -> BaseParallelBackend:
         """Create parallel backend from config dictionary"""
@@ -387,3 +402,76 @@ class FitnessEvaluator:
         # Convert digest to an integer seed in [0, 2**32-1]
         seed64 = int.from_bytes(h.digest(), byteorder="big", signed=False)
         return seed64 % (2**32)
+
+    def _validate_case_data_support(self) -> None:
+        if not self.require_case_data:
+            return
+
+        for fn in self.fitness_functions:
+            if getattr(fn, "case_data_key", None) is None:
+                raise ValueError(
+                    f"{type(fn).__name__} does not support case data required for lexicase selection."
+                )
+
+    def _apply_evaluation_record(
+        self,
+        individual: Individual,
+        record: EvaluationRecord,
+    ) -> None:
+        # set fitness and case metadata to the individual
+        individual.fitness = record.fitness
+
+        if record.case_data:
+            individual.set_meta(Individual.CASE_DATA_META_KEY, record.case_data)
+        else:
+            individual.remove_meta(Individual.CASE_DATA_META_KEY)
+
+        for key, value in record.meta.items():
+            individual.set_meta(key, value)
+
+    def _validate_context_compatibility(self) -> None:
+        # Validate the runner-fitness combination to make sure runner can
+        # provide the keys required by fitness function
+
+        # if there is no runner we don't need to validate. for example in stringmatch problem the runner is not needed
+        if not self.runner:
+            return
+
+        required_keys = self._get_required_keys()
+        builtin_keys = {"phenotype", "require_case_data"}
+
+        runner_keys: set[str] = set()
+        if self.runner is not None:
+            runner_keys = getattr(self.runner, "provided_context_keys", set())
+
+        available_keys = builtin_keys | runner_keys
+        missing_keys = required_keys - available_keys
+
+        if missing_keys:
+            runner_name = (
+                type(self.runner).__name__ if self.runner is not None else "None"
+            )
+            raise ValueError(
+                f"FitnessEvaluator context contract is invalid."
+                f"Required context keys {sorted(missing_keys)} are not provided by "
+                f"runner {runner_name}"
+            )
+
+    def _validate_context_keys(
+        self,
+        eval_context: dict[str, Any],
+        required_keys: set[str],
+        individual: "Individual",
+    ) -> None:
+        # if there is no runner we don't need to validate. for example in stringmatch problem the runner is not needed
+        if not self.runner:
+            return
+
+        # validate context keys to avoid failing when wrong runner is provided.
+        missing = sorted(key for key in required_keys if key not in eval_context)
+        if missing:
+            raise ValueError(
+                f"Evaluation context for phenotype {individual.phenotype!r} is missing "
+                f"required keys: {missing}. "
+                f"Ensure the required keys are provided by the runner: ({type(self.runner).__name__}) "
+            )

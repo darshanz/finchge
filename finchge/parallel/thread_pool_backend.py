@@ -7,7 +7,12 @@ from typing import Any, Dict, Optional
 import numpy as np
 
 from finchge.config import Keys
-from finchge.fitness import GEFitnessFunction
+from finchge.fitness.fitness_functions import GEFitnessFunction
+from finchge.fitness.fitness_types import (
+    EvaluationRecord,
+    Fitness,
+    merge_fitness_results,
+)
 from finchge.parallel.base import BaseParallelBackend
 
 
@@ -45,7 +50,7 @@ class ThreadPoolBackend(BaseParallelBackend):
         fitness_functions: list[GEFitnessFunction],
         required_keys: Dict[str, Any],
         seed: int,
-    ) -> list[float]:
+    ) -> EvaluationRecord:
         """
         Evaluate a single individual in a thread.
         """
@@ -57,42 +62,43 @@ class ThreadPoolBackend(BaseParallelBackend):
 
             seed_everything(seed, use_torch=use_torch)
 
-            eval_context: Dict[str, Any] = {}
+            eval_context: dict[str, Any] = {"phenotype": phenotype}
 
             if runner is not None:
                 # Run the phenotype
-                eval_context = runner.run(
+                runner_context = runner.run(
                     phenotype=phenotype, context_hints=required_keys
                 )
+
+                eval_context.update(runner_context)
 
                 if hasattr(runner, "get_context"):
                     extra_context = runner.get_context()
                     if isinstance(extra_context, dict):
                         eval_context.update(extra_context)
-            else:
-                # No runner required . eg. stringmatch
-                eval_context = {
-                    "phenotype": phenotype,
-                }
 
-            # Calculate fitness
-            return [fn.evaluate(eval_context) for fn in fitness_functions]
+            results = [fn.evaluate(eval_context) for fn in fitness_functions]
+
+            return merge_fitness_results(results)
 
         except Exception as e:
             logging.error(f"Thread worker failed: {e}")
             import traceback
 
             traceback.print_exc()
-            return [
-                float("inf") if fn.maximize else float("-inf")
-                for fn in fitness_functions
-            ]
+
+            fallback = []
+            for fn in fitness_functions:
+                bad = float("-inf") if fn.maximize else float("inf")
+                fallback.append(Fitness(value=bad))
+
+            return merge_fitness_results(fallback)
 
     async def evaluate_batch(
         self,
         contexts: list[dict[str, Any]],
         fitness_functions: list[GEFitnessFunction],
-    ) -> list[list[float]]:
+    ) -> list[EvaluationRecord]:
         """
         Evaluate a batch of individuals using thread pool.
 
@@ -108,13 +114,13 @@ class ThreadPoolBackend(BaseParallelBackend):
                 max_workers=self.max_workers, thread_name_prefix="FinchGE_Thread"
             )
 
-        all_results: list[list[float]] = []
+        all_results: list[EvaluationRecord] = []
         total_items = len(contexts)
 
         # Process in batches
         for batch_start in range(0, total_items, self.batch_size):
             batch_end = min(batch_start + self.batch_size, total_items)
-            batch_futures: list[concurrent.futures.Future[list[float]]] = []
+            batch_futures: list[concurrent.futures.Future[EvaluationRecord]] = []
             # Submit batch to thread pool
             for i in range(batch_start, batch_end):
                 ctx = contexts[i]
@@ -132,15 +138,30 @@ class ThreadPoolBackend(BaseParallelBackend):
             for future in batch_futures:
                 try:
                     result = future.result(timeout=60)
-                    # Ensure result is list[float]
-                    if not isinstance(result, list):
-                        result = [float("-inf")] * len(fitness_functions)
+                    # Ensure result is EvaluationRecord
+
+                    if not isinstance(result, EvaluationRecord):
+                        fallback = [
+                            Fitness(
+                                value=float("-inf") if fn.maximize else float("inf")
+                            )
+                            for fn in fitness_functions
+                        ]
+                        result = merge_fitness_results(fallback)
                 except concurrent.futures.TimeoutError:
                     logging.warning("Thread task timed out")
-                    result = [float("-inf")] * len(fitness_functions)
+                    fallback = [
+                        Fitness(value=float("-inf") if fn.maximize else float("inf"))
+                        for fn in fitness_functions
+                    ]
+                    result = merge_fitness_results(fallback)
                 except Exception as e:
                     logging.error(f"Thread worker failed: {e}")
-                    result = [float("-inf")] * len(fitness_functions)
+                    fallback = [
+                        Fitness(value=float("-inf") if fn.maximize else float("inf"))
+                        for fn in fitness_functions
+                    ]
+                    result = merge_fitness_results(fallback)
 
                 all_results.append(result)
 

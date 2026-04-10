@@ -4,16 +4,13 @@ import tempfile
 import numpy as np
 from numpy.testing import assert_array_equal
 
-from finchge.benchmarks.logic.multiplexer import (
-    Multiplexer6Benchmark,
-    Multiplexer11Benchmark,
-)
+from finchge.benchmarks.logic import MultiplexerBenchmark
 from finchge.grammar.grammar import Grammar
 
 
 class TestMultiplexer6Benchmark:
     def test_metadata(self):
-        bench = Multiplexer6Benchmark()
+        bench = MultiplexerBenchmark(version=6)
 
         assert bench.metadata.name == "6-bit Multiplexer"
         assert bench.metadata.category == "logic"
@@ -21,10 +18,9 @@ class TestMultiplexer6Benchmark:
         assert bench.metadata.output_dim == 1
         assert bench.metadata.train_size == 64
         assert bench.metadata.test_size == 64
-        assert "Koza" in bench.metadata.reference
 
     def test_data_shapes(self):
-        bench = Multiplexer6Benchmark()
+        bench = MultiplexerBenchmark(version=6)
         X_train, y_train, X_test, y_test = bench._generate_data()
 
         assert X_train.shape == (64, 6)
@@ -40,7 +36,7 @@ class TestMultiplexer6Benchmark:
         assert np.all(y_train == y_train.astype(int))
 
     def test_all_combinations_present(self):
-        bench = Multiplexer6Benchmark()
+        bench = MultiplexerBenchmark(version=6)
         X_train, _, _, _ = bench._generate_data()
 
         combinations = set(tuple(row) for row in X_train)
@@ -52,7 +48,7 @@ class TestMultiplexer6Benchmark:
         assert (0, 0, 0, 1, 0, 1) in combinations
 
     def test_multiplexer_logic_6bit(self):
-        bench = Multiplexer6Benchmark()
+        bench = MultiplexerBenchmark(version=6)
         X, y, _, _ = bench._generate_data()
 
         for i in range(64):
@@ -72,7 +68,7 @@ class TestMultiplexer6Benchmark:
             ), f"Row {i}: bits={bits}, address={address}, expected={expected}, got={y[i]}"
 
     def test_specific_cases_6bit(self):
-        bench = Multiplexer6Benchmark()
+        bench = MultiplexerBenchmark(version=6)
         X, y, _, _ = bench._generate_data()
 
         def find_row(bits):
@@ -114,7 +110,7 @@ class TestMultiplexer6Benchmark:
         assert y[row] == 1  # address 11 selects D3 which is 1
 
     def test_deterministic(self):
-        bench = Multiplexer6Benchmark()
+        bench = MultiplexerBenchmark(version=6)
 
         X1, y1, X2, y2 = bench._generate_data()
         X3, y3, X4, y4 = bench._generate_data()
@@ -125,20 +121,20 @@ class TestMultiplexer6Benchmark:
         assert_array_equal(y2, y4)
 
     def test_train_test_identical(self):
-        bench = Multiplexer6Benchmark()
+        bench = MultiplexerBenchmark(version=6)
         X_train, y_train, X_test, y_test = bench._generate_data()
 
         assert_array_equal(X_train, X_test)
         assert_array_equal(y_train, y_test)
 
     def test_grammar_content(self):
-        bench = Multiplexer6Benchmark()
+        bench = MultiplexerBenchmark(version=6)
         grammar = bench.grammar()
 
-        assert "if ( " in grammar.terminals
-        assert "and ( " in grammar.terminals
-        assert "or ( " in grammar.terminals
-        assert "not ( " in grammar.terminals
+        assert "if(" in grammar.terminals
+        assert "and(" in grammar.terminals
+        assert "or(" in grammar.terminals
+        assert "not(" in grammar.terminals
 
         for i in range(6):
             assert f"x{i}" in grammar.terminals
@@ -147,7 +143,7 @@ class TestMultiplexer6Benchmark:
         assert "x6" not in grammar.terminals
 
     def test_pickle_roundtrip(self):
-        bench = Multiplexer6Benchmark()
+        bench = MultiplexerBenchmark(version=6)
         X_original, y_original, _, _ = bench._generate_data()
 
         with tempfile.NamedTemporaryFile() as f:
@@ -163,15 +159,15 @@ class TestMultiplexer6Benchmark:
         assert bench_loaded.metadata.name == bench.metadata.name
 
     def test_repr(self):
-        bench = Multiplexer6Benchmark()
+        bench = MultiplexerBenchmark(version=6)
         repr_str = repr(bench)
-        assert "Multiplexer6Benchmark" in repr_str
-        assert "64" in repr_str
+        assert "Multiplexer" in repr_str
+        assert "6-bit" in repr_str
 
 
 class TestMultiplexer11Benchmark:
     def test_metadata(self):
-        bench = Multiplexer11Benchmark()
+        bench = MultiplexerBenchmark(version=11)
 
         assert bench.metadata.name == "11-bit Multiplexer"
         assert bench.metadata.category == "logic"
@@ -181,7 +177,7 @@ class TestMultiplexer11Benchmark:
         assert bench.metadata.test_size == 2048
 
     def test_data_shapes(self):
-        bench = Multiplexer11Benchmark()
+        bench = MultiplexerBenchmark(version=11)
         X_train, y_train, X_test, y_test = bench._generate_data()
 
         assert X_train.shape == (2048, 11)
@@ -190,14 +186,14 @@ class TestMultiplexer11Benchmark:
         assert y_test.shape == (2048,)
 
     def test_all_combinations_present(self):
-        bench = Multiplexer11Benchmark()
+        bench = MultiplexerBenchmark(version=11)
         X_train, _, _, _ = bench._generate_data()
 
         combinations = set(tuple(row) for row in X_train)
         assert len(combinations) == 2048
 
     def test_multiplexer_logic_11bit(self):
-        bench = Multiplexer11Benchmark()
+        bench = MultiplexerBenchmark(version=11)
         X, y, _, _ = bench._generate_data()
 
         for i in range(100):
@@ -215,7 +211,7 @@ class TestMultiplexer11Benchmark:
             ), f"Row {i}: bits={bits}, address={address}, expected={expected}, got={y[i]}"
 
     def test_specific_cases_11bit(self):
-        bench = Multiplexer11Benchmark()
+        bench = MultiplexerBenchmark(version=11)
         X, y, _, _ = bench._generate_data()
 
         def find_row(bits):
@@ -267,7 +263,7 @@ class TestMultiplexer11Benchmark:
         assert y[row] == 1
 
     def test_deterministic(self):
-        bench = Multiplexer11Benchmark()
+        bench = MultiplexerBenchmark(version=11)
 
         X1, y1, X2, y2 = bench._generate_data()
         X3, y3, X4, y4 = bench._generate_data()
@@ -278,21 +274,21 @@ class TestMultiplexer11Benchmark:
         assert_array_equal(y2, y4)
 
     def test_train_test_identical(self):
-        bench = Multiplexer11Benchmark()
+        bench = MultiplexerBenchmark(version=11)
         X_train, y_train, X_test, y_test = bench._generate_data()
 
         assert_array_equal(X_train, X_test)
         assert_array_equal(y_train, y_test)
 
     def test_grammar_content(self):
-        bench = Multiplexer11Benchmark()
+        bench = MultiplexerBenchmark(version=11)
         grammar = Grammar(bench.grammar_str())
 
         # Should have all needed functions
-        assert "if ( " in grammar.terminals
-        assert "and ( " in grammar.terminals
-        assert "or ( " in grammar.terminals
-        assert "not ( " in grammar.terminals
+        assert "if(" in grammar.terminals
+        assert "and(" in grammar.terminals
+        assert "or(" in grammar.terminals
+        assert "not(" in grammar.terminals
 
         # Should have all 11 variables
         for i in range(11):
@@ -302,7 +298,7 @@ class TestMultiplexer11Benchmark:
         assert "x11" not in grammar.terminals
 
     def test_pickle_roundtrip(self):
-        bench = Multiplexer11Benchmark()
+        bench = MultiplexerBenchmark(version=11)
         X_original, y_original, _, _ = bench._generate_data()
 
         with tempfile.NamedTemporaryFile() as f:
@@ -317,16 +313,16 @@ class TestMultiplexer11Benchmark:
         assert_array_equal(y_original, y_loaded)
 
     def test_repr(self):
-        bench = Multiplexer11Benchmark()
+        bench = MultiplexerBenchmark(version=11)
         repr_str = repr(bench)
-        assert "Multiplexer11Benchmark" in repr_str
-        assert "2048" in repr_str
+        assert "Multiplexer" in repr_str
+        assert "11-bit" in repr_str
 
 
 class TestMultiplexerCommon:
     def test_no_random_state_effect(self):
-        bench1 = Multiplexer6Benchmark(random_state=42)
-        bench2 = Multiplexer6Benchmark(random_state=123)
+        bench1 = MultiplexerBenchmark(version=6, random_state=42)
+        bench2 = MultiplexerBenchmark(version=6, random_state=123)
 
         X1, y1, _, _ = bench1._generate_data()
         X2, y2, _, _ = bench2._generate_data()
@@ -335,8 +331,8 @@ class TestMultiplexerCommon:
         assert_array_equal(y1, y2)
 
         # Same for 11-bit
-        bench1 = Multiplexer11Benchmark(random_state=42)
-        bench2 = Multiplexer11Benchmark(random_state=123)
+        bench1 = MultiplexerBenchmark(version=11, random_state=42)
+        bench2 = MultiplexerBenchmark(version=11, random_state=123)
 
         X1, y1, _, _ = bench1._generate_data()
         X2, y2, _, _ = bench2._generate_data()
@@ -345,27 +341,27 @@ class TestMultiplexerCommon:
         assert_array_equal(y1, y2)
 
     def test_boolean_values(self):
-        bench6 = Multiplexer6Benchmark()
+        bench6 = MultiplexerBenchmark(version=6)
         X6, y6, _, _ = bench6._generate_data()
 
         assert np.all((X6 == 0) | (X6 == 1))
         assert np.all((y6 == 0) | (y6 == 1))
 
-        bench11 = Multiplexer11Benchmark()
+        bench11 = MultiplexerBenchmark(version=11)
         X11, y11, _, _ = bench11._generate_data()
 
         assert np.all((X11 == 0) | (X11 == 1))
         assert np.all((y11 == 0) | (y11 == 1))
 
     def test_address_data_separation(self):
-        bench6 = Multiplexer6Benchmark()
+        bench6 = MultiplexerBenchmark(version=6)
         X6, _, _, _ = bench6._generate_data()
 
         # First 3 bits are address, last 3 are data
         assert np.all(X6[:, :3].max() <= 1)
         assert np.all(X6[:, 3:].max() <= 1)
 
-        bench11 = Multiplexer11Benchmark()
+        bench11 = MultiplexerBenchmark(version=11)
         X11, _, _, _ = bench11._generate_data()
 
         # First 4 bits are address, last 7 are data

@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.0.1-beta.8] - 2026-04-10
+
+### Added
+- Selection operators: LexicaseSelection, EpsilonLexicaseSelection
+- Fitness Functions: CrossEntroypyFitness, HingeLossFitness, MSEFitness
+- Added VladislavlevaBenchmark benchmark for regression
+
+### Changed
+- Updated FitnessEvaluator, Parallel Executor, Algorithms, Checkpointing to support Lexicase
+- Updated Fitness functions to support Case-wise evaluation
+- Added validation to ensure the evaluation context contract is valid among FitnessEvaluator, selction, and fitness.
+- Refactored benchmark suites for more organized folder structure
+
+### Fixed
+- Fixed random seed leak fixed in parallel execution.
+- Fixed silent failure cases when incompatible phenotype runners were used
+- Fixed SymbolicExpression evaluation freezing for deeply nested trigonometric functions.
+
+
 ## [1.0.1-beta.7] - 2026-04-05
 
 ### Added

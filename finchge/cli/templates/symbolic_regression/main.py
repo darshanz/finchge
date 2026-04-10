@@ -1,4 +1,4 @@
-from finchge.benchmarks.regression.nguyen import Nguyen6Benchmark
+from finchge.benchmarks.regression import NguyenBenchmark
 from finchge.config import FinchConfig, Keys
 from finchge.core import GrammaticalEvolution
 from finchge.fitness import FitnessEvaluator, RMSEFitness
@@ -17,7 +17,8 @@ def main() -> None:
     config = FinchConfig.from_yaml("config.yaml")
 
     # get benchmark instance
-    benchmark = Nguyen6Benchmark(
+    benchmark = NguyenBenchmark(
+        version=6,
         random_state=config.experiment[Keys.RANDOM_SEED],
         train_samples=20,
         test_samples=1000,
