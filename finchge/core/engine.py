@@ -29,21 +29,26 @@ from finchge.utils.results import ResultHelper, StatsHelper
 
 class GrammaticalEvolution(RandomStateMixin):
     """
-     Grammatical evolution class for running the evolution. This is the Evolution controller class responsible for runing
-     FinchGE utils.
-
-    This class is responsible for wiring up different components. This includes loading experiment configurations,
+    Grammatical evolution class for running the evolution. This is the Evolution controller class responsible for runing
+    FinchGE utils. This class is responsible for wiring up different components. This includes loading experiment configurations,
     Loading grammar, initializing initial population, setting up fitness evaluator, and using gentic algorithm to
-    run the evolution.
+    run the evolution.  GrammaticalEvolution class is also responsible for running the evolution loop.
 
-    GrammaticalEvolution class is also responsible for running the evolution loop.
+    Args:
+        fitness_evaluator (FitnessEvaluator):
+            Evaluator to evaluate the fitness of individuals.
+        grammar (Optional[Grammar]):
+            BNF Grammar to be used. If not provided config must be available and must contain grammar_file value
+        config (Any | None = None):
+            Configuration settings for the GE algorithm.
+        initialiser (Optional[GEInitialiser]) :
+            Initializer class either integer based or tree based initializer
+        algorithm (BaseAlgorithm):
+            Evolutionary algorithm to be used e.g., GA, NSGA.
 
-     Args:
-         fitness_evaluator (FitnessEvaluator): Evaluator to evaluate the fitness of individuals.
-         grammar (Optional[Grammar]): BNF Grammar to be used. If not provided config must be available and must contain grammar_file value
-         config (Any | None = None): Configuration settings for the GE algorithm.
-         initialiser (Optional[GEInitialiser])
-         algorithm (BaseAlgorithm): Evolutionary algorithm to be used (e.g., GA, NSGA). If agorithm is not provided, GA will be used (provided that config is available).
+    Note:
+    If agorithm is not provided, GA will be used (provided that config is available)
+
     """
 
     def __init__(
@@ -398,15 +403,12 @@ class GrammaticalEvolution(RandomStateMixin):
 
     def halt(self, min_gens_allowed: int = 0) -> None:
         """
-         # halt signal to stop generation loop : can specify minimum allowed generations,
-        # if halt signal received it will wait if min_generations are not satisfied yet,
-        # if halt signal is received after minimum generations allowed, will halt immediately
+        halt signal to stop generation loop : can specify minimum allowed generations,
+        if halt signal received it will wait if min_generations are not satisfied yet,
+        if halt signal is received after minimum generations allowed, will halt immediately
 
         Args:
-            min_gens_allowed:
-
-        Returns:
-
+            min_gens_allowed: Minimum number of generations before halt
         """
         self._halt_min_gen = min_gens_allowed
         self._halt = True

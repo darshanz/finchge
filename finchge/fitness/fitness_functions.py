@@ -63,9 +63,6 @@ class AccuracyFitness(GEFitnessFunction):
     and the ground-truth labels from the validation data. It is intended to be
     used in supervised classification tasks, and is a maximization objective.
 
-    Inherits from:
-        GEFitnessFunction (maximize=True)
-
     Methods:
         evaluate(context): Computes accuracy using 'y_pred' and 'y_true' from the context.
     """
@@ -384,7 +381,6 @@ class RMSEFitness(GEFitnessFunction):
 class RewardFitness(GEFitnessFunction):
     """
     Fitness function for control problems with reward maximization.
-
     Simply returns the reward (higher is better).
     """
 

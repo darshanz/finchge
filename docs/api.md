@@ -144,7 +144,10 @@ The finchGE API consists of:
         - GEFitnessFunction
         - AccuracyFitness
         - MAEFitness
+        - MSEFitness
         - RMSEFitness
+        - CrossEntropyFitness
+        - HingeLossFitness
         - RewardFitness
         - StringMatchFitness
 

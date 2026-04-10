@@ -193,16 +193,15 @@ class TreeNode:
 
     def to_string(self) -> str:
         """
-        Canonical, reversible tree serialization using length-prefixed symbols.
+        Reversible tree serialization using length-prefixed symbols.
 
         Format:
+            Length followd by the symbol and the children in braces. For example.
+            ```
             <len>:<symbol>{child1,child2,...}
+            ```
 
-        Leaf example:
-            1:x
-
-        Internal node example:
-            3:add{1:x,1:y}
+            Leaf :  `1:x`,  internal node: `3:add{1:x,1:y}`
 
         Returns:
             str: Canonical serialized tree string.

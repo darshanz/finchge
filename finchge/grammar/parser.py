@@ -22,12 +22,15 @@ class GrammarParser(ABC):
         Parse input data and return grammar components.
 
         Returns:
-            tuple containing:
-                rules_contracted (dict[str, Rule]): Mapping of non-terminal symbols to Rule objects (original written form withoutrange expansion).
-                rules (dict[str, Rule]): Mapping of non-terminal symbols to Rule objects in Expanded (range notation) form.
-                start_rule (str): The first non-terminal rule, considered the start rule.
-                terminals (set[str]): Set of terminal symbols.
-                non_terminals (set[str]): Set of non-terminal symbols.
+            tuple : containing the rules, terminals and non-terminals
+
+        Response Contains:
+            - `rules_original` (dict[str, Rule]): Mapping of non-terminal symbols to Rule objects (original written form without range expansion).
+            - `rules` (dict[str, Rule]): Mapping of non-terminal symbols to Rule objects in Expanded (range notation) form.
+            - `start_rule` (str): The first non-terminal rule, considered the start rule.
+            - `terminals` (set[str]): Set of terminal symbols.
+            - `non_terminals` (set[str]): Set of non-terminal symbols.
+
         """
         pass
 
@@ -246,12 +249,14 @@ class BNFGrammarParser(GrammarParser):
         Parses the BNF grammar string into rules, terminals, and non-terminals.
 
         Returns:
-            Tuple:
-                rules (dict[str, Rule]): Mapping of non-terminal symbols to Rule objects.
-                rules_expanded (dict[str, Rule]): Mapping of non-terminal symbols to Rule objects in Expanded (range notation) form.
-                start_rule (str): The first non-terminal rule, considered the start rule.
-                terminals (set[str]): List of terminal symbols.
-                non_terminals (set[str]): List of non-terminal symbols.
+            Tuple: Tuple containing rules (original), rules_expanded, start_rule, terminals and non-terminals.
+
+        Response contains:
+            - `rules_original` (dict[str, Rule]): Mapping of non-terminal symbols to Rule objects. (Original may be contracted form)
+            - `rules` (dict[str, Rule]): Mapping of non-terminal symbols to Rule objects in Expanded (range notation) form.
+            - `start_rule` (str): The first non-terminal rule, considered the start rule.
+            - `terminals` (set[str]): List of terminal symbols.
+            - `non_terminals` (set[str]): List of non-terminal symbols.
 
 
         Raises:
