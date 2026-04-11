@@ -36,38 +36,45 @@ def setup_logging(
     Setup logging for a specific project instance.
     """
     timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-    group_name = f"/{group_name}" if group_name else ""
-    log_dir = f"logs/{group_name}/{logger_id}_{timestamp}"
+    log_dir = (
+        f"logs/{group_name}/{logger_id}_{timestamp}"
+        if group_name
+        else f"logs/{logger_id}_{timestamp}"
+    )
     os.makedirs(log_dir, exist_ok=True)
 
     log_file = os.path.join(log_dir, f"{logger_id}.log")
     LOG_DIRS[logger_id] = log_dir
-    logger = logging.getLogger(logger_id)
-    logger.setLevel(logging.INFO)
-    logger.propagate = False
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+
+    for h in root_logger.handlers[:]:
+        root_logger.removeHandler(h)
+        try:
+            h.close()
+        except Exception:
+            pass
 
     formatter = logging.Formatter(
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
 
-    # File handler
-    if not any(isinstance(h, logging.FileHandler) for h in logger.handlers):
-        fh = logging.FileHandler(log_file)
-        fh.setFormatter(formatter)
-        fh.setLevel(logging.INFO)
-        logger.addHandler(fh)
+    fh = logging.FileHandler(log_file, encoding="utf-8")
+    fh.setFormatter(formatter)
+    fh.setLevel(logging.INFO)
+    root_logger.addHandler(fh)
 
-    # Console handler
-    if not any(isinstance(h, TqdmLoggingHandler) for h in logger.handlers):
-        ch = TqdmLoggingHandler()
-        ch.setFormatter(formatter)
-        if verbose:
-            ch.setLevel(logging.INFO)
-        else:
-            ch.setLevel(logging.WARNING)
-        logger.addHandler(ch)
+    ch = TqdmLoggingHandler()
+    ch.setFormatter(formatter)
+    ch.setLevel(logging.INFO if verbose else logging.WARNING)
+    root_logger.addHandler(ch)
 
-    logger.info(f"Logging setup complete for {logger_id}. Log file: {log_file}")
+    logger = logging.getLogger(logger_id)
+    logger.setLevel(logging.INFO)
+    logger.propagate = True
+
+    root_logger.info(f"Logging setup complete for {logger_id}. Log file: {log_file}")
     return log_dir
 
 
@@ -380,7 +387,7 @@ class ExperimentLogger(FileLogger):
             try:
                 self.custom_log_hook(hook_data)
             except Exception as e:
-                logging.warning(f"Custom logging hook failed: {e}")
+                logging.getLogger(__name__).warning("Custom logging hook failed: %s", e)
 
     def _log_single_objective(
         self,
