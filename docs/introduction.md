@@ -559,6 +559,16 @@ fitness_evaluator = FitnessEvaluator(
         parallel_config=ge_config.parallel
     )
 ```
+
+!!! Note
+
+    In finchGE, tree-based initialization produces individuals without a genotype representation.
+    Genotype-based operators (e.g., OnePointCrossover, IntFlipMutation) require genotypes to function correctly.
+    To use these operators with tree-based initialization,
+    enable genotype encoding by setting `encode_trees=True` in the FitnessEvaluator.
+
+
+
 Fitness evaluator handles the [```PhenotypeRunner```][finchge.runners.PhenotypeRunner], fitness functions
 and parallel executors to evaluate the individuals. The phenotype runner instances such as
  [`SymbolicRegressionRunner`][finchge.runners.SymbolicRegressionRunner],

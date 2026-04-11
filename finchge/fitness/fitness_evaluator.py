@@ -33,7 +33,8 @@ class FitnessEvaluator:
         fitness_functions (GEFitnessFunction or list): One or more fitness function instances.
         mapper (GenotypeMapper) : Genotype mapper
         runner (PhenotypeRunner) : Runner for running (evaluating) the phenotype models on data
-        encode_trees (bool) : whether to encode trees in tree based method, generally genotype not needed
+        encode_trees (bool) : whether to encode trees to integer genotype,
+                                needed if genome-based operators are used after tree-based initialisation
         parallel_config (dict) : parallel section of config
         require_case_data (book) : determines whether case based evaluation is required. eg.True when using Lexicase
     """
