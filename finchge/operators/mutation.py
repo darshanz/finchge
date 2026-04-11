@@ -36,7 +36,11 @@ class IntFlipMutation(GEMutationStrategy):
             Individual: Mutated Individual.
         """
         if not individual.genotype:
-            raise ValueError("The genotype must exist.")
+            raise ValueError(
+                "OnePointCrossover requires individuals with a genotype, but none was found.\n"
+                "This usually happens when using tree-based initialization, which does not create genotypes.\n"
+                "To use this operator, enable genotype encoding by setting encode_trees=True in FitnessEvaluator class."
+            )
         genome: list[int] = individual.genotype
         for i in range(len(genome)):
             if self.rng.random() < self.mutation_probability:
@@ -87,7 +91,11 @@ class SwapMutation(GEMutationStrategy):
             A new Individual with a mutated genotype.
         """
         if not individual.genotype:
-            raise ValueError("The genotype must exist.")
+            raise ValueError(
+                "SwapMutation requires individuals with a genotype, but none was found.\n"
+                "This usually happens when using tree-based initialization, which does not create genotypes.\n"
+                "To use this operator, enable genotype encoding by setting encode_trees=True in FitnessEvaluator class."
+            )
         original_genome: list[int] = individual.genotype
 
         # Copy genome to avoid mutating the original individual
@@ -165,7 +173,11 @@ class GaussianMutation(GEMutationStrategy):
             A new Individual with a mutated genotype.
         """
         if not individual.genotype:
-            raise ValueError("The genotype must exist.")
+            raise ValueError(
+                "GaussianMutation requires individuals with a genotype, but none was found.\n"
+                "This usually happens when using tree-based initialization, which does not create genotypes.\n"
+                "To use this operator, enable genotype encoding by setting encode_trees=True in FitnessEvaluator class."
+            )
         original_genome: list[int] = individual.genotype
 
         # Copy genome to avoid mutating the original individual
@@ -219,7 +231,11 @@ class InversionMutation(GEMutationStrategy):
             A new Individual with a mutated genotype.
         """
         if not individual.genotype:
-            raise ValueError("The genotype must exist.")
+            raise ValueError(
+                "InversionMutation requires individuals with a genotype, but none was found.\n"
+                "This usually happens when using tree-based initialization, which does not create genotypes.\n"
+                "To use this operator, enable genotype encoding by setting encode_trees=True in FitnessEvaluator class."
+            )
         original_genome: list[int] = individual.genotype
         length = len(original_genome)
 
@@ -290,7 +306,11 @@ class CyclicMutation(GEMutationStrategy):
             A new Individual with a mutated genotype.
         """
         if not individual.genotype:
-            raise ValueError("The genotype must exist.")
+            raise ValueError(
+                "CyclicMutation requires individuals with a genotype, but none was found.\n"
+                "This usually happens when using tree-based initialization, which does not create genotypes.\n"
+                "To use this operator, enable genotype encoding by setting encode_trees=True in FitnessEvaluator class."
+            )
         original_genome: list[int] = individual.genotype
         genome_length = len(original_genome)
 
@@ -357,7 +377,11 @@ class DuplicationMutation(GEMutationStrategy):
             A new Individual with a mutated genotype.
         """
         if not individual.genotype:
-            raise ValueError("The genotype must exist.")
+            raise ValueError(
+                "DuplicationMutation requires individuals with a genotype, but none was found.\n"
+                "This usually happens when using tree-based initialization, which does not create genotypes.\n"
+                "To use this operator, enable genotype encoding by setting encode_trees=True in FitnessEvaluator class."
+            )
         original_genome: list[int] = individual.genotype
         length = len(original_genome)
 

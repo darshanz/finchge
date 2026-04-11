@@ -54,7 +54,11 @@ class OnePointCrossover(GECrossoverStrategy):
             Two offspring individuals.
         """
         if parent1.genotype is None or parent2.genotype is None:
-            raise ValueError("The genotype must exist.")
+            raise ValueError(
+                "OnePointCrossover requires individuals with a genotype, but none was found.\n"
+                "This usually happens when using tree-based initialization, which does not create genotypes.\n"
+                "To use this operator, enable genotype encoding by setting encode_trees=True in FitnessEvaluator class."
+            )
 
         genome_p1: List[int] = parent1.genotype.copy()
         genome_p2: List[int] = parent2.genotype.copy()
@@ -144,7 +148,11 @@ class TwoPointCrossover(GECrossoverStrategy):
             Two offspring individuals.
         """
         if parent1.genotype is None or parent2.genotype is None:
-            raise ValueError("The genotype must exist.")
+            raise ValueError(
+                "TwoPointCrossover requires individuals with a genotype, but none was found.\n"
+                "This usually happens when using tree-based initialization, which does not create genotypes.\n"
+                "To use this operator, enable genotype encoding by setting encode_trees=True in FitnessEvaluator class."
+            )
 
         genome_p1: List[int] = parent1.genotype.copy()
         genome_p2: List[int] = parent2.genotype.copy()
@@ -237,7 +245,11 @@ class UniformCrossover(GECrossoverStrategy):
             Two offspring individuals.
         """
         if parent1.genotype is None or parent2.genotype is None:
-            raise ValueError("The genotype must exist.")
+            raise ValueError(
+                "UniformCrossover requires individuals with a genotype, but none was found.\n"
+                "This usually happens when using tree-based initialization, which does not create genotypes.\n"
+                "To use this operator, enable genotype encoding by setting encode_trees=True in FitnessEvaluator class."
+            )
 
         genome_p1: List[int] = parent1.genotype.copy()
         genome_p2: List[int] = parent2.genotype.copy()
