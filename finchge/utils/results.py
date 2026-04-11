@@ -1,4 +1,7 @@
+from pathlib import Path
 from typing import TYPE_CHECKING
+
+from finchge.grammar.derivation_tree import TreeNode
 
 if TYPE_CHECKING:
     from finchge.core.individual import Individual
@@ -8,15 +11,20 @@ import math
 import statistics
 from typing import Any, Dict, Optional
 
-import numpy as np
 import pandas as pd
 from tabulate import tabulate
 
 from finchge.utils.logger import get_log_dir, get_logger
 from finchge.utils.visualization import (
-    plot_best_fitness,
+    plot_front_size,
+    plot_generation_runtime,
+    plot_objective_progress,
+    plot_search_diagnostics,
+    plot_single_objective_complexity,
+    plot_single_objective_fitness,
     plot_tree,
-    visualize_pareto_front,
+    visualize_final_pareto_front,
+    visualize_pareto_front_evolution,
 )
 
 
@@ -25,144 +33,276 @@ class ResultHelper:
         self.project_id = project_id
         self.logger = get_logger(project_id)
 
-    def generate_summary(self) -> None:
-        """
-        Generate and save summary statistics for single-objective optimization utils
-
-        Args:
-            objective_names (list): Names of the objective functions
-        """
-
+    def generate_summary(self, objective_names: Optional[list[str]] = None) -> None:
         csv_file_path = f"{get_log_dir(self.project_id)}/generations.csv"
+
         try:
             generation_data = pd.read_csv(csv_file_path)
         except FileNotFoundError:
             self.logger.info(
-                f"Skipped generation summary. CSV file not found for generating summary. "
-                f" {csv_file_path}   To automatically generate summary enable ExperimentLogger."
+                f"Skipped generation summary. CSV file not found: {csv_file_path}. "
+                f"Enable ExperimentLogger to generate it."
             )
             return
+
+        if generation_data.empty:
+            self.logger.info("Skipped generation summary. generations.csv is empty.")
+            return
+
+        if objective_names is None:
+            raise ValueError("objective_names is required for multi-objective summary")
+
+        if len(objective_names) > 1:
+            self._generate_multiobjective_summary(generation_data, objective_names)
+        else:
+            self._generate_single_objective_summary(generation_data)
+
+    def _generate_single_objective_summary(
+        self,
+        generation_data: pd.DataFrame,
+    ) -> None:
+        """
+        Generate and save summary statistics from generations.csv.
+        """
 
         def get_column_stats(
             column_name: str,
         ) -> tuple[float, float, float, float] | None:
-            """
-            Get statistics for a column if it exists, otherwise return None
-            Some colums may not exist, stats will show None for such columns. For example,
-            For Tree based work flow, the used_codons may not be saved, as no integer genome is involved.
-            """
             if column_name not in generation_data.columns:
-                self.logger.warning(
-                    f"Column '{column_name}' not found in CSV. Skipping."
-                )
                 return None
 
-            col_data = generation_data[column_name]
-            # Handle empty columns or columns with all NaN values
-            if col_data.empty or col_data.isna().all():
-                self.logger.warning(
-                    f"Column '{column_name}' has no valid data. Skipping."
-                )
+            col_data = pd.to_numeric(
+                generation_data[column_name], errors="coerce"
+            ).dropna()
+            if len(col_data) == 0:
                 return None
 
-            # Drop NaN values for calculation
-            clean_data = col_data.dropna()
-            if len(clean_data) == 0:
-                return None
-
-            max_ = float(round(clean_data.max(), 4))
-            min_ = float(round(clean_data.min(), 4))
-            avg_ = round(statistics.mean(clean_data), 4)
-            std_ = round(statistics.stdev(clean_data), 4)
+            min_ = float(round(col_data.min(), 4))
+            max_ = float(round(col_data.max(), 4))
+            avg_ = float(round(col_data.mean(), 4))
+            std_ = float(round(col_data.std(ddof=1), 4)) if len(col_data) > 1 else 0.0
             return min_, max_, avg_, std_
 
-        # Prepare tables with optional columns
-        headers = ["Min", "Max", "Average(±std)"]
-        fitness_stats = []
-
-        # Always include best_fitness if available
-        bf = get_column_stats("best_fitness")
-        if bf:
-            fitness_stats.append(["Best Fitness", bf[0], bf[1], f"{bf[2]}(±{bf[3]})"])
-
-        # Optional metrics - only include if data exists
-        optional_metrics = [
-            ("valid_count", "Valid Individuals"),
-            ("used_codons", "Used Codons"),
-            ("tree_depth", "Tree Depth"),
+        summary_metrics = [
+            ("best_fitness", "Best Fitness"),
+            ("ave_fitness", "Average Fitness"),
+            ("invalids", "Invalid Individuals"),
+            ("unique_inds", "Unique Individuals"),
+            ("unused_search", "Unused Search (%)"),
+            ("ave_used_codons", "Average Used Codons"),
+            ("best_used_codons", "Best Used Codons"),
+            ("ave_tree_depth", "Average Tree Depth"),
+            ("best_tree_depth", "Best Tree Depth"),
+            ("ave_tree_nodes", "Average Tree Nodes"),
+            ("best_tree_nodes", "Best Tree Nodes"),
+            ("ave_genome_length", "Average Genome Length"),
+            ("best_genome_length", "Best Genome Length"),
+            ("time_taken", "Time Per Generation"),
+            ("total_time", "Total Time"),
         ]
 
-        for col_name, display_name in optional_metrics:
-            stats = get_column_stats(col_name)
-            if stats:
-                fitness_stats.append(
-                    [display_name, stats[0], stats[1], f"{stats[2]}(±{stats[3]})"]
-                )
-            else:
-                fitness_stats.append([display_name, "N/A", "N/A", "N/A"])
+        headers = ["Metric", "Min", "Max", "Average(±std)"]
+        summary_rows = []
 
-        # Check if there are any statistics to display
-        if not fitness_stats:
+        for col_name, display_name in summary_metrics:
+            stats = get_column_stats(col_name)
+            if stats is None:
+                continue
+            summary_rows.append(
+                [display_name, stats[0], stats[1], f"{stats[2]}(±{stats[3]})"]
+            )
+
+        if not summary_rows:
             self.logger.error(
-                "No valid statistics could be calculated from the CSV data."
+                "No valid statistics could be calculated from generations.csv."
             )
             return
 
         summary = "\nStatistics:\n"
-        summary += tabulate(fitness_stats, headers=headers, tablefmt="pretty")
+        summary += tabulate(summary_rows, headers=headers, tablefmt="pretty")
 
         self.logger.info(summary)
+
         summary_path = f"{get_log_dir(self.project_id)}/summary.txt"
         with open(summary_path, "w") as f:
             f.write(summary)
+
         self.logger.info(f"Summary saved to {summary_path}")
 
-        # Plot fitness chart
+        # Plot best tree from actual best generation
+        if (
+            "best_fitness" in generation_data.columns
+            and "gen" in generation_data.columns
+        ):
+            try:
+                best_row = generation_data.loc[
+                    pd.to_numeric(
+                        generation_data["best_fitness"], errors="coerce"
+                    ).idxmin()
+                ]
+                best_generation = int(best_row["gen"])
+
+                best_tree_path = (
+                    f"{get_log_dir(self.project_id)}/trees/{best_generation}_tree.txt"
+                )
+
+                self.logger.info(
+                    f"Tree saved for best generation: {best_generation} -- {best_tree_path}"
+                )
+
+                with open(best_tree_path, "r") as file:
+                    best_tree = file.read()
+
+                plot_tree(best_tree, get_log_dir(self.project_id))
+
+            except FileNotFoundError:
+                self.logger.info(
+                    "Skipping plotting phenotype mapping tree: tree file not found for "
+                    "best generation. Ensure tree logging is enabled."
+                )
+            except Exception as e:
+                self.logger.error(f"Exception while plotting best tree: {e}")
+
+            # Plots
+        self.plot_single_objective_diagnostics()
+
+    def _generate_multiobjective_summary(
+        self,
+        generation_data: pd.DataFrame,
+        objective_names: list[str],
+    ) -> None:
+        save_dir = get_log_dir(self.project_id)
+        pareto_csv_path = f"{save_dir}/final_pareto_front/front.csv"
+
         try:
-            plot_best_fitness(
-                best_fitness=generation_data["best_fitness"].to_numpy(dtype=np.float64),
-                save_path=f"{get_log_dir(self.project_id)}/fitness_chart.png",
-            )
-            self.logger.info(
-                f"Fitness chart saved to {get_log_dir(self.project_id)}/fitness_chart.png"
-            )
-        except Exception as e:
-            self.logger.error(f"Exception {e}")
-
-        # Assuming Eliticism.. finchGE is built with eliticism
-        # If changed later this may need to be updated by
-        # perhaps the tree of the best individual can be saved at the end of the evolution
-        best_generation = generation_data["generation"].max()
-        self.logger.info(
-            f"Tree saved for: {best_generation} --  {get_log_dir(self.project_id)}/trees/{best_generation}_tree.txt"
-        )
-
-        # tree for best generation
-
-        best_tree_path = (
-            f"{get_log_dir(self.project_id)}/trees/{best_generation}_tree.txt"
-        )
-        try:
-            with open(best_tree_path, "r") as file:
-                best_tree_json = file.read()
-            plot_tree(best_tree_json, get_log_dir(self.project_id))
+            pareto_data = pd.read_csv(pareto_csv_path)
         except FileNotFoundError:
             self.logger.info(
-                f"Skipping plotting phenotype mapping tree: Tree file for generation {best_generation} not found. Please ensure logging is not excluded for tree files in config."
+                f"Skipped Pareto front summary. File not found: {pareto_csv_path}"
+            )
+            return
+
+        def get_column_stats(
+            df: pd.DataFrame,
+            column_name: str,
+        ) -> tuple[float, float, float, float] | None:
+            if column_name not in df.columns:
+                return None
+
+            col_data = pd.to_numeric(df[column_name], errors="coerce").dropna()
+            if len(col_data) == 0:
+                return None
+
+            min_ = float(round(col_data.min(), 4))
+            max_ = float(round(col_data.max(), 4))
+            avg_ = float(round(col_data.mean(), 4))
+            std_ = float(round(col_data.std(ddof=1), 4)) if len(col_data) > 1 else 0.0
+            return min_, max_, avg_, std_
+
+        summary_lines = []
+
+        # Top-level run facts
+        total_generations = (
+            int(generation_data["gen"].max()) + 1
+            if "gen" in generation_data.columns
+            else len(generation_data)
+        )
+        final_front_size = len(pareto_data)
+        final_total_time = (
+            float(generation_data["total_time"].dropna().iloc[-1])
+            if "total_time" in generation_data.columns
+            and not generation_data["total_time"].dropna().empty
+            else None
+        )
+
+        summary_lines.append("Multi-objective Summary\n")
+        summary_lines.append(f"Total generations: {total_generations}")
+        summary_lines.append(f"Final Pareto front size: {final_front_size}")
+        if final_total_time is not None:
+            summary_lines.append(f"Total runtime: {round(final_total_time, 4)} seconds")
+
+        # Generation-level statistics
+        generation_metrics = [
+            ("front_size", "Front Size"),
+            ("invalids", "Invalid Individuals"),
+            ("unique_inds", "Unique Individuals"),
+            ("unused_search", "Unused Search (%)"),
+            ("ave_genome_length", "Average Genome Length"),
+            ("ave_tree_depth", "Average Tree Depth"),
+            ("ave_tree_nodes", "Average Tree Nodes"),
+            ("ave_used_codons", "Average Used Codons"),
+            ("time_taken", "Time Per Generation"),
+        ]
+
+        headers = ["Metric", "Min", "Max", "Average(±std)"]
+        summary_rows = []
+
+        for col_name, display_name in generation_metrics:
+            stats = get_column_stats(generation_data, col_name)
+            if stats is None:
+                continue
+            summary_rows.append(
+                [display_name, stats[0], stats[1], f"{stats[2]}(±{stats[3]})"]
             )
 
-    def save_pareto_front(
-        self, pareto_front: list["Individual"], objective_names: list[str]
-    ) -> None:
-        pareto_csv_path = f"{get_log_dir()}/pareto_front.csv"
+        # Final Pareto front objective stats
+        for objective_name in objective_names:
+            stats = get_column_stats(pareto_data, objective_name)
+            if stats is None:
+                continue
+            summary_rows.append(
+                [
+                    f"Final Front: {objective_name}",
+                    stats[0],
+                    stats[1],
+                    f"{stats[2]}(±{stats[3]})",
+                ]
+            )
 
-        # fitness objectives + phenotype
-        headers = objective_names + ["phenotype"]
+        if summary_rows:
+            summary_lines.append("\nStatistics:\n")
+            summary_lines.append(
+                tabulate(summary_rows, headers=headers, tablefmt="pretty")
+            )
+
+        summary = "\n".join(summary_lines)
+
+        summary_path = f"{save_dir}/summary.txt"
+        with open(summary_path, "w") as f:
+            f.write(summary)
+
+        self.logger.info(summary)
+        self.logger.info(f"Summary saved to {summary_path}")
+
+        # plots
+        self.plot_multiobjective_diagnostics(objective_names)
+
+    def save_pareto_front(
+        self,
+        pareto_front: list["Individual"],
+        objective_names: list[str],
+    ) -> None:
+        save_dir = Path(get_log_dir(self.project_id))
+        front_dir = save_dir / "final_pareto_front"
+        front_dir.mkdir(parents=True, exist_ok=True)
+
+        pareto_csv_path = front_dir / "front.csv"
+
+        headers = [
+            "id",
+            *objective_names,
+            "used_codons",
+            "genome_length",
+            "tree_depth",
+            "phenotype_length",
+            "phenotype",
+        ]
 
         with open(pareto_csv_path, "w", newline="") as f:
             writer = csv.writer(f)
             writer.writerow(headers)
-            for ind in pareto_front:
+
+            for i, ind in enumerate(pareto_front):
                 if ind.fitness is None:
                     fitness = []
                 elif isinstance(ind.fitness, list):
@@ -170,11 +310,111 @@ class ResultHelper:
                 else:
                     fitness = [ind.fitness]
 
-                row = fitness + [ind.phenotype]
+                phenotype = getattr(ind, "phenotype", None) or ""
+                genotype = getattr(ind, "genotype", None)
+                tree = getattr(ind, "tree", None)
+
+                if hasattr(ind, "used_codon_count"):
+                    used_codons = getattr(ind, "used_codon_count")
+                elif hasattr(ind, "used_codons"):
+                    used_codons = getattr(ind, "used_codons")
+                else:
+                    used_codons = None
+
+                try:
+                    genome_length = len(genotype) if genotype is not None else 0
+                except TypeError:
+                    genome_length = 0
+
+                try:
+                    tree_depth = TreeNode.from_string(tree).max_depth if tree else 0
+                except Exception:
+                    tree_depth = 0
+
+                row = [
+                    i,
+                    *fitness,
+                    used_codons,
+                    genome_length,
+                    tree_depth,
+                    len(phenotype),
+                    phenotype,
+                ]
                 writer.writerow(row)
 
+        self.logger.info(f"Final Pareto front saved to {pareto_csv_path}")
+
+        try:
+            visualize_final_pareto_front(str(save_dir), objective_names)
+            self.logger.info(f"Pareto front visualization saved in {save_dir}")
+        except Exception as e:
+            self.logger.error(f"Failed to visualize Pareto front: {e}")
+
+    def plot_single_objective_diagnostics(self) -> None:
         save_dir = get_log_dir(self.project_id)
-        visualize_pareto_front(save_dir, objective_names)
+
+        try:
+            plot_single_objective_fitness(save_dir)
+            self.logger.info("Saved single-objective fitness plot")
+        except Exception as e:
+            self.logger.error(f"Failed to save fitness plot: {e}")
+
+        try:
+            plot_single_objective_complexity(save_dir)
+            self.logger.info("Saved complexity plot")
+        except Exception as e:
+            self.logger.error(f"Failed to save complexity plot: {e}")
+
+        try:
+            plot_search_diagnostics(save_dir)
+            self.logger.info("Saved search diagnostics plot")
+        except Exception as e:
+            self.logger.error(f"Failed to save search diagnostics plot: {e}")
+
+        try:
+            plot_generation_runtime(save_dir)
+            self.logger.info("Saved runtime plot")
+        except Exception as e:
+            self.logger.error(f"Failed to save runtime plot: {e}")
+
+    def plot_multiobjective_diagnostics(self, objective_names: list[str]) -> None:
+        save_dir = get_log_dir(self.project_id)
+
+        try:
+            visualize_final_pareto_front(save_dir, objective_names)
+            self.logger.info("Saved final Pareto front plot")
+        except Exception as e:
+            self.logger.error(f"Failed to save final Pareto front plot: {e}")
+
+        try:
+            visualize_pareto_front_evolution(save_dir, objective_names)
+            self.logger.info("Saved Pareto front evolution plot")
+        except Exception as e:
+            self.logger.error(f"Failed to save Pareto front evolution plot: {e}")
+
+        try:
+            plot_front_size(save_dir)
+            self.logger.info("Saved front size plot")
+        except Exception as e:
+            self.logger.error(f"Failed to save front size plot: {e}")
+
+        try:
+            plot_objective_progress(save_dir, objective_names)
+            self.logger.info("Saved objective progress plot")
+        except Exception as e:
+            self.logger.error(f"Failed to save objective progress plot: {e}")
+
+        try:
+            plot_search_diagnostics(save_dir)
+            self.logger.info("Saved search diagnostics plot")
+        except Exception as e:
+            self.logger.error(f"Failed to save search diagnostics plot: {e}")
+
+        try:
+            plot_generation_runtime(save_dir)
+            self.logger.info("Saved runtime plot")
+        except Exception as e:
+            self.logger.error(f"Failed to save runtime plot: {e}")
 
 
 class StatsHelper:

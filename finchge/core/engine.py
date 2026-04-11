@@ -285,10 +285,6 @@ class GrammaticalEvolution(RandomStateMixin):
                         pareto_front=None,  # NA: for MO only
                     )
                 )
-
-            # Summary is implemented only for Single-Objective
-            self.result_helper.generate_summary()
-
         else:
             pareto_front = self.__find_best_front(start_generation, population)
 
@@ -300,6 +296,8 @@ class GrammaticalEvolution(RandomStateMixin):
                         best_individual=None,  # NA: for single objective only
                     )
                 )
+        # Save Summary and plots
+        self.result_helper.generate_summary(self.objective_names)
 
         stop = timeit.default_timer()
         self.logger.info(f"Total time taken: {stop - start :.4f} seconds")

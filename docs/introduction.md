@@ -1199,41 +1199,9 @@ Runtime logs are written to a `.log` file and optionally displayed in the consol
 
 ---
 
-#### Experiment loggers
-
-Experiment loggers record **structured results** produced during evolution.
-They are independent of Python logging and operate through lifecycle callbacks.
-
-All experiment loggers implement the [`BaseLogger`][finchge.utils.logger.BaseLogger] interface.
-
----
-
-#### Available experiment loggers
-
-#### FileLogger (lightweight)
-
-[`FileLogger`][finchge.utils.logger.FileLogger] records **compact, append-only summaries** suitable for monitoring
-and post-hoc analysis.
-Use `[`FileLogger`][finchge.utils.logger.FileLogger] when storage should be minimal,  only high-level metrics are needed, or long runs are monitored in real time.
-
-For each generation it logs:
-
-- best fitness (single-objective), or
-- summary statistics of the Pareto front (multi-objective)
-
-At the end of a run it writes a final summary file.
-
-Example:
-
-```python
-from finchge.utils.logger import FileLogger
-
-logger = FileLogger()
-
-```
 
 
-#### ExperimentLogger (full experiment tracking)
+#### ExperimentLogger
 
 [`ExperimentLogger`][finchge.utils.logger.ExperimentLogger] records complete experiment artifacts, enabling full
 reproducibility and detailed analysis. Use [`ExperimentLogger`][finchge.utils.logger.ExperimentLogger]  when
@@ -1257,10 +1225,9 @@ from finchge.utils.logger import ExperimentLogger
 logger = ExperimentLogger(exclude=["trees"])
 ```
 
+#### Using experiment logger
 
-#### Using experiment loggers
-
-When using [`GrammaticalEvolution`][finchge.core.GrammaticalEvolution] for running project, loggers are managed
+When using [`GrammaticalEvolution`][finchge.core.GrammaticalEvolution] for running project, logger is managed
 automatically.
 
 ```python
@@ -1278,26 +1245,15 @@ result = ge.run()
 However, for more advanced usage or custom logging Experiment Loggers provide callbacks such as `on_run_start()` ,
 `on_generation_end()` and `on_run_end()`.
 
-
-#### Single-objective vs multi-objective logging
-
-- **Single-objective** runs log the best individual per generation.
-- **Multi-objective** runs log Pareto front summaries ([`FileLogger`][finchge.utils.logger.FileLogger]) or
-full fronts ([`ExperimentLogger`][finchge.utils.logger.ExperimentLogger]).
-
-The logging behavior adapts automatically based on the algorithm used.
+The logging behavior logs relevant logs automatically based on the single objective or multi-objective algorithm used.
 
 
 !!! info "Note"
 
     - Runtime logging and experiment logging are intentionally separate.
-    - Experiment loggers never configure Python logging.
+    - Experiment logger never configures Python logging.
     - Checkpointing operates independently of logging.
     - Logging does not affect determinism or reproducibility.
-
-      Use [`FileLogger`][finchge.utils.logger.FileLogger] with minimal logging for quicker development and [`ExperimentLogger`][finchge.utils.logger.ExperimentLogger] for
-      final experiments for detailed results analysis.
-
 
 
 

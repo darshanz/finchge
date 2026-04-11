@@ -1,156 +1,302 @@
-import logging
-import os
-from typing import Any, Optional, Union
+import re
+from pathlib import Path
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
-from matplotlib.axes import Axes
 from matplotlib.cm import ScalarMappable
 from matplotlib.colors import Normalize
-from matplotlib.figure import Figure
-from numpy.typing import NDArray
 
 
-def plot_fitness_chart(
-    data: list[float],
-    title: Optional[str] = None,
-    xlabel: Optional[str] = None,
-    ylabel: Optional[str] = None,
-    objective_name: Optional[str] = None,
-    save_path: Optional[str] = None,
-) -> None:
-    if objective_name:
-        ylabel = f"Fitness value ({objective_name})"
+def plot_single_objective_fitness(save_dir: str) -> None:
+    csv_path = f"{save_dir}/generations.csv"
+    df = pd.read_csv(csv_path)
 
-    title = "Fitness" if not title else title
-    xlabel = "Generation" if not xlabel else xlabel
-    ylabel = "Fitness value" if not ylabel else ylabel
-    plt.plot(data)
-    plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    if save_path:
-        plt.savefig(save_path)
-    plt.close()
+    if "gen" not in df.columns or "best_fitness" not in df.columns:
+        raise ValueError("generations.csv must contain 'gen' and 'best_fitness'")
 
+    fig, ax = plt.subplots(figsize=(10, 6))
 
-def plot_best_fitness(
-    best_fitness: Union[list[Any], NDArray[np.float64]],
-    title: str = "Fitness Progress",
-    x_label: str = "Generation",
-    y_label: str = "Fitness",
-    figsize: tuple[int, int] = (10, 6),
-    save_path: Optional[str] = None,
-) -> tuple[Figure, Axes]:
-    """
-    Plot the best fitness across generations.
+    ax.plot(df["gen"], df["best_fitness"], label="Best Fitness", linewidth=2)
 
-    Args:
-        best_fitness: List or array of best fitness values per generation
-        title: Plot title
-        x_label: X-axis label
-        y_label: Y-axis label
-        figsize: Figure size
-        save_path: Optional path to save figure
+    if "ave_fitness" in df.columns:
+        ax.plot(df["gen"], df["ave_fitness"], label="Average Fitness", linewidth=1.5)
 
-    Returns:
-        Tuple of (fig, ax)
-    """
-    best_fitness = np.array(best_fitness)
-    generations = np.arange(1, len(best_fitness) + 1)
-
-    fig, ax = plt.subplots(figsize=figsize)
-
-    ax.plot(generations, best_fitness, "b-", linewidth=1.5, label="Best Fitness")
-    ax.set_title(title)
-    ax.set_xlabel(x_label)
-    ax.set_ylabel(y_label)
+    ax.set_xlabel("Generation")
+    ax.set_ylabel("Fitness")
+    ax.set_title("Fitness Progression")
     ax.legend()
     ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
-
-    if save_path:
-        plt.savefig(save_path, dpi=300, bbox_inches="tight")
-
-    return fig, ax
+    plt.savefig(f"{save_dir}/fitness_progression.pdf")
+    plt.close(fig)
 
 
-def visualize_pareto_front(save_dir: str, objective_names: list[str]) -> None:
+def plot_single_objective_complexity(save_dir: str) -> None:
+    csv_path = f"{save_dir}/generations.csv"
+    df = pd.read_csv(csv_path)
+
+    if "gen" not in df.columns:
+        raise ValueError("generations.csv must contain 'gen'")
+
+    complexity_cols = [
+        ("ave_genome_length", "Average Genome Length"),
+        ("ave_tree_depth", "Average Tree Depth"),
+        ("ave_tree_nodes", "Average Tree Nodes"),
+        ("ave_used_codons", "Average Used Codons"),
+        ("best_genome_length", "Best Genome Length"),
+        ("best_tree_depth", "Best Tree Depth"),
+        ("best_tree_nodes", "Best Tree Nodes"),
+        ("best_used_codons", "Best Used Codons"),
+    ]
+
+    available = [(col, label) for col, label in complexity_cols if col in df.columns]
+    if not available:
+        return
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    for col, label in available:
+        ax.plot(df["gen"], df[col], label=label)
+
+    ax.set_xlabel("Generation")
+    ax.set_ylabel("Complexity")
+    ax.set_title("Complexity Progression")
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    plt.savefig(f"{save_dir}/complexity_progression.pdf")
+    plt.close(fig)
+
+
+def plot_search_diagnostics(save_dir: str) -> None:
+    csv_path = f"{save_dir}/generations.csv"
+    df = pd.read_csv(csv_path)
+
+    if "gen" not in df.columns:
+        raise ValueError("generations.csv must contain 'gen'")
+
+    cols = [
+        ("unique_inds", "Unique Individuals"),
+        ("unused_search", "Unused Search (%)"),
+        ("invalids", "Invalid Individuals"),
+    ]
+    available = [(col, label) for col, label in cols if col in df.columns]
+    if not available:
+        return
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    for col, label in available:
+        ax.plot(df["gen"], df[col], label=label)
+
+    ax.set_xlabel("Generation")
+    ax.set_ylabel("Count / Percentage")
+    ax.set_title("Search Diagnostics")
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    plt.savefig(f"{save_dir}/search_diagnostics.pdf")
+    plt.close(fig)
+
+
+def plot_generation_runtime(save_dir: str) -> None:
+    csv_path = f"{save_dir}/generations.csv"
+    df = pd.read_csv(csv_path)
+
+    if "gen" not in df.columns or "time_taken" not in df.columns:
+        return
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    ax.plot(df["gen"], df["time_taken"], linewidth=1.8)
+    ax.set_xlabel("Generation")
+    ax.set_ylabel("Seconds")
+    ax.set_title("Generation Runtime")
+    ax.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    plt.savefig(f"{save_dir}/generation_runtime.pdf")
+    plt.close(fig)
+
+
+def visualize_final_pareto_front(save_dir: str, objective_names: list[str]) -> None:
     if len(objective_names) < 2:
-        raise ValueError("objective_names must contain at least two objectives")
+        raise ValueError("Need at least two objectives to plot a Pareto front")
 
-    pareto_csv_path: str = f"{save_dir}/pareto_front.csv"
-    df: pd.DataFrame = pd.read_csv(pareto_csv_path)
+    csv_path = f"{save_dir}/final_pareto_front/front.csv"
+    df = pd.read_csv(csv_path)
 
-    os.makedirs(save_dir, exist_ok=True)
+    x_name = objective_names[0]
+    y_name = objective_names[1]
 
-    # Extract generations safely
-    generations = df["generation"]
-    unique_gens: list[int] = sorted(int(g) for g in generations.unique())
+    if x_name not in df.columns or y_name not in df.columns:
+        raise ValueError(f"Expected columns '{x_name}' and '{y_name}' in {csv_path}")
 
-    fig, ax1 = plt.subplots(figsize=(10, 8))
+    plot_df = df[[x_name, y_name]].dropna().sort_values(by=x_name)
 
-    # Colormap colors
+    fig, ax = plt.subplots(figsize=(10, 8))
+
+    ax.scatter(plot_df[x_name], plot_df[y_name], s=25, alpha=0.8)
+    ax.plot(plot_df[x_name], plot_df[y_name], alpha=0.7)
+
+    ax.set_xlabel(x_name)
+    ax.set_ylabel(y_name)
+    ax.set_title("Final Pareto Front")
+    ax.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    plt.savefig(f"{save_dir}/final_pareto_front/final_pareto_front.pdf")
+    plt.close(fig)
+
+
+def visualize_pareto_front_evolution(save_dir: str, objective_names: list[str]) -> None:
+    if len(objective_names) < 2:
+        raise ValueError("Need at least two objectives to plot Pareto front evolution")
+
+    base_dir = Path(save_dir)
+    front_files = sorted(base_dir.glob("generation_*/front.csv"))
+
+    if not front_files:
+        raise FileNotFoundError(f"No generation front.csv files found in {save_dir}")
+
+    frames: list[pd.DataFrame] = []
+
+    for csv_path in front_files:
+        match = re.search(r"generation_(\d+)", str(csv_path.parent))
+        if not match:
+            continue
+
+        generation = int(match.group(1))
+        df = pd.read_csv(csv_path)
+
+        x_name = objective_names[0]
+        y_name = objective_names[1]
+
+        if x_name not in df.columns or y_name not in df.columns:
+            continue
+
+        df = df.copy()
+        df["generation"] = generation
+        frames.append(df)
+
+    if not frames:
+        raise ValueError(
+            "No valid front.csv files found with the required objective columns"
+        )
+
+    all_df = pd.concat(frames, ignore_index=True)
+
+    x_name = objective_names[0]
+    y_name = objective_names[1]
+    unique_gens = sorted(all_df["generation"].unique())
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+
     cmap = plt.colormaps["viridis"]
-    colors = cmap(np.linspace(0.0, 1.0, len(unique_gens)))
+    norm = Normalize(vmin=min(unique_gens), vmax=max(unique_gens))
 
-    # Scatter all solutions
-    all_data: pd.DataFrame = df[objective_names + ["generation"]]
-
-    ax1.scatter(
-        all_data[objective_names[0]],
-        all_data[objective_names[1]],
-        c=all_data["generation"],
-        cmap="viridis",
-        alpha=0.2,
+    ax.scatter(
+        all_df[x_name],
+        all_df[y_name],
+        c=all_df["generation"],
+        cmap=cmap,
+        norm=norm,
+        alpha=0.25,
         s=15,
         marker=".",
     )
 
-    # Plot Pareto fronts per generation
-    for i, gen in enumerate(unique_gens):
-        gen_data: pd.DataFrame = df[df["generation"] == gen]
-        gen_data_sorted: pd.DataFrame = gen_data.sort_values(by=objective_names[0])
+    for gen in unique_gens:
+        gen_df = all_df[all_df["generation"] == gen].sort_values(by=x_name)
 
-        ax1.step(
-            gen_data_sorted[objective_names[0]],
-            gen_data_sorted[objective_names[1]],
-            linestyle="--",
+        ax.step(
+            gen_df[x_name],
+            gen_df[y_name],
             where="pre",
-            color=colors[i],
-            lw=0.35,
-            alpha=0.25,
+            linestyle="--",
+            lw=0.7,
+            alpha=0.35,
+            color=cmap(norm(gen)),
         )
-
-        ax1.plot(
-            gen_data_sorted[objective_names[0]],
-            gen_data_sorted[objective_names[1]],
+        ax.plot(
+            gen_df[x_name],
+            gen_df[y_name],
             "o",
-            color=colors[i],
-            ms=1,
+            ms=1.5,
+            alpha=0.6,
+            color=cmap(norm(gen)),
         )
 
-    ax1.set_xlabel(objective_names[0], fontsize=14)
-    ax1.set_ylabel(objective_names[1], fontsize=14)
-    ax1.set_title("Pareto Fronts by Generation")
+    ax.set_xlabel(x_name)
+    ax.set_ylabel(y_name)
+    ax.set_title("Pareto Front Evolution")
+    ax.grid(True, alpha=0.3)
 
-    # Colorbar
-    norm = Normalize(vmin=0, vmax=len(unique_gens) - 1)
     sm = ScalarMappable(norm=norm, cmap=cmap)
-
     sm.set_array([])
-
-    cbar = plt.colorbar(sm, ax=ax1, ticks=[0, len(unique_gens) - 1])
+    cbar = plt.colorbar(sm, ax=ax)
     cbar.ax.set_ylabel("Generation", rotation=90)
 
     plt.tight_layout()
-
     plt.savefig(f"{save_dir}/pareto_front_evolution.pdf")
-    plt.savefig(f"{save_dir}/pareto_front_evolution.png", dpi=300)
     plt.close(fig)
 
-    logging.info(
-        f"Pareto front evolution plot saved to: {save_dir}/pareto_front_evolution.pdf"
-    )
+
+def plot_front_size(save_dir: str) -> None:
+    csv_path = f"{save_dir}/generations.csv"
+    df = pd.read_csv(csv_path)
+
+    if "gen" not in df.columns or "front_size" not in df.columns:
+        return
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    ax.plot(df["gen"], df["front_size"], linewidth=2)
+    ax.set_xlabel("Generation")
+    ax.set_ylabel("Front Size")
+    ax.set_title("Pareto Front Size Over Generations")
+    ax.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    plt.savefig(f"{save_dir}/front_size_progression.pdf")
+    plt.close(fig)
+
+
+def plot_objective_progress(save_dir: str, objective_names: list[str]) -> None:
+    csv_path = f"{save_dir}/generations.csv"
+    df = pd.read_csv(csv_path)
+
+    if "gen" not in df.columns:
+        return
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    plotted = False
+
+    for name in objective_names:
+        mean_col = f"front_mean_{name}"
+        min_col = f"front_min_{name}"
+
+        if mean_col in df.columns:
+            ax.plot(df["gen"], df[mean_col], label=f"{name} mean")
+            plotted = True
+
+        if min_col in df.columns:
+            ax.plot(df["gen"], df[min_col], label=f"{name} min", linestyle="--")
+            plotted = True
+
+    if not plotted:
+        plt.close(fig)
+        return
+
+    ax.set_xlabel("Generation")
+    ax.set_ylabel("Objective Value")
+    ax.set_title("Objective-wise Pareto Front Progress")
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    plt.savefig(f"{save_dir}/objective_progress.pdf")
+    plt.close(fig)

@@ -9,6 +9,8 @@ from numpy.random import RandomState
 class RandomStateMixin:
     """
     Mixin to add random state control
+    All classes using randomness either using python random or numpy random should extend from RandomMixin.
+    And, should provide random_state parmeter in the constructor, Otherwise, the determinism is not guaranteed across runs.
     """
 
     def __init__(
@@ -24,9 +26,6 @@ class RandomStateMixin:
         self._init_rngs()
 
     def _init_rngs(self) -> None:
-        """
-        Initialize or reinitialize RNGs from _original_random_state.
-        """
         if self._original_random_state is None:
             self._rng = random.Random()
             self._np_rng = np.random.RandomState()
