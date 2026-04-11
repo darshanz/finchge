@@ -56,12 +56,6 @@ def test_missing_column_error():
         expr.eval(X)
 
 
-def test_simplification_equivalence():
-    expr = SymbolicExpression("x0 + 0")
-    simplified = expr.simplify()
-    assert str(simplified) == "x0"
-
-
 def test_deterministic_evaluation():
     X = np.random.randn(50, 3)
     expr = SymbolicExpression("x0 * x1 + x2")

@@ -8,7 +8,7 @@ def get_vlad_grammar(dim: int) -> str:
 
     return f"""
     <expr>  ::= <expr> <op> <expr> | <func>(<expr>) | <var> | <const>
-    <op>    ::= + | - | * | /
+    <op>    ::= + | - | * | pdiv
     <func>  ::= sin | cos | exp | plog | psqrt
     <var>   ::= {vars_list}
     <const> ::= {consts}
