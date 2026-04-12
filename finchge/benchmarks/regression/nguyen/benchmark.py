@@ -72,8 +72,6 @@ class NguyenBenchmark(Benchmark):
         self.x_range = self._verify_range(raw_range)
         self.expression_str = spec["expr"]
 
-        print(self.dim)
-
         self._metadata = BenchmarkMetadata(
             name=spec["name"],
             category="regression",

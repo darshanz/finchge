@@ -112,6 +112,7 @@ class SymbolicExpression:
         "sub": pmath.sub,
         "mul": pmath.mul,
         "div": pmath.div,
+        "pdiv": pmath.div,
         "pow": pmath.pow,
     }
 

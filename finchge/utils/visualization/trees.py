@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 import matplotlib.pyplot as plt
@@ -87,4 +88,4 @@ def plot_tree(tree_json: str, save_dir: str) -> None:
     )
     plt.close(fig)
 
-    print(f"Tree plot saved to: {output_path}")
+    logging.info(f"Tree plot saved to: {output_path}")

@@ -196,7 +196,6 @@ class GrammaticalEvolution(RandomStateMixin):
         if not self.expt_logger:
             expt_config = self.config.experiment.get(Keys.EXPT_LOGGER_ENABLED, False)
             exclude_log_config = self.config.experiment.get(Keys.EXCLUDE_LOGS, [])
-            print(exclude_log_config)
             if expt_config:  # logger is configured
                 self.expt_logger = ExperimentLogger(exclude=exclude_log_config)
             else:  # logger not configured
@@ -246,8 +245,8 @@ class GrammaticalEvolution(RandomStateMixin):
 
         # Initial evaluation
         self.fitness_evaluator.evaluate_population(population)
-        self.algorithm.sort_population(population)
 
+        self.algorithm.sort_population(population)
         # Resume if checkpoint exists
         if self.checkpoint_manager and self.checkpoint_manager.exists():
             expected_hash = stable_config_hash(self.config.to_dict())

@@ -478,7 +478,7 @@ class StatsHelper:
             values: list[float] = []
 
             for ind in individuals:
-                if ind.fitness is None:
+                if not ind.fitness:
                     continue
 
                 val = ind.fitness[obj_idx]

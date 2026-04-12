@@ -158,7 +158,7 @@ class RVDInitialiser(GEInitialiser):
             if result.phenotype in self._seen_phenotypes:
                 continue
 
-            self._seen_phenotypes.add(result.phenotype)
+            self._seen_phenotypes.add(str(result.phenotype))
 
             return Individual(
                 genotype=genome,

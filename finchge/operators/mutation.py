@@ -64,7 +64,7 @@ class IntFlipMutation(GEMutationStrategy):
             )
 
         # avoiding mutating the original individual in place.
-        genome: list[int] = individual.genotype
+        genome: list[int] = individual.genotype.copy()
 
         # calculate effective length if it is within_used
         eff_length = self._get_effective_length(individual=individual, genome=genome)

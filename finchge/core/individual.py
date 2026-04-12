@@ -61,7 +61,7 @@ class Individual:
         self,
         *,
         genotype: Optional[list[int]] = None,
-        phenotype: str = "",
+        phenotype: str | None = None,
         used_genome: Optional[list[int]] = None,
         used_codon_count: int = 0,
         invalid: bool = False,
@@ -108,7 +108,7 @@ class Individual:
                 raise TypeError("used_genotype must contain only integers")
 
         self.genotype: Optional[list[int]] = genotype
-        self.phenotype: str = phenotype
+        self.phenotype: str | None = phenotype
         self.used_genome: Optional[list[int]] = used_genome
         self.used_codon_count: int = used_codon_count
         self.invalid: bool = invalid
