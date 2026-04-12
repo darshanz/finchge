@@ -144,7 +144,9 @@ class RVDInitialiser(GEInitialiser):
                     "Grammar may not support enough unique valid individuals."
                 )
 
-            genome = [self.rng.randint(0, 255) for _ in range(self.genome_length)]
+            genome = [
+                self.rng.randint(0, self.codon_size) for _ in range(self.genome_length)
+            ]
 
             result = self.mapper.map(genome)
 
