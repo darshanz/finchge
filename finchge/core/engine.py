@@ -1,3 +1,4 @@
+import logging
 import timeit
 import warnings
 from typing import Any, Optional
@@ -22,7 +23,7 @@ from finchge.operators.replacement import GenerationalReplacement
 from finchge.operators.selection import TournamentSelection
 from finchge.utils.cache import CacheManager
 from finchge.utils.checkpoint import CheckpointManager, stable_config_hash
-from finchge.utils.logger import BaseLogger, get_logger, setup_logging
+from finchge.utils.logger import BaseLogger, ExperimentLogger, get_logger, setup_logging
 from finchge.utils.random_mixin import RandomStateMixin
 from finchge.utils.results import ResultHelper, StatsHelper
 
@@ -189,7 +190,22 @@ class GrammaticalEvolution(RandomStateMixin):
             )
 
         # experiment logging and checkpoint
+        # If custom experiment logging is not passed in the constructor,
+        # if enabled in config we use default Experiment Logger
         self.expt_logger = expt_logger
+        if not self.expt_logger:
+            expt_config = self.config.experiment.get(Keys.EXPT_LOGGER_ENABLED, False)
+            exclude_log_config = self.config.experiment.get(Keys.EXCLUDE_LOGS, [])
+            print(exclude_log_config)
+            if expt_config:  # logger is configured
+                self.expt_logger = ExperimentLogger(exclude=exclude_log_config)
+            else:  # logger not configured
+                if exclude_log_config:  # but exclude dirs setup
+                    logging.warning(
+                        "[GrammaticalEvolutions]: exclude_logs config ignored. ExperimentLogger is not enabled"
+                    )
+
+        # if available setup the callbacks
         if self.expt_logger:
             self.expt_logger.on_run_start(
                 log_dir, self.objective_names, self.config.to_dict()
@@ -311,8 +327,6 @@ class GrammaticalEvolution(RandomStateMixin):
     def __find_best_individual(
         self, start_generation: int, population: Population
     ) -> Individual:
-        # exclude_log_config = self.config.experiment.get(Keys.EXCLUDE_LOGS, [])
-
         fittest: Individual = self.algorithm.get_best_individual(population)
 
         generation_progress = tqdm(

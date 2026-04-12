@@ -18,9 +18,6 @@ def plot_single_objective_fitness(save_dir: str) -> None:
 
     ax.plot(df["gen"], df["best_fitness"], label="Best Fitness", linewidth=2)
 
-    if "ave_fitness" in df.columns:
-        ax.plot(df["gen"], df["ave_fitness"], label="Average Fitness", linewidth=1.5)
-
     ax.set_xlabel("Generation")
     ax.set_ylabel("Fitness")
     ax.set_title("Fitness Progression")

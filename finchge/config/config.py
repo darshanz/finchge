@@ -16,6 +16,7 @@ class Keys:
     RANDOM_SEED = "random_seed"
     NUM_GENERATIONS = "num_generations"
     VERBOSE = "verbose"  # Enable verbose logging
+    EXPT_LOGGER_ENABLED = "expt_logger_enabled"  # Enable full expt logging
     EXCLUDE_LOGS = "exclude_logs"  # List of log directories to be excluded
 
     # Core

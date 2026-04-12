@@ -53,7 +53,7 @@ class FitnessEvaluator:
         self.fitness_functions = fitness_functions
         self.mapper = mapper
         self.cache_manager: CacheManager[Any] | None = None
-        self.ecode_trees = encode_trees
+        self.encode_trees = encode_trees
         self.runner = runner
         # require_case_data flag determines whether case wise evaluation is required. It will be set True for lexicase
         self.require_case_data = require_case_data
@@ -181,7 +181,7 @@ class FitnessEvaluator:
         phenotype_to_indices: dict[str, list[int]] = {}
         phenotypes = []
         for i, ind in enumerate(population.individuals):
-            self._ensure_complete(ind)
+            self.refesh_mapping(ind)
             if ind.fitness:
                 continue
             # Cross-generation cache check
@@ -281,8 +281,7 @@ class FitnessEvaluator:
             list: A list of fitness scores corresponding to each fitness function.
         """
 
-        self._ensure_complete(individual)
-
+        self.refesh_mapping(individual)
         # Build cache key
         if self.cache_manager is not None:
             cached = self.cache_manager.get_fitness(
@@ -338,12 +337,12 @@ class FitnessEvaluator:
         if self._parallel_backend is not None:
             await self._parallel_backend.shutdown()
 
-    def _ensure_complete(self, ind: "Individual") -> None:
+    def refesh_mapping(self, ind: "Individual") -> None:
         """
-        Completion logic :: Fitness evaluator is also responsible
-        for ensuring the Individual Class is complete
-        The individuals may be initialised incomplete
-        only with integer genome or tree based representation
+        Ensure that genotype, phenotype, and tree are consistent.
+        - If genotype exists - map to phenotype and tree
+        - If tree exists and encode_trees=True - reverse map to genotype
+        - Update used_genome, used_codon_count, invalid, etc.
         """
 
         if ind.genotype is None and ind.tree is None:
@@ -361,7 +360,7 @@ class FitnessEvaluator:
         # When there is tree and no genotype :
         # genotypes are not needed , however encode_trees flag can be used to reverse map to genotype anyway
         if ind.genotype is None and ind.tree is not None:
-            if self.ecode_trees:
+            if self.encode_trees:
                 ind.genotype = self.mapper.reverse_map(tree=ind.tree)
             else:
                 ind.phenotype = TreeNode.from_string(ind.tree).to_phenotype()
@@ -375,6 +374,10 @@ class FitnessEvaluator:
             ind.used_codon_count = mapping_result.used_codon_count
             ind.invalid = mapping_result.invalid
             ind.tree = mapping_result.tree_str
+
+    def refresh_mapping_all(self, individuals: list[Individual]):
+        for ind in individuals:
+            self.refesh_mapping(ind)
 
     def clear_cache(self) -> None:
         if self.cache_manager:

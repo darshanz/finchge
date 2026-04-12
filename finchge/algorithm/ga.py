@@ -100,6 +100,9 @@ class GeneticAlgorithm(BaseAlgorithm):
             new_pop_size=population.population_size,
         )
 
+        # remap
+        self.fitness_evaluator.refresh_mapping_all(offsprings)
+
         # Mutation
         offspring_population = self.apply_mutation(
             mutation_strategy=self.mutation, individuals=offsprings

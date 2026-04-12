@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Literal, Optional, Tuple
 
 from finchge.core.individual import Individual
 from finchge.grammar.derivation_tree import TreeNode
@@ -15,6 +15,15 @@ class OnePointCrossover(GECrossoverStrategy):
     offspring.  Parent genomes are split at a randomly selected point. Offspring are
     constructed by concatenating prefix segments from one parent with suffix
     segments from the other.
+    Supports both fixed and variable one-point crossover variants with mode parameter.
+
+    - variable:
+        Select one crossover point independently in each parent.
+        This can change offspring genome lengths.
+
+    - fixed:
+        Select the same crossover point in both parents.
+        This  preserves offspring genome lengths.
 
     """
 
@@ -23,20 +32,43 @@ class OnePointCrossover(GECrossoverStrategy):
         codon_size: int,
         crossover_proba: float,
         within_used: bool = True,
+        mode: Literal["variable", "fixed"] = "fixed",
         random_state: Optional[int] = None,
     ) -> None:
         """
         Initialize the one-point crossover strategy.
 
+        This operator supports both fixed and variable one-point crossover:
+
+        - "fixed": Uses the same crossover point in both parents. Offspring
+          genome lengths are preserved. Equivalent to PonyGE-style
+          fixed one-point crossover.
+
+        - "variable": Uses independent crossover points in each parent.
+          Offspring genome lengths may differ from parents. Equivalent to
+          PonyGE-style variable one-point crossover.
+
         Args:
-            codon_size: Size of each codon.
-            crossover_proba: Probability of crossover occurring.
-            within_used: If True, crossover points are limited to the
-                used portion of each parent's genome.
+            codon_size: Maximum codon value (inclusive).
+            crossover_proba: Probability that crossover is applied; otherwise,
+                offspring are copies of the parents.
+            within_used: If True, crossover points are restricted to the
+                used portion of each parent's genome (i.e., within
+                ``used_codon_count``). If False, the full genome length
+                is considered.
+            mode: Crossover mode. Either "fixed" or "variable".
+            random_state: Optional random seed for reproducibility.
         """
         super().__init__(crossover_proba=crossover_proba, random_state=random_state)
         self.codon_size = codon_size
         self.within_used = within_used
+        self.mode = mode
+
+        if self.mode not in {"variable", "fixed"}:
+            raise ValueError(
+                f"Unsupported one-point crossover mode: {self.mode!r}. "
+                "Expected 'variable' or 'fixed'."
+            )
 
     def cross(
         self,
@@ -63,36 +95,36 @@ class OnePointCrossover(GECrossoverStrategy):
         genome_p1: List[int] = parent1.genotype.copy()
         genome_p2: List[int] = parent2.genotype.copy()
 
-        len_p1 = len(genome_p1)
-        len_p2 = len(genome_p2)
+        max_p_0, max_p_1 = self._get_max_points(parent1, parent2, genome_p1, genome_p2)
 
-        used_0 = parent1.used_codon_count or 0
-        used_1 = parent2.used_codon_count or 0
+        if self.rng.random() >= self.crossover_proba:
+            return (
+                Individual.from_genotype(genome_p1),
+                Individual.from_genotype(genome_p2),
+            )
 
-        # Determine maximum valid crossover points
-        if self.within_used:
-            max_p_0 = max(1, min(used_0, len_p1))
-            max_p_1 = max(1, min(used_1, len_p2))
-        else:
-            max_p_0 = max(1, len_p1)
-            max_p_1 = max(1, len_p2)
+        if max_p_0 <= 1 or max_p_1 <= 1:
+            return (
+                Individual.from_genotype(genome_p1),
+                Individual.from_genotype(genome_p2),
+            )
 
-        if self.rng.random() < self.crossover_proba and max_p_0 > 1 and max_p_1 > 1:
-            try:
-                # Select crossover points
+        try:
+            if self.mode == "variable":
                 pt_p_0 = self.rng.randint(1, max_p_0)
                 pt_p_1 = self.rng.randint(1, max_p_1)
 
-                # Create offspring by swapping genome tails
-                genome_o1: List[int] = genome_p1[:pt_p_0] + genome_p2[pt_p_1:]
-                genome_o2: List[int] = genome_p2[:pt_p_1] + genome_p1[pt_p_0:]
-            except (IndexError, ValueError) as exc:
-                # return parent copies if error
-                logging.debug("Crossover failed (%s); using parent copies.", exc)
-                genome_o1 = genome_p1.copy()
-                genome_o2 = genome_p2.copy()
-        else:
-            # when no crossover return parent copies
+                genome_o1 = genome_p1[:pt_p_0] + genome_p2[pt_p_1:]
+                genome_o2 = genome_p2[:pt_p_1] + genome_p1[pt_p_0:]
+
+            else:  # fixed
+                pt = self.rng.randint(1, min(max_p_0, max_p_1))
+
+                genome_o1 = genome_p1[:pt] + genome_p2[pt:]
+                genome_o2 = genome_p2[:pt] + genome_p1[pt:]
+
+        except (IndexError, ValueError) as exc:
+            logging.debug("Crossover failed (%s); using parent copies.", exc)
             genome_o1 = genome_p1.copy()
             genome_o2 = genome_p2.copy()
 
@@ -100,6 +132,31 @@ class OnePointCrossover(GECrossoverStrategy):
             Individual.from_genotype(genome_o1),
             Individual.from_genotype(genome_o2),
         )
+
+    def _get_max_points(
+        self,
+        parent1: "Individual",
+        parent2: "Individual",
+        genome_p1: List[int],
+        genome_p2: List[int],
+    ) -> Tuple[int, int]:
+        """
+        Determine maximum valid crossover points for each parent.
+        """
+        len_p1 = len(genome_p1)
+        len_p2 = len(genome_p2)
+
+        used_0 = parent1.used_codon_count or 0
+        used_1 = parent2.used_codon_count or 0
+
+        if self.within_used:
+            max_p_0 = max(1, min(used_0, len_p1))
+            max_p_1 = max(1, min(used_1, len_p2))
+        else:
+            max_p_0 = max(1, len_p1)
+            max_p_1 = max(1, len_p2)
+
+        return max_p_0, max_p_1
 
 
 class TwoPointCrossover(GECrossoverStrategy):
@@ -118,20 +175,45 @@ class TwoPointCrossover(GECrossoverStrategy):
         codon_size: int,
         crossover_proba: float,
         within_used: bool = True,
+        mode: Literal["fixed", "variable"] = "fixed",
         random_state: Optional[int] = None,
     ) -> None:
         """
-        Initialize the two-point crossover .
+        Initialize the two-point crossover strategy.
+
+        This operator supports both fixed and variable two-point crossover:
+
+        - "fixed": Uses the same two crossover points in both parents.
+          A segment between the two points is exchanged, preserving
+          offspring genome lengths. Equivalent to PonyGE-style
+          fixed two-point crossover.
+
+        - "variable": Uses independently selected crossover points
+          in each parent. Exchanged segments may differ in length,
+          allowing offspring genomes to grow or shrink. Equivalent
+          to PonyGE-style variable two-point crossover.
 
         Args:
-            codon_size: Size of each codon.
-            crossover_proba: Probability of crossover occurring.
-            within_used: If True, crossover points are limited to the
-                used portion of each parent's genome.
+            codon_size: Maximum codon value (inclusive).
+            crossover_proba: Probability that crossover is applied; otherwise,
+                offspring are copies of the parents.
+            within_used: If True, crossover points are restricted to the
+                used portion of each parent's genome (i.e., within
+                ``used_codon_count``). If False, the full genome length
+                is considered.
+            mode: Crossover mode. Either "fixed" or "variable".
+            random_state: Optional random seed for reproducibility.
         """
         super().__init__(crossover_proba=crossover_proba, random_state=random_state)
         self.codon_size = codon_size
         self.within_used = within_used
+        self.mode = mode
+
+        if self.mode not in {"fixed", "variable"}:
+            raise ValueError(
+                f"Unsupported two-point crossover mode: {self.mode}. "
+                "Expected 'fixed' or 'variable'."
+            )
 
     def cross(
         self,
@@ -157,42 +239,43 @@ class TwoPointCrossover(GECrossoverStrategy):
         genome_p1: List[int] = parent1.genotype.copy()
         genome_p2: List[int] = parent2.genotype.copy()
 
-        len_p1 = len(genome_p1)
-        len_p2 = len(genome_p2)
+        max_p_0, max_p_1 = self._get_max_points(parent1, parent2, genome_p1, genome_p2)
 
-        used_0 = parent1.used_codon_count or 0
-        used_1 = parent2.used_codon_count or 0
-
-        # Determine maximum valid crossover range
-        if self.within_used:
-            max_p_0 = max(0, min(used_0, len_p1))
-            max_p_1 = max(0, min(used_1, len_p2))
-        else:
-            max_p_0 = len_p1
-            max_p_1 = len_p2
-
-        # Two-point crossover requires at least two valid cut points
-        if self.rng.random() < self.crossover_proba and max_p_0 >= 2 and max_p_1 >= 2:
-            # Select two ordered crossover points per parent
-            pt_p_0_1 = self.rng.randint(1, max_p_0 - 1)
-            pt_p_0_2 = self.rng.randint(pt_p_0_1 + 1, max_p_0)
-
-            pt_p_1_1 = self.rng.randint(1, max_p_1 - 1)
-            pt_p_1_2 = self.rng.randint(pt_p_1_1 + 1, max_p_1)
-
-            # Exchange middle segments
-            genome_o1: List[int] = (
-                genome_p1[:pt_p_0_1]
-                + genome_p2[pt_p_1_1:pt_p_1_2]
-                + genome_p1[pt_p_0_2:]
+        if self.rng.random() >= self.crossover_proba:
+            return (
+                Individual.from_genotype(genome_p1),
+                Individual.from_genotype(genome_p2),
             )
-            genome_o2: List[int] = (
-                genome_p2[:pt_p_1_1]
-                + genome_p1[pt_p_0_1:pt_p_0_2]
-                + genome_p2[pt_p_1_2:]
+
+        if max_p_0 <= 1 or max_p_1 <= 1:
+            return (
+                Individual.from_genotype(genome_p1),
+                Individual.from_genotype(genome_p2),
             )
-        else:
-            # No crossover: return parent copies
+
+        try:
+            if self.mode == "fixed":
+                a = self.rng.randint(1, min(max_p_0, max_p_1))
+                b = self.rng.randint(1, min(max_p_0, max_p_1))
+                pt_0, pt_1 = min(a, b), max(a, b)
+
+                genome_o1 = genome_p1[:pt_0] + genome_p2[pt_0:pt_1] + genome_p1[pt_1:]
+                genome_o2 = genome_p2[:pt_0] + genome_p1[pt_0:pt_1] + genome_p2[pt_1:]
+
+            else:  # variable
+                a_0 = self.rng.randint(1, max_p_0)
+                b_0 = self.rng.randint(1, max_p_0)
+                pt_0, pt_1 = min(a_0, b_0), max(a_0, b_0)
+
+                a_1 = self.rng.randint(1, max_p_1)
+                b_1 = self.rng.randint(1, max_p_1)
+                pt_2, pt_3 = min(a_1, b_1), max(a_1, b_1)
+
+                genome_o1 = genome_p1[:pt_0] + genome_p2[pt_2:pt_3] + genome_p1[pt_1:]
+                genome_o2 = genome_p2[:pt_2] + genome_p1[pt_0:pt_1] + genome_p2[pt_3:]
+
+        except (IndexError, ValueError) as exc:
+            logging.debug("Two-point crossover failed (%s); using parent copies.", exc)
             genome_o1 = genome_p1.copy()
             genome_o2 = genome_p2.copy()
 
@@ -200,6 +283,28 @@ class TwoPointCrossover(GECrossoverStrategy):
             Individual.from_genotype(genome_o1),
             Individual.from_genotype(genome_o2),
         )
+
+    def _get_max_points(
+        self,
+        parent1: "Individual",
+        parent2: "Individual",
+        genome_p1: List[int],
+        genome_p2: List[int],
+    ) -> Tuple[int, int]:
+        len_p1 = len(genome_p1)
+        len_p2 = len(genome_p2)
+
+        used_0 = parent1.used_codon_count or 0
+        used_1 = parent2.used_codon_count or 0
+
+        if self.within_used:
+            max_p_0 = max(1, min(used_0, len_p1))
+            max_p_1 = max(1, min(used_1, len_p2))
+        else:
+            max_p_0 = max(1, len_p1)
+            max_p_1 = max(1, len_p2)
+
+        return max_p_0, max_p_1
 
 
 class UniformCrossover(GECrossoverStrategy):
