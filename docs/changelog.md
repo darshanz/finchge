@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 For changelog we follow  [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format and for versioning use  [Semantic Versioning](https://semver.org/)
 
+## [1.0.1-beta.10](https://github.com/finchGE/finchge/releases/tag/v1.0.1-beta.10) - 2026-04-13
+
+### Fixed
+- Fixed CLI-based project creation issues
 
 ## [1.0.1-beta.9](https://github.com/finchGE/finchge/releases/tag/v1.0.1-beta.9) - 2026-04-13
 

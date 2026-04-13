@@ -4,11 +4,11 @@ experiment:
   verbose: false
   cache_type: lru
   cache_size: 128
+  expt_logger_enabled: true
 
 ge:
-  grammar_file: grammar.bnf
   population_size: 100
-  codon_size: 127
+  codon_size: 200
   max_wraps: 6
   max_recursion_depth: 20
   genome_length: 100

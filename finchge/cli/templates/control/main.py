@@ -1,10 +1,9 @@
-from finchge.benchmarks.control.santafe import SantaFeTrailBenchmark
+from finchge.benchmarks.control import SantaFeTrailBenchmark
 from finchge.config import FinchConfig, Keys
 from finchge.core import GrammaticalEvolution
 from finchge.fitness import FitnessEvaluator
 from finchge.fitness.fitness_functions import RewardFitness
 from finchge.grammar.mapper import GenotypeMapper
-from finchge.utils.logger import ExperimentLogger
 
 if __name__ == "__main__":
     # instantiate the benchmark
@@ -38,11 +37,8 @@ if __name__ == "__main__":
         parallel_config=ge_config.parallel,
     )
 
-    # setup logger and run the experiment
-    expt_logger = ExperimentLogger()
-    ge_ = GrammaticalEvolution(
-        grammar=grammar, fitness_evaluator=fitness_evaluator, expt_logger=expt_logger
-    )
+    #  run experiment
+    ge_ = GrammaticalEvolution(grammar=grammar, fitness_evaluator=fitness_evaluator)
     result = ge_.run()
 
     print(f"Best fitness: {result.best_individual.fitness[0]}/89 food eaten")

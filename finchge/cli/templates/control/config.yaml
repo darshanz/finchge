@@ -6,7 +6,6 @@ experiment:
   cache_size: 128
 
 ge:
-  grammar_file: grammar.bnf
   population_size: 500
   codon_size: 127
   max_wraps: 6

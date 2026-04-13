@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.0.1-beta.10] - 2026-04-13
+
+### Fixed
+- Fixed CLI-based project creation issues
+
 ## [1.0.1-beta.9] - 2026-04-13
 
 ### Added

@@ -298,3 +298,7 @@ and structured optimization problems.
 
 
 ---
+
+## More Examples
+
+More examples are available on github repository [finchGE/finchge-examples](https://github.com/finchGE/finchge-examples)

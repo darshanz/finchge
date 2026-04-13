@@ -1,10 +1,9 @@
-from finchge.benchmarks.logic.multiplexer import Multiplexer6Benchmark
+from finchge.benchmarks.logic import MultiplexerBenchmark
 from finchge.config import FinchConfig, Keys
 from finchge.core import GrammaticalEvolution
 from finchge.fitness import FitnessEvaluator
 from finchge.fitness.fitness_functions import AccuracyFitness
 from finchge.grammar.mapper import GenotypeMapper
-from finchge.utils.logger import ExperimentLogger
 
 """
 NOTE: This is a basic example for Multiplexer-6 logic problem.
@@ -14,7 +13,7 @@ Edit the main function as needed to customize and run your experiment.
 
 if __name__ == "__main__":
     # Create benchmark
-    benchmark = Multiplexer6Benchmark()
+    benchmark = MultiplexerBenchmark(version=6)
 
     # Create benchmark runner
     multiplexer_runner = benchmark.create_runner("train")
@@ -45,11 +44,8 @@ if __name__ == "__main__":
         parallel_config=ge_config.parallel,
     )
 
-    # setup experiment logger and run the experiment
-    expt_logger = ExperimentLogger()
-    ge_ = GrammaticalEvolution(
-        grammar=grammar, fitness_evaluator=fitness_evaluator, expt_logger=expt_logger
-    )
+    # setup run the experiment
+    ge_ = GrammaticalEvolution(grammar=grammar, fitness_evaluator=fitness_evaluator)
 
     result = ge_.run()
 
