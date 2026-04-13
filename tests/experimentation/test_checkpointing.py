@@ -72,7 +72,6 @@ def ge_config():
 
 @pytest.fixture
 def checkpoint_manager(tmp_path):
-    print(tmp_path)
     return FileCheckpointManager(
         directory=tmp_path / "checkpoints",
         every=5,
@@ -82,7 +81,6 @@ def checkpoint_manager(tmp_path):
 
 @pytest.fixture
 def ge_factory(simple_grammar, fitness_evaluator, ge_config):
-
     def _make(
         *,
         checkpoint_manager=None,

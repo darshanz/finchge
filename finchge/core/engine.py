@@ -1,3 +1,4 @@
+import logging
 import timeit
 import warnings
 from typing import Any, Optional
@@ -22,7 +23,7 @@ from finchge.operators.replacement import GenerationalReplacement
 from finchge.operators.selection import TournamentSelection
 from finchge.utils.cache import CacheManager
 from finchge.utils.checkpoint import CheckpointManager, stable_config_hash
-from finchge.utils.logger import BaseLogger, get_logger, setup_logging
+from finchge.utils.logger import BaseLogger, ExperimentLogger, get_logger, setup_logging
 from finchge.utils.random_mixin import RandomStateMixin
 from finchge.utils.results import ResultHelper, StatsHelper
 
@@ -122,6 +123,9 @@ class GrammaticalEvolution(RandomStateMixin):
         else:
             self.grammar = grammar
 
+        # fitness evaluator
+        self.fitness_evaluator = fitness_evaluator
+
         # use inititalizer passed by Grammatical Evolution or make one if can be created from config.
         # initialiser passed through GrammaticalEvolution should always get priority and config will be ignored..
         # if neither of them are provided make_initialiser takes empty dict
@@ -147,7 +151,9 @@ class GrammaticalEvolution(RandomStateMixin):
                 )
                 self.initialiser.set_tree_generator(self.tree_generator)
 
-        self.fitness_evaluator = fitness_evaluator
+            if hasattr(self.initialiser, "set_mapper"):
+                self.initialiser.set_mapper(self.fitness_evaluator.mapper)
+
         self.objective_names = self.fitness_evaluator.get_objective_names()
         self.multi_obj = self.fitness_evaluator.is_multi_objective()
 
@@ -189,7 +195,21 @@ class GrammaticalEvolution(RandomStateMixin):
             )
 
         # experiment logging and checkpoint
+        # If custom experiment logging is not passed in the constructor,
+        # if enabled in config we use default Experiment Logger
         self.expt_logger = expt_logger
+        if not self.expt_logger:
+            expt_config = self.config.experiment.get(Keys.EXPT_LOGGER_ENABLED, False)
+            exclude_log_config = self.config.experiment.get(Keys.EXCLUDE_LOGS, [])
+            if expt_config:  # logger is configured
+                self.expt_logger = ExperimentLogger(exclude=exclude_log_config)
+            else:  # logger not configured
+                if exclude_log_config:  # but exclude dirs setup
+                    logging.warning(
+                        "[GrammaticalEvolutions]: exclude_logs config ignored. ExperimentLogger is not enabled"
+                    )
+
+        # if available setup the callbacks
         if self.expt_logger:
             self.expt_logger.on_run_start(
                 log_dir, self.objective_names, self.config.to_dict()
@@ -231,6 +251,20 @@ class GrammaticalEvolution(RandomStateMixin):
         # Initial evaluation
         self.fitness_evaluator.evaluate_population(population)
         self.algorithm.sort_population(population)
+
+        # Logging Generation 0
+        initial_fitness_stats: list[dict[str, Any]] = StatsHelper.compute_fitness_stats(
+            individuals=population.individuals
+        )
+        initial_best = self.algorithm.get_best_individual(population)
+
+        if self.expt_logger:
+            self.expt_logger.on_generation_end(
+                generation=0,
+                population=population,
+                best=initial_best,
+                fitness_stats=initial_fitness_stats,
+            )
 
         # Resume if checkpoint exists
         if self.checkpoint_manager and self.checkpoint_manager.exists():
@@ -285,10 +319,6 @@ class GrammaticalEvolution(RandomStateMixin):
                         pareto_front=None,  # NA: for MO only
                     )
                 )
-
-            # Summary is implemented only for Single-Objective
-            self.result_helper.generate_summary()
-
         else:
             pareto_front = self.__find_best_front(start_generation, population)
 
@@ -300,6 +330,8 @@ class GrammaticalEvolution(RandomStateMixin):
                         best_individual=None,  # NA: for single objective only
                     )
                 )
+        # Save Summary and plots
+        self.result_helper.generate_summary(self.objective_names)
 
         stop = timeit.default_timer()
         self.logger.info(f"Total time taken: {stop - start :.4f} seconds")
@@ -313,8 +345,6 @@ class GrammaticalEvolution(RandomStateMixin):
     def __find_best_individual(
         self, start_generation: int, population: Population
     ) -> Individual:
-        # exclude_log_config = self.config.experiment.get(Keys.EXCLUDE_LOGS, [])
-
         fittest: Individual = self.algorithm.get_best_individual(population)
 
         generation_progress = tqdm(

@@ -38,7 +38,10 @@ def process_train_and_evaluate(
 ) -> EvaluationRecord:
     """Process a single individual in a process pool."""
     try:
-        phenotype = context.get("phenotype", "")
+        phenotype = context.get("phenotype")
+        if not isinstance(phenotype, str):
+            raise ValueError("ProcessPoolBackend received non-string phenotype")
+
         seed = context.get("seed", 0)
 
         # Set seed for reproducibility
@@ -49,24 +52,23 @@ def process_train_and_evaluate(
 
         seed_everything(seed, use_torch=use_torch)
 
-        eval_context: dict[str, Any] = {}
+        eval_context: dict[str, Any] = {
+            "phenotype": phenotype,
+        }
 
         if "runner" in context:
             # Classic case: use runner
             runner = context["runner"]
-            eval_context = runner.run(
+            runner_context = runner.run(
                 phenotype=phenotype, context_hints=context.get("required_keys", {})
             )
+            eval_context.update(runner_context)
+
             # Add any additional context the executor might provide
             if hasattr(runner, "get_context"):
                 extra_context = runner.get_context()
                 if isinstance(extra_context, dict):
                     eval_context.update(extra_context)
-        else:
-            # Direct evaluation: phenotype is the value, Fitness function should handle that. eg. stringmatch
-            eval_context = {
-                "phenotype": phenotype,
-            }
 
         # Calculate fitness
         results = [

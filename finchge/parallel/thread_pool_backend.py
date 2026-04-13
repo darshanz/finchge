@@ -124,10 +124,14 @@ class ThreadPoolBackend(BaseParallelBackend):
             # Submit batch to thread pool
             for i in range(batch_start, batch_end):
                 ctx = contexts[i]
+                phenotype = ctx.get("phenotype")
+                if not isinstance(phenotype, str):
+                    raise ValueError("ThreadPoolBackend received non-string phenotype")
+
                 future = self.executor.submit(
                     self._evaluate_single,
                     ctx.get("runner"),
-                    str(ctx.get("phenotype", "")),
+                    phenotype,
                     fitness_functions,
                     ctx.get("required_keys", {}),
                     ctx.get("seed", 0),

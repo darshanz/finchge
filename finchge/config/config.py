@@ -16,6 +16,7 @@ class Keys:
     RANDOM_SEED = "random_seed"
     NUM_GENERATIONS = "num_generations"
     VERBOSE = "verbose"  # Enable verbose logging
+    EXPT_LOGGER_ENABLED = "expt_logger_enabled"  # Enable full expt logging
     EXCLUDE_LOGS = "exclude_logs"  # List of log directories to be excluded
 
     # Core
@@ -28,8 +29,8 @@ class Keys:
 
     # Tree-related
     MAX_TREE_DEPTH = "max_tree_depth"  # limit on tree depth
-    INIT_MIN_DEPTH = "init_min_depth"  # Minimum depth for RHH initialisation
-    INIT_MAX_DEPTH = "init_max_depth"  # Maximum depth for RHH initialisation
+    INIT_MIN_DEPTH = "init_min_depth"  # Minimum depth for Full and Grow initialisation
+    INIT_MAX_DEPTH = "init_max_depth"  # Maximum depth for tree based initialisation
     PTC2_TARGET_SIZE = "ptc2_target_size"  # Target tree size for PCT2
     INIT_TREE_MIN_SIZE = "init_tree_min_size"  # for Ramped PTC2
     INIT_TREE_MAX_SIZE = "init_tree_max_size"  # for Ramped PTC2

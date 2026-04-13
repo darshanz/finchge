@@ -1,9 +1,23 @@
-from .plots import plot_best_fitness, plot_fitness_chart, visualize_pareto_front
-from .trees import plot_tree
+from finchge.utils.visualization.plots import (
+    plot_front_size,
+    plot_generation_runtime,
+    plot_objective_progress,
+    plot_search_diagnostics,
+    plot_single_objective_complexity,
+    plot_single_objective_fitness,
+    visualize_final_pareto_front,
+    visualize_pareto_front_evolution,
+)
+from finchge.utils.visualization.trees import plot_tree
 
 __all__ = [
-    "plot_fitness_chart",
-    "plot_best_fitness",
     "plot_tree",
-    "visualize_pareto_front",
+    "plot_single_objective_fitness",
+    "plot_single_objective_complexity",
+    "plot_search_diagnostics",
+    "plot_generation_runtime",
+    "visualize_final_pareto_front",
+    "visualize_pareto_front_evolution",
+    "plot_front_size",
+    "plot_objective_progress",
 ]

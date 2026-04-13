@@ -80,6 +80,9 @@ class NSGA2(BaseAlgorithm):
             new_pop_size=population.population_size,
         )
 
+        # remap
+        self.fitness_evaluator.refresh_mapping_all(offsprings)
+
         # Mutation
         offspring_population = self.apply_mutation(
             mutation_strategy=self.mutation, individuals=offsprings
@@ -218,6 +221,9 @@ class NSGA3(BaseAlgorithm):
             selected_individuals=selected_individuals,
             new_pop_size=population.population_size,
         )
+
+        # remap
+        self.fitness_evaluator.refresh_mapping_all(offsprings)
 
         # Mutation
         offspring_population = self.apply_mutation(

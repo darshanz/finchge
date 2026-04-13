@@ -34,6 +34,10 @@ class Grammar:
 
         self._analyzed = False
 
+        # ramping metadata
+        self.min_ramp: int | None = None
+        self.permutations: dict[int, int] = {}
+
     def analyze(self) -> None:
         """
         Analyze grammar structure for initialisation and diagnostics.
@@ -175,6 +179,110 @@ class Grammar:
                 if candidate_depths:
                     rule.min_path = min(candidate_depths)
                     changed = True
+
+    def compute_min_ramp(
+        self,
+        *,
+        population_size: int,
+        max_init_depth: int,
+    ) -> int | None:
+        """
+        Compute minimum ramp depth.
+
+        Ramping should start at the first depth where the grammar can generate
+        enough distinct derivations to support population diversity across the
+        requested ramp range.
+        """
+        start_rule = self.rules[self.start_rule]
+
+        permutations = self.compute_permutations_by_depth(max_init_depth)
+        if start_rule.min_path is None or not permutations:
+            self.min_ramp = None
+            return self.min_ramp
+
+        # Use grammar minimum terminating depth as the natural lower bound.
+        min_depth = start_rule.min_path
+        depths = list(range(min_depth, max_init_depth + 1))
+
+        # RHH uses grow/full pairs, so odd pop sizes are rounded up.
+        size = population_size
+        if size % 2:
+            size += 1
+
+        if size // 2 < len(depths):
+            depths = depths[: size // 2]
+
+        if not depths:
+            self.min_ramp = min_depth
+            return self.min_ramp
+
+        # Minimum number of distinct individuals we need per ramp level.
+        unique_start = size // len(depths)
+
+        ramp = min_depth
+        for depth in sorted(self.permutations):
+            if self.permutations[depth] > unique_start:
+                ramp = depth
+                break
+
+        self.min_ramp = ramp
+        return self.min_ramp
+
+    def compute_permutations_by_depth(self, max_depth: int) -> dict[int, int]:
+        """
+        Estimate the number of distinct derivation trees available at each depth.
+
+        permutations means:
+            how many derivations can be generated with exact tree depth d
+            starting from the grammar start rule.
+        """
+        start_rule = self.rules[self.start_rule]
+
+        if start_rule.min_path is None:
+            self.permutations = {}
+            return self.permutations
+
+        # This function is used for ramping analysis, so the run-specific
+        # max depth passed in should define how far we count permutations.
+        if max_depth < start_rule.min_path:
+            self.permutations = {}
+            return self.permutations
+
+        memo: dict[tuple[str, int], int] = {}
+
+        def count_symbol(symbol: str, depth: int) -> int:
+            # Terminals contribute one valid completion.
+            if symbol not in self.non_terminals:
+                return 1 if depth >= 0 else 0
+
+            key = (symbol, depth)
+            if key in memo:
+                return memo[key]
+
+            if depth <= 0:
+                memo[key] = 0
+                return 0
+
+            rule = self.rules[symbol]
+            total = 0
+
+            for choice in rule.choices:
+                ways = 1
+                for child in choice:
+                    child_ways = count_symbol(child, depth - 1)
+                    ways *= child_ways
+                    if ways == 0:
+                        break
+                total += ways
+
+            memo[key] = total
+            return total
+
+        self.permutations = {}
+        for depth in range(start_rule.min_path, max_depth + 1):
+            self.permutations[depth] = count_symbol(self.start_rule, depth)
+
+        return self.permutations
 
     def _compute_max_path(self) -> None:
         # NOTE:

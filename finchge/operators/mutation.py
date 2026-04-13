@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Literal, Optional
 
 from finchge.core.individual import Individual
 from finchge.grammar.derivation_tree import TreeNode
@@ -19,11 +19,32 @@ class IntFlipMutation(GEMutationStrategy):
         self,
         mutation_probability: float,
         codon_size: int,
+        mode: Literal["per_codon", "per_ind"] = "per_codon",
+        mutation_events: int = 1,
+        within_used: bool = True,
         random_state: Optional[int] = None,
     ) -> None:
         super().__init__(random_state=random_state)
         self.mutation_probability = mutation_probability
         self.codon_size = codon_size
+        self.mode = mode
+        self.mutation_events = mutation_events
+        self.within_used = within_used
+
+        if self.mode not in {"per_codon", "per_ind"}:
+            raise ValueError(
+                f"Unsupported mutation mode: {self.mode!r}. "
+                "Expected 'per_codon' or 'per_ind'."
+            )
+
+        if self.mode == "per_codon":
+            if self.mutation_probability is not None:
+                if not (0.0 <= self.mutation_probability <= 1.0):
+                    raise ValueError("mutation_probability must be between 0 and 1.")
+
+        if self.mode == "per_ind":
+            if self.mutation_events < 0:
+                raise ValueError("mutation_events must be >= 0.")
 
     def mutate(self, individual: "Individual") -> "Individual":
         """
@@ -36,13 +57,65 @@ class IntFlipMutation(GEMutationStrategy):
             Individual: Mutated Individual.
         """
         if not individual.genotype:
-            raise ValueError("The genotype must exist.")
-        genome: list[int] = individual.genotype
-        for i in range(len(genome)):
-            if self.rng.random() < self.mutation_probability:
-                genome[i] = self.rng.randint(0, self.codon_size)
+            raise ValueError(
+                "IntFlipMutation requires individuals with a genotype, but none was found.\n"
+                "This usually happens when using tree-based initialization, which does not create genotypes.\n"
+                "To use this operator, enable genotype encoding by setting encode_trees=True in FitnessEvaluator class."
+            )
+
+        # avoiding mutating the original individual in place.
+        genome: list[int] = individual.genotype.copy()
+
+        # calculate effective length if it is within_used
+        eff_length = self._get_effective_length(individual=individual, genome=genome)
+
+        if eff_length == 0:
+            return Individual.from_genotype(genome)
+
+        if self.mode == "per_codon":
+            self._mutate_per_codon(genome, eff_length)
+        elif self.mode == "per_ind":
+            self._mutate_per_ind(genome, eff_length)
 
         return Individual.from_genotype(genome)
+
+    def _get_effective_length(
+        self,
+        individual: "Individual",
+        genome: list[int],
+    ) -> int:
+        """
+        Determine how much of the genome is eligible for mutation.
+        """
+        if not self.within_used:
+            return len(genome)
+        if individual.invalid:
+            return len(genome)
+        effective_length = (
+            len(genome) if not individual.used_genome else len(individual.used_genome)
+        )
+        return max(0, min(effective_length, len(genome)))
+
+    def _mutate_per_codon(self, genome: list[int], mutation_length: int) -> None:
+        """
+        Mutate each gene independently with some probability.
+        """
+        if self.mutation_probability is not None:
+            p_mut = self.mutation_probability
+        else:
+            p_mut = 1.0 / mutation_length
+
+        for i in range(mutation_length):
+            if self.rng.random() < p_mut:
+                genome[i] = self.rng.randint(0, self.codon_size)
+
+    def _mutate_per_ind(self, genome: list[int], mutation_length: int) -> None:
+        """
+        Perform a fixed number of mutation events.
+        """
+        for _ in range(self.mutation_events):
+            idx = self.rng.randint(0, mutation_length - 1)
+            genome[idx] = self.rng.randint(0, self.codon_size)
 
 
 class SwapMutation(GEMutationStrategy):
@@ -87,7 +160,11 @@ class SwapMutation(GEMutationStrategy):
             A new Individual with a mutated genotype.
         """
         if not individual.genotype:
-            raise ValueError("The genotype must exist.")
+            raise ValueError(
+                "SwapMutation requires individuals with a genotype, but none was found.\n"
+                "This usually happens when using tree-based initialization, which does not create genotypes.\n"
+                "To use this operator, enable genotype encoding by setting encode_trees=True in FitnessEvaluator class."
+            )
         original_genome: list[int] = individual.genotype
 
         # Copy genome to avoid mutating the original individual
@@ -165,7 +242,11 @@ class GaussianMutation(GEMutationStrategy):
             A new Individual with a mutated genotype.
         """
         if not individual.genotype:
-            raise ValueError("The genotype must exist.")
+            raise ValueError(
+                "GaussianMutation requires individuals with a genotype, but none was found.\n"
+                "This usually happens when using tree-based initialization, which does not create genotypes.\n"
+                "To use this operator, enable genotype encoding by setting encode_trees=True in FitnessEvaluator class."
+            )
         original_genome: list[int] = individual.genotype
 
         # Copy genome to avoid mutating the original individual
@@ -219,7 +300,11 @@ class InversionMutation(GEMutationStrategy):
             A new Individual with a mutated genotype.
         """
         if not individual.genotype:
-            raise ValueError("The genotype must exist.")
+            raise ValueError(
+                "InversionMutation requires individuals with a genotype, but none was found.\n"
+                "This usually happens when using tree-based initialization, which does not create genotypes.\n"
+                "To use this operator, enable genotype encoding by setting encode_trees=True in FitnessEvaluator class."
+            )
         original_genome: list[int] = individual.genotype
         length = len(original_genome)
 
@@ -290,7 +375,11 @@ class CyclicMutation(GEMutationStrategy):
             A new Individual with a mutated genotype.
         """
         if not individual.genotype:
-            raise ValueError("The genotype must exist.")
+            raise ValueError(
+                "CyclicMutation requires individuals with a genotype, but none was found.\n"
+                "This usually happens when using tree-based initialization, which does not create genotypes.\n"
+                "To use this operator, enable genotype encoding by setting encode_trees=True in FitnessEvaluator class."
+            )
         original_genome: list[int] = individual.genotype
         genome_length = len(original_genome)
 
@@ -357,7 +446,11 @@ class DuplicationMutation(GEMutationStrategy):
             A new Individual with a mutated genotype.
         """
         if not individual.genotype:
-            raise ValueError("The genotype must exist.")
+            raise ValueError(
+                "DuplicationMutation requires individuals with a genotype, but none was found.\n"
+                "This usually happens when using tree-based initialization, which does not create genotypes.\n"
+                "To use this operator, enable genotype encoding by setting encode_trees=True in FitnessEvaluator class."
+            )
         original_genome: list[int] = individual.genotype
         length = len(original_genome)
 

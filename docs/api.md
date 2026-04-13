@@ -180,7 +180,6 @@ The finchGE API consists of:
       show_source: false
       members:
         - BaseLogger
-        - FileLogger
         - ExperimentLogger
         - setup_logging
         - get_log_dir

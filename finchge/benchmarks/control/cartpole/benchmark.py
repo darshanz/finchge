@@ -57,7 +57,7 @@ class CartPoleBenchmark(Benchmark):
         """
         return Grammar(grammar_str=self.grammar_str())
 
-    def create_runner(self, data_type: str = "train"):
+    def create_runner(self, data_type: str = "train") -> CartPoleRunner:
         # Inject the specs into the factory
         # We make a copy of specs so we don't modify the original dict
         env_params = self.specs.copy()

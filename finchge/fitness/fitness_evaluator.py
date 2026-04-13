@@ -33,7 +33,8 @@ class FitnessEvaluator:
         fitness_functions (GEFitnessFunction or list): One or more fitness function instances.
         mapper (GenotypeMapper) : Genotype mapper
         runner (PhenotypeRunner) : Runner for running (evaluating) the phenotype models on data
-        encode_trees (bool) : whether to encode trees in tree based method, generally genotype not needed
+        encode_trees (bool) : whether to encode trees to integer genotype,
+                                needed if genome-based operators are used after tree-based initialisation
         parallel_config (dict) : parallel section of config
         require_case_data (book) : determines whether case based evaluation is required. eg.True when using Lexicase
     """
@@ -52,7 +53,7 @@ class FitnessEvaluator:
         self.fitness_functions = fitness_functions
         self.mapper = mapper
         self.cache_manager: CacheManager[Any] | None = None
-        self.ecode_trees = encode_trees
+        self.encode_trees = encode_trees
         self.runner = runner
         # require_case_data flag determines whether case wise evaluation is required. It will be set True for lexicase
         self.require_case_data = require_case_data
@@ -178,25 +179,32 @@ class FitnessEvaluator:
 
         # Collect unevaluated individuals and group by phenotype
         phenotype_to_indices: dict[str, list[int]] = {}
-        phenotypes = []
+        phenotypes: list[str] = []
         for i, ind in enumerate(population.individuals):
-            self._ensure_complete(ind)
-            if ind.fitness:
+            self.refesh_mapping(ind)
+
+            # skip un mapped or invalids from evaluation
+            if not ind.is_evaluable():
                 continue
-            # Cross-generation cache check
+            if ind.has_fitness():
+                continue
+
+            phenotype = ind.require_phenotype()
+            #  cache check
             if self.cache_manager is not None:
                 cached = self.cache_manager.get_fitness(
-                    phenotype=ind.phenotype,
+                    phenotype=phenotype,
                     env_version=self.get_env_version(),
                 )
                 if cached is not None:
                     self._apply_evaluation_record(ind, cached)
                     continue
+
             # Group by phenotype for duplicate detection
-            if ind.phenotype not in phenotype_to_indices:
-                phenotype_to_indices[ind.phenotype] = []
-                phenotypes.append(ind.phenotype)
-            phenotype_to_indices[ind.phenotype].append(i)
+            if phenotype not in phenotype_to_indices:
+                phenotype_to_indices[phenotype] = []
+                phenotypes.append(phenotype)
+            phenotype_to_indices[phenotype].append(i)
 
         if not phenotypes:
             return
@@ -210,29 +218,22 @@ class FitnessEvaluator:
             # Get seed from mapper for reproducibility
             mapper_seed_info = self.mapper.get_seed_info()
             seed: int | None = mapper_seed_info.get("effective_seed")
-            if not seed:
+            if seed is None:
                 seed = 42
-                logging.debug("GenotypeMapper: Seed not set. Using default seed: 42")
+                logging.info("GenotypeMapper: Seed not set. Using default seed: 42")
             eval_seed = self.derive_eval_seed(
                 base_seed=seed, phenotype=phenotype, env_version=self.get_env_version()
             )
 
+            context = {
+                "phenotype": phenotype,
+                "seed": eval_seed,
+                "required_keys": required_keys,
+                "require_case_data": self.require_case_data,
+            }
+
             if self.runner:
-                # Classic case: runner converts phenotype to predictions
-                context = {
-                    "phenotype": phenotype,
-                    "runner": self.runner,
-                    "seed": eval_seed,
-                    "required_keys": required_keys,
-                    "require_case_data": self.require_case_data,
-                }
-            else:
-                context = {
-                    "phenotype": phenotype,
-                    "seed": eval_seed,
-                    "required_keys": required_keys,
-                    "require_case_data": self.require_case_data,
-                }
+                context["runner"] = self.runner
             contexts.append(context)
 
         # Evaluate unique phenotypes in parallel
@@ -261,10 +262,9 @@ class FitnessEvaluator:
                 ind = population.individuals[idx]
                 self._apply_evaluation_record(ind, record)
 
-                # Update cache
                 if self.cache_manager is not None:
                     self.cache_manager.set_fitness(
-                        phenotype=ind.phenotype,
+                        phenotype=phenotype,
                         env_version=self.get_env_version(),
                         fitness=record,
                     )
@@ -279,13 +279,18 @@ class FitnessEvaluator:
         Returns:
             list: A list of fitness scores corresponding to each fitness function.
         """
+        self.refesh_mapping(individual)
+        if not individual.is_evaluable():
+            return
 
-        self._ensure_complete(individual)
+        phenotype = individual.require_phenotype()
 
         # Build cache key
         if self.cache_manager is not None:
+            # env version will protect against using wrong fitness from cache in dynamic systems
+            # if data changes env should change
             cached = self.cache_manager.get_fitness(
-                phenotype=individual.phenotype,
+                phenotype=phenotype,
                 env_version=self.get_env_version(),
             )
             if cached is not None:
@@ -298,7 +303,7 @@ class FitnessEvaluator:
         # Store in cache
         if self.cache_manager is not None:
             self.cache_manager.set_fitness(
-                phenotype=individual.phenotype,
+                phenotype=phenotype,
                 env_version=self.get_env_version(),
                 fitness=record,
             )
@@ -307,14 +312,16 @@ class FitnessEvaluator:
         # Keys required by the fitness function
         required_keys = self._get_required_keys()
 
+        phenotype = individual.require_phenotype()
+
         # prepare context for evaluation
         eval_context: dict[str, Any] = {
-            "phenotype": individual.phenotype,
+            "phenotype": phenotype,
             "require_case_data": self.require_case_data,
         }
         if self.runner:
             result_context = self.runner.run(
-                phenotype=individual.phenotype, context_hints=required_keys
+                phenotype=phenotype, context_hints=required_keys
             )
             eval_context.update(result_context)
             # Compute fitness and return
@@ -337,14 +344,18 @@ class FitnessEvaluator:
         if self._parallel_backend is not None:
             await self._parallel_backend.shutdown()
 
-    def _ensure_complete(self, ind: "Individual") -> None:
+    def refesh_mapping(self, ind: "Individual") -> None:
         """
-        Completion logic :: Fitness evaluator is also responsible
-        for ensuring the Individual Class is complete
-        The individuals may be initialised incomplete
-        only with integer genome or tree based representation
-        """
+        Ensure that genotype, phenotype, and tree are consistent.
 
+        Rules:
+            - If already mapped, do nothing.
+            - If tree exists and genotype is absent:
+                - reverse-map genotype when encode_trees=True
+                - otherwise derive phenotype directly from tree
+            - If genotype exists, map through the mapper
+
+        """
         if ind.genotype is None and ind.tree is None:
             raise RuntimeError("Individual has neither genotype nor tree.")
 
@@ -353,14 +364,14 @@ class FitnessEvaluator:
                 "Mapper is required. No mapper was passed to the constructor of FitnessEvaluator"
             )
 
-        # If phenotype already exists, DO NOT remap
-        if len(ind.phenotype) > 0:
+        # Already mapped: either valid phenotype exists or the individual is known invalid.
+        if ind.is_mapped():
             return
 
         # When there is tree and no genotype :
         # genotypes are not needed , however encode_trees flag can be used to reverse map to genotype anyway
         if ind.genotype is None and ind.tree is not None:
-            if self.ecode_trees:
+            if self.encode_trees:
                 ind.genotype = self.mapper.reverse_map(tree=ind.tree)
             else:
                 ind.phenotype = TreeNode.from_string(ind.tree).to_phenotype()
@@ -374,6 +385,13 @@ class FitnessEvaluator:
             ind.used_codon_count = mapping_result.used_codon_count
             ind.invalid = mapping_result.invalid
             ind.tree = mapping_result.tree_str
+
+            if mapping_result.invalid:
+                ind.mark_invalid()
+
+    def refresh_mapping_all(self, individuals: list[Individual]) -> None:
+        for ind in individuals:
+            self.refesh_mapping(ind)
 
     def clear_cache(self) -> None:
         if self.cache_manager:
@@ -394,7 +412,7 @@ class FitnessEvaluator:
         h = hashlib.blake2b(digest_size=8)  # 64-bit digest
         h.update(str(base_seed).encode("utf-8"))
         h.update(b"|")
-        h.update(phenotype.encode("utf-8"))
+        h.update(str(phenotype).encode("utf-8"))
         if env_version is not None:
             h.update(b"|")
             h.update(env_version.encode("utf-8"))

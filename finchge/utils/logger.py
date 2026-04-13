@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-import csv
-import json
 import logging
 import os
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional, Set, TextIO, Union
+from typing import Any, Callable, Dict, Optional, Set, Union
 
 import numpy as np
 from tqdm import tqdm
@@ -15,7 +13,13 @@ from tqdm import tqdm
 from finchge.core.individual import Individual
 from finchge.core.population import Population
 from finchge.core.result import GEResult
-from finchge.grammar.derivation_tree import TreeNode
+from finchge.utils.logging_helpers import (
+    IndividualLogHelper,
+    LogIOHelper,
+    ParetoFrontMetricsHelper,
+    PopulationMetricsHelper,
+    PopulationSamplingHelper,
+)
 
 LOG_DIRS = {}
 
@@ -36,38 +40,45 @@ def setup_logging(
     Setup logging for a specific project instance.
     """
     timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-    group_name = f"/{group_name}" if group_name else ""
-    log_dir = f"logs/{group_name}/{logger_id}_{timestamp}"
+    log_dir = (
+        f"logs/{group_name}/{logger_id}_{timestamp}"
+        if group_name
+        else f"logs/{logger_id}_{timestamp}"
+    )
     os.makedirs(log_dir, exist_ok=True)
 
     log_file = os.path.join(log_dir, f"{logger_id}.log")
     LOG_DIRS[logger_id] = log_dir
-    logger = logging.getLogger(logger_id)
-    logger.setLevel(logging.INFO)
-    logger.propagate = False
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+
+    for h in root_logger.handlers[:]:
+        root_logger.removeHandler(h)
+        try:
+            h.close()
+        except Exception:
+            pass
 
     formatter = logging.Formatter(
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
 
-    # File handler
-    if not any(isinstance(h, logging.FileHandler) for h in logger.handlers):
-        fh = logging.FileHandler(log_file)
-        fh.setFormatter(formatter)
-        fh.setLevel(logging.INFO)
-        logger.addHandler(fh)
+    fh = logging.FileHandler(log_file, encoding="utf-8")
+    fh.setFormatter(formatter)
+    fh.setLevel(logging.INFO)
+    root_logger.addHandler(fh)
 
-    # Console handler
-    if not any(isinstance(h, TqdmLoggingHandler) for h in logger.handlers):
-        ch = TqdmLoggingHandler()
-        ch.setFormatter(formatter)
-        if verbose:
-            ch.setLevel(logging.INFO)
-        else:
-            ch.setLevel(logging.WARNING)
-        logger.addHandler(ch)
+    ch = TqdmLoggingHandler()
+    ch.setFormatter(formatter)
+    ch.setLevel(logging.INFO if verbose else logging.WARNING)
+    root_logger.addHandler(ch)
 
-    logger.info(f"Logging setup complete for {logger_id}. Log file: {log_file}")
+    logger = logging.getLogger(logger_id)
+    logger.setLevel(logging.INFO)
+    logger.propagate = True
+
+    root_logger.info(f"Logging setup complete for {logger_id}. Log file: {log_file}")
     return log_dir
 
 
@@ -127,92 +138,13 @@ class BaseLogger(ABC):
         pass
 
 
-class FileLogger(BaseLogger):
-    def __init__(self) -> None:
-        self.run_dir: Optional[Path] = None
-        self.metrics_file: Optional[TextIO] = None
-
-    def on_run_start(
-        self, log_dir: str, obj_names: list[str], config: dict[str, Any]
-    ) -> None:
-        self.run_dir = Path(log_dir)
-        self.run_dir.mkdir(parents=True, exist_ok=True)
-
-        config_path = self.run_dir / "config.json"
-        with open(config_path, "w") as f:
-            json.dump(config, f, indent=2)
-
-        metrics_path = self.run_dir / "metrics.jsonl"
-        self.metrics_file = open(metrics_path, "a")
-
-    def on_generation_end(
-        self,
-        generation: int,
-        population: Population,
-        best: Optional[Individual] = None,
-        pareto_front: Optional[list[Individual]] = None,
-        fitness_stats: Optional[list[dict[str, Any]]] = None,
-    ) -> None:
-        if best is not None:
-            record = {
-                "generation": generation,
-                "fitness": best.fitness,
-                "phenotype": best.phenotype,
-            }
-
-        elif pareto_front is not None:
-            fitness = np.array([ind.fitness for ind in pareto_front])
-
-            record = {
-                "generation": generation,
-                "front_size": len(pareto_front),
-                "fitness_min": fitness.min(axis=0).tolist(),
-                "fitness_max": fitness.max(axis=0).tolist(),
-            }
-
-        else:
-            return
-        if self.metrics_file:
-            self.metrics_file.write(json.dumps(record) + "\n")
-            self.metrics_file.flush()
-
-    def on_run_end(self, result: GEResult) -> None:
-        if self.run_dir is None:
-            return
-
-        if result.best_individual is not None:
-            payload: dict[str, Union[list[float], str, int, None]] = {
-                "type": "single_objective",
-                "fitness": result.best_individual.fitness,
-                "phenotype": result.best_individual.phenotype,
-            }
-
-        elif result.pareto_front is not None:
-            fitness = np.array([ind.fitness for ind in result.pareto_front])
-            payload = {
-                "type": "multi_objective",
-                "front_size": len(result.pareto_front),
-                "fitness_min": fitness.min(axis=0).tolist(),
-                "fitness_max": fitness.max(axis=0).tolist(),
-            }
-
-        else:
-            payload = {"type": "empty"}
-
-        with open(self.run_dir / "final_summary.json", "w") as f:
-            json.dump(payload, f, indent=2)
-
-        if self.metrics_file:
-            self.metrics_file.close()
-
-
-class ExperimentLogger(FileLogger):
+class ExperimentLogger(BaseLogger):
     """
     Experiment logger
 
-     Logs essential data for post-hoc analysis.
-     This provided minimal essential logs only.
-     To add more logs, this class can be extended or wrapped to add custom metrics and analysis.
+    Logs essential data for post-hoc analysis.
+    This provides minimal essential logs only.
+    To add more logs, this class can be extended or wrapped to add custom metrics and analysis.
     """
 
     def __init__(
@@ -223,16 +155,6 @@ class ExperimentLogger(FileLogger):
         sample_size: int = 5,
         custom_log_hook: Optional[Callable[[dict[str, Any]], None]] = None,
     ) -> None:
-        """
-        Logs essential data for post-hoc analysis.
-
-        Args:
-            exclude: Fields to exclude from logging ('phenotypes', 'genotypes', 'trees')
-            compress_genotypes: Save genotypes as compressed numpy arrays
-            log_population_samples: Save samples from full population (not just front/best)
-            sample_size: Number of individuals to sample from population
-            custom_log_hook: Function to call with extra logging data each generation
-        """
         self.exclude: Set[str] = exclude or set()
         self.compress_genotypes: bool = compress_genotypes
         self.log_population_samples: bool = log_population_samples
@@ -245,12 +167,13 @@ class ExperimentLogger(FileLogger):
         self.csv_path: Optional[Path] = None
         self.objective_names: Optional[list[str]] = None
 
-        # history for analysis
         self.generation_history: list[dict[str, Any]] = []
         self.run_start_time: Optional[datetime] = None
 
-        # reference to algorithm for custom logging
         self.algorithm: Optional[Any] = None
+
+        self.generations_csv: Optional[Path] = None
+        self.last_generation_time: Optional[datetime] = None
 
     def on_run_start(
         self,
@@ -261,20 +184,18 @@ class ExperimentLogger(FileLogger):
     ) -> None:
         """
         Initialize logging when the experiment run starts.
-        Mainly creates different directories for logging, prepares config data and expt metadata for logging
-        `log_dir` should be provided to store logs. Not autogenerated to maintain consistency.
-
 
         Args:
             algorithm: Optional reference to algorithm instance for custom logging hooks
         """
+
         self.log_dir = Path(log_dir)
-        self.log_dir.mkdir(parents=True, exist_ok=True)
+        LogIOHelper.ensure_dir(self.log_dir)
+
         self.objective_names = obj_names
         self.algorithm = algorithm
         self.run_start_time = datetime.now()
 
-        # Save config with timestamp and metadata
         config_data = {
             "timestamp": self.run_start_time.isoformat(),
             "objective_names": obj_names,
@@ -284,42 +205,83 @@ class ExperimentLogger(FileLogger):
                 "exclude": list(self.exclude),
                 "compress_genotypes": self.compress_genotypes,
                 "log_population_samples": self.log_population_samples,
+                "sample_size": self.sample_size,
             },
         }
 
-        config_path = self.log_dir / "experiment_config.json"
-        with open(config_path, "w") as f:
-            json.dump(config_data, f, indent=2, default=str)
+        LogIOHelper.write_json(self.log_dir / "experiment_config.json", config_data)
 
-        # Initialize directories
         self._init_dirs()
+        self._init_generation_csv()
+        self.last_generation_time = self.run_start_time
 
-        # Initialize CSV for single-objective
-        if len(obj_names) == 1:
-            self._init_single_objective_csv()
-
-        print(f"[ExperimentLogger] Started logging to: {log_dir}")
-        print(f"[ExperimentLogger] Objectives: {obj_names}")
+        logging.info(f"[ExperimentLogger] Started logging to: {log_dir}")
+        logging.info(f"[ExperimentLogger] Objectives: {obj_names}")
 
     def _init_dirs(self) -> None:
         if not self.log_dir:
             raise AttributeError("Log directory is not set")
 
-        # Create population samples directory if enabled
         if self.log_population_samples:
-            (self.log_dir / "population_samples").mkdir(exist_ok=True)
+            LogIOHelper.ensure_dir(self.log_dir / "population_samples")
 
-    def _init_single_objective_csv(self) -> None:
+    def _get_generation_csv_headers(self) -> list[str]:
+        if self.objective_names is None:
+            raise AttributeError("Objective names are not set")
+        headers = [
+            "gen",
+            "invalids",
+            "total_inds",
+            "unique_inds",
+            "unused_search",
+            "ave_genome_length",
+            "max_genome_length",
+            "min_genome_length",
+            "ave_tree_depth",
+            "max_tree_depth",
+            "min_tree_depth",
+            "ave_tree_nodes",
+            "max_tree_nodes",
+            "min_tree_nodes",
+            "ave_used_codons",
+            "max_used_codons",
+            "min_used_codons",
+            "time_taken",
+            "total_time",
+        ]
+
+        if len(self.objective_names) == 1:
+            headers[1:1] = [
+                "ave_fitness",
+                "best_fitness",
+                "best_genome_length",
+                "best_tree_depth",
+                "best_tree_nodes",
+                "best_used_codons",
+                "best_phenotype_length",
+            ]
+        else:
+            headers.insert(1, "front_size")
+
+            for name in self.objective_names:
+                headers.extend(
+                    [
+                        f"front_min_{name}",
+                        f"front_max_{name}",
+                        f"front_mean_{name}",
+                    ]
+                )
+
+        return headers
+
+    def _init_generation_csv(self) -> None:
+        """Initialize the main generations CSV for the current run type."""
         if not self.log_dir:
             raise AttributeError("Log directory is not set")
 
-        self.csv_path = self.log_dir / "generations.csv"
-        with open(self.csv_path, "w", newline="") as f:
-            writer = csv.writer(f)
-            stat_cols = ["min", "max", "avg", "std", "total_count", "valid_count"]
-            writer.writerow(
-                ["generation", "best_fitness", *stat_cols, "used_codons", "tree_depth"]
-            )
+        self.generations_csv = self.log_dir / "generations.csv"
+        headers = self._get_generation_csv_headers()
+        LogIOHelper.write_csv(self.generations_csv, headers, [])
 
     def on_generation_end(
         self,
@@ -339,7 +301,6 @@ class ExperimentLogger(FileLogger):
         if self.log_dir is None:
             return
 
-        # Store minimal history in memory
         history_entry = {
             "generation": generation,
             "timestamp": datetime.now().isoformat(),
@@ -347,25 +308,22 @@ class ExperimentLogger(FileLogger):
         }
 
         if best is not None:
-            # Single-objective logging
             self._log_single_objective(generation, best, fitness_stats, population)
-            history_entry["best_fitness"] = best.fitness[0]
+            best_summary = IndividualLogHelper.build_summary(best)
+            fitness = best_summary["fitness"]
+            history_entry["best_fitness"] = fitness[0] if fitness else None
             history_entry["type"] = "single_objective"
 
         elif pareto_front is not None:
-            # Multi-objective logging
             self._log_multi_objective(generation, pareto_front, population)
             history_entry["front_size"] = len(pareto_front)
             history_entry["type"] = "multi_objective"
 
-        # Add extra data to history
         if extra_data:
             history_entry["extra"] = extra_data
 
-        # Store in history list
         self.generation_history.append(history_entry)
 
-        # Call custom logging hook if provided
         if self.custom_log_hook:
             hook_data = {
                 "generation": generation,
@@ -380,7 +338,7 @@ class ExperimentLogger(FileLogger):
             try:
                 self.custom_log_hook(hook_data)
             except Exception as e:
-                logging.warning(f"Custom logging hook failed: {e}")
+                logging.getLogger(__name__).warning("Custom logging hook failed: %s", e)
 
     def _log_single_objective(
         self,
@@ -393,53 +351,65 @@ class ExperimentLogger(FileLogger):
         if not self.log_dir:
             return
 
-        # Create phenotype/genotype/tree directories if not excluded
-        if "phenotypes" not in self.exclude:
-            (self.log_dir / "phenotypes").mkdir(exist_ok=True)
-        if "genotypes" not in self.exclude:
-            (self.log_dir / "genotypes").mkdir(exist_ok=True)
-        if "trees" not in self.exclude:
-            (self.log_dir / "trees").mkdir(exist_ok=True)
+        IndividualLogHelper.write_individual_artifacts(
+            base_dir=self.log_dir,
+            ind=best,
+            file_stem=str(generation),
+            exclude=self.exclude,
+            compress_genotypes=self.compress_genotypes,
+        )
 
-        if best.phenotype and "phenotypes" not in self.exclude:
-            phenotype_path = self.log_dir / "phenotypes" / f"{generation}.txt"
-            phenotype_path.write_text(best.phenotype)
+        metrics = PopulationMetricsHelper.compute(population)
+        best_summary = IndividualLogHelper.build_summary(best)
+        fitness = best_summary["fitness"]
+        tree = IndividualLogHelper.get_tree(best)
 
-        if "genotypes" not in self.exclude and hasattr(best, "genotype"):
-            genotype_path = self.log_dir / "genotypes" / f"{generation}.txt"
-            genotype_path.write_text(str(best.genotype))
+        now = datetime.now()
 
-        if best.tree and "trees" not in self.exclude:
-            tree_path = self.log_dir / "trees" / f"{generation}_tree.txt"
-            tree_path.write_text(best.tree)
+        if self.last_generation_time is not None:
+            time_taken = (now - self.last_generation_time).total_seconds()
+        else:
+            time_taken = 0.0
 
-        # calculate tree depth
-        depth = 0
-        if best.tree:
-            try:
-                depth = TreeNode.from_string(best.tree).max_depth
-            except (AttributeError, ValueError, TypeError):
-                depth = 0
+        if self.run_start_time is not None:
+            total_time = (now - self.run_start_time).total_seconds()
+        else:
+            total_time = 0.0
 
-        # write to CSV
-        if self.csv_path and fitness_stats:
-            fitness_stats_dict = fitness_stats[0]  # single objective only
-            stat_cols = ["min", "max", "avg", "std", "total_count", "valid_count"]
-            stats_values = [fitness_stats_dict[col] for col in stat_cols]
+        self.last_generation_time = now
 
-            with open(self.csv_path, "a", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(
-                    [
-                        generation,
-                        best.fitness[0],
-                        *stats_values,
-                        best.used_codon_count if hasattr(best, "used_codons") else 0,
-                        depth,
-                    ]
-                )
+        row = [
+            generation,
+            metrics["ave_fitness"],
+            fitness[0] if fitness else None,
+            best_summary["genotype_length"],
+            best_summary["tree_depth"],
+            PopulationMetricsHelper._tree_nodes(tree),
+            best_summary["used_codons"],
+            best_summary["phenotype_length"],
+            metrics["invalids"],
+            metrics["total_inds"],
+            metrics["unique_inds"],
+            metrics["unused_search"],
+            metrics["ave_genome_length"],
+            metrics["max_genome_length"],
+            metrics["min_genome_length"],
+            metrics["ave_tree_depth"],
+            metrics["max_tree_depth"],
+            metrics["min_tree_depth"],
+            metrics["ave_tree_nodes"],
+            metrics["max_tree_nodes"],
+            metrics["min_tree_nodes"],
+            metrics["ave_used_codons"],
+            metrics["max_used_codons"],
+            metrics["min_used_codons"],
+            time_taken,
+            total_time,
+        ]
 
-        # Log population samples if enabled
+        if self.generations_csv:
+            LogIOHelper.append_csv_row(self.generations_csv, row)
+
         if self.log_population_samples and population:
             self._log_population_sample(generation, population, "single_objective")
 
@@ -454,63 +424,132 @@ class ExperimentLogger(FileLogger):
             return
 
         gen_dir = self.log_dir / f"generation_{generation}"
-        gen_dir.mkdir(exist_ok=True)
+        LogIOHelper.ensure_dir(gen_dir)
 
-        # Save front fitness matrix as npy
         fitness_matrix = np.array([ind.fitness for ind in front])
-        np.save(gen_dir / "front_fitness.npy", fitness_matrix)
+        LogIOHelper.write_npy(gen_dir / "front_fitness.npy", fitness_matrix)
 
-        # Save as CSV for easy viewing
-        rows: list[list[Union[float, int]]] = []
+        rows: list[list[Any]] = []
         for i, ind in enumerate(front):
-            row: list[Union[float, int]] = [i, *ind.fitness]
-            if hasattr(ind, "used_codons"):
-                row.append(ind.used_codon_count)
+            ind_summary = IndividualLogHelper.build_summary(ind)
+            tree = IndividualLogHelper.get_tree(ind)
+
+            row: list[Any] = [i, *ind.fitness]
+            row.extend(
+                [
+                    ind_summary["used_codons"],
+                    ind_summary["genotype_length"],
+                    ind_summary["tree_depth"],
+                    PopulationMetricsHelper._tree_nodes(tree),
+                    ind_summary["phenotype_length"],
+                ]
+            )
             rows.append(row)
 
-            # Save individual files
-            if ind.phenotype and "phenotypes" not in self.exclude:
-                (gen_dir / "phenotypes").mkdir(exist_ok=True)
-                (gen_dir / "phenotypes" / f"{i}.txt").write_text(ind.phenotype)
+            IndividualLogHelper.write_individual_artifacts(
+                base_dir=gen_dir,
+                ind=ind,
+                file_stem=str(i),
+                exclude=self.exclude,
+                compress_genotypes=self.compress_genotypes,
+            )
 
-            if "genotypes" not in self.exclude and hasattr(ind, "genotype"):
-                (gen_dir / "genotypes").mkdir(exist_ok=True)
-                if ind.genotype:
-                    if self.compress_genotypes:
-                        np.savez_compressed(
-                            gen_dir / "genotypes" / f"{i}.npz", genotype=ind.genotype
-                        )
-                    else:
-                        (gen_dir / "genotypes" / f"{i}.txt").write_text(
-                            str(ind.genotype) if ind.genotype else ""
-                        )
-
-            if ind.tree and "trees" not in self.exclude:
-                (gen_dir / "trees").mkdir(exist_ok=True)
-                (gen_dir / "trees" / f"{i}_tree.txt").write_text(ind.tree)
-
-        # Save CSV with headers
         if self.objective_names:
-            headers = ["id", *self.objective_names]
-            if any(hasattr(ind, "used_codons") for ind in front):
-                headers.append("used_codons")
+            headers = [
+                "id",
+                *self.objective_names,
+                "used_codons",
+                "genome_length",
+                "tree_depth",
+                "tree_nodes",
+                "phenotype_length",
+            ]
+        else:
+            n_objectives = len(front[0].fitness) if front else 0
+            headers = [
+                "id",
+                *[f"obj{i}" for i in range(n_objectives)],
+                "used_codons",
+                "genome_length",
+                "tree_depth",
+                "tree_nodes",
+                "phenotype_length",
+            ]
 
-            with open(gen_dir / "front.csv", "w", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(headers)
-                writer.writerows(rows)
+        LogIOHelper.write_csv(gen_dir / "front.csv", headers, rows)
 
-        # Save front metadata
         front_metadata = {
             "generation": generation,
             "front_size": len(front),
             "timestamp": datetime.now().isoformat(),
             "objective_names": self.objective_names,
         }
-        with open(gen_dir / "metadata.json", "w") as f:
-            json.dump(front_metadata, f, indent=2)
+        LogIOHelper.write_json(gen_dir / "metadata.json", front_metadata)
 
-        # Log population samples if enabled
+        now = datetime.now()
+
+        if self.last_generation_time is not None:
+            time_taken = (now - self.last_generation_time).total_seconds()
+        else:
+            time_taken = 0.0
+
+        if self.run_start_time is not None:
+            total_time = (now - self.run_start_time).total_seconds()
+        else:
+            total_time = 0.0
+
+        self.last_generation_time = now
+
+        pop_metrics = PopulationMetricsHelper.compute(population)
+        front_metrics = ParetoFrontMetricsHelper.compute(front, self.objective_names)
+
+        row_front: list[Any] = [
+            generation,
+            front_metrics.get("front_size"),
+            pop_metrics.get("invalids"),
+            pop_metrics.get("total_inds"),
+            pop_metrics.get("unique_inds"),
+            pop_metrics.get("unused_search"),
+            pop_metrics.get("ave_genome_length"),
+            pop_metrics.get("max_genome_length"),
+            pop_metrics.get("min_genome_length"),
+            pop_metrics.get("ave_tree_depth"),
+            pop_metrics.get("max_tree_depth"),
+            pop_metrics.get("min_tree_depth"),
+            pop_metrics.get("ave_tree_nodes"),
+            pop_metrics.get("max_tree_nodes"),
+            pop_metrics.get("min_tree_nodes"),
+            pop_metrics.get("ave_used_codons"),
+            pop_metrics.get("max_used_codons"),
+            pop_metrics.get("min_used_codons"),
+            time_taken,
+            total_time,
+        ]
+
+        if self.objective_names:
+            for name in self.objective_names:
+                row_front.extend(
+                    [
+                        front_metrics.get(f"front_min_{name}"),
+                        front_metrics.get(f"front_max_{name}"),
+                        front_metrics.get(f"front_mean_{name}"),
+                    ]
+                )
+        elif front:
+            n_objectives = len(front[0].fitness)
+            for i in range(n_objectives):
+                name = f"obj{i}"
+                row_front.extend(
+                    [
+                        front_metrics.get(f"front_min_{name}"),
+                        front_metrics.get(f"front_max_{name}"),
+                        front_metrics.get(f"front_mean_{name}"),
+                    ]
+                )
+
+        if self.generations_csv:
+            LogIOHelper.append_csv_row(self.generations_csv, row_front)
+
         if self.log_population_samples and population:
             self._log_population_sample(generation, population, "multi_objective")
 
@@ -529,18 +568,47 @@ class ExperimentLogger(FileLogger):
         if not self.log_dir:
             raise ValueError("Log directory not set.")
 
-        # Sample individuals (stratified by fitness)
-        sample_indices = self._sample_population_indices(population, self.sample_size)
+        sample_indices = PopulationSamplingHelper.sample_indices(
+            population,
+            self.sample_size,
+        )
         sample = [population.individuals[i] for i in sample_indices]
 
         sample_dir = self.log_dir / "population_samples" / f"gen_{generation}"
-        sample_dir.mkdir(parents=True, exist_ok=True)
+        LogIOHelper.ensure_dir(sample_dir)
 
-        # Save sample fitness
         sample_fitness = np.array([ind.fitness for ind in sample])
-        np.save(sample_dir / "sample_fitness.npy", sample_fitness)
+        LogIOHelper.write_npy(sample_dir / "sample_fitness.npy", sample_fitness)
 
-        # Save sample metadata
+        sample_rows: list[list[Any]] = []
+        for idx, ind in zip(sample_indices, sample):
+            summary = IndividualLogHelper.build_summary(ind)
+            fitness = summary["fitness"]
+
+            sample_rows.append(
+                [
+                    idx,
+                    fitness,
+                    summary["used_codons"],
+                    summary["tree_depth"],
+                    summary["phenotype_length"],
+                    summary["genotype_length"],
+                ]
+            )
+
+        LogIOHelper.write_csv(
+            sample_dir / "sample_summary.csv",
+            [
+                "population_index",
+                "fitness",
+                "used_codons",
+                "tree_depth",
+                "phenotype_length",
+                "genotype_length",
+            ],
+            sample_rows,
+        )
+
         sample_metadata = {
             "generation": generation,
             "sample_size": len(sample),
@@ -549,40 +617,7 @@ class ExperimentLogger(FileLogger):
             "sample_indices": sample_indices,
             "timestamp": datetime.now().isoformat(),
         }
-        with open(sample_dir / "metadata.json", "w") as f:
-            json.dump(sample_metadata, f, indent=2)
-
-    def _sample_population_indices(
-        self,
-        population: Population,
-        sample_size: int,
-    ) -> list[int]:
-        """
-        Sample indices from population, trying to capture diversity.
-        """
-        n = len(population)
-        sample_size = min(sample_size, n)
-
-        if n <= sample_size:
-            return list(range(n))
-
-        # Simple stratified sampling by fitness percentiles
-        try:
-            # For single-objective or first objective
-            fitness_values = [ind.fitness[0] for ind in population.individuals]
-            sorted_indices = np.argsort(fitness_values)
-            # Take from different parts of the distribution
-            indices = []
-            for i in range(sample_size):
-                pos = int(i * (n - 1) / (sample_size - 1)) if sample_size > 1 else 0
-                indices.append(sorted_indices[pos])
-            return indices
-        except (IndexError, ValueError):
-            # Fallback: linear sampling
-            if sample_size == 0:
-                return []
-            step = n / sample_size
-            return [int(i * step) for i in range(sample_size)]
+        LogIOHelper.write_json(sample_dir / "metadata.json", sample_metadata)
 
     def on_run_end(self, result: GEResult) -> None:
         """
@@ -598,7 +633,6 @@ class ExperimentLogger(FileLogger):
             else 0
         )
 
-        # Save run summary
         summary: Dict[str, Union[str, float, int, list[Any], None, Dict[str, Any]]] = {
             "run_start": (
                 self.run_start_time.isoformat() if self.run_start_time else None
@@ -609,93 +643,74 @@ class ExperimentLogger(FileLogger):
             "n_objectives": len(self.objective_names) if self.objective_names else 0,
         }
 
-        # Add result-specific data
         if result.best_individual is not None:
             ind = result.best_individual
-            summary["type"] = "single_objective"
-            summary["best_fitness"] = ind.fitness[0] if ind.fitness else None
-            summary["best_individual"] = {
-                "fitness": ind.fitness[0],
-                "used_codons": getattr(ind, "used_codons", None),
-                "has_phenotype": ind.phenotype is not None,
-                "has_tree": ind.tree is not None,
-            }
+            ind_summary = IndividualLogHelper.build_summary(ind)
+            fitness = ind_summary["fitness"]
 
-            # Save best individual
+            summary["type"] = "single_objective"
+            summary["best_fitness"] = fitness[0] if fitness else None
+            summary["best_individual"] = ind_summary
+
             payload = {
                 "type": "single_objective",
-                "fitness": ind.fitness,
-                "phenotype": ind.phenotype,
-                "used_codons": ind.used_codon_count,
-                "tree": ind.tree,
+                "fitness": fitness,
+                "phenotype": IndividualLogHelper.get_phenotype(ind),
+                "used_codons": ind_summary["used_codons"],
+                "tree": IndividualLogHelper.get_tree(ind),
+                "tree_depth": ind_summary["tree_depth"],
+                "phenotype_length": ind_summary["phenotype_length"],
+                "genotype_length": ind_summary["genotype_length"],
             }
-            with open(self.log_dir / "best_individual.json", "w") as f:
-                json.dump(payload, f, indent=2, default=str)
+            LogIOHelper.write_json(self.log_dir / "best_individual.json", payload)
 
         elif result.pareto_front is not None:
             front = result.pareto_front
             summary["type"] = "multi_objective"
             summary["front_size"] = len(front)
 
-            # Save final Pareto front
             front_dir = self.log_dir / "final_pareto_front"
-            front_dir.mkdir(exist_ok=True)
+            LogIOHelper.ensure_dir(front_dir)
 
-            # Save fitness matrix
             fitness_matrix = np.array([ind.fitness for ind in front])
-            np.save(front_dir / "front_fitness.npy", fitness_matrix)
+            LogIOHelper.write_npy(front_dir / "front_fitness.npy", fitness_matrix)
 
-            # Save individual files
-            rows = []
+            rows: list[list[Any]] = []
             for i, ind in enumerate(front):
+                ind_summary = IndividualLogHelper.build_summary(ind)
                 row = [i, *ind.fitness]
-                if hasattr(ind, "used_codons"):
-                    row.append(ind.used_codon_count)
+                if ind_summary["used_codons"] is not None:
+                    row.append(ind_summary["used_codons"])
                 rows.append(row)
 
-                (front_dir / f"{i}_phenotype.txt").write_text(ind.phenotype or "")
+                IndividualLogHelper.write_individual_artifacts(
+                    base_dir=front_dir,
+                    ind=ind,
+                    file_stem=str(i),
+                    exclude=self.exclude,
+                    compress_genotypes=self.compress_genotypes,
+                )
 
-                if self.compress_genotypes and hasattr(ind, "genotype"):
-                    if ind.genotype:
-                        np.savez_compressed(
-                            front_dir / f"{i}_genotype.npz", genotype=ind.genotype
-                        )
-                elif hasattr(ind, "genotype"):
-                    (front_dir / f"{i}_genotype.txt").write_text(str(ind.genotype))
-
-                if ind.tree:
-                    (front_dir / f"{i}_tree.json").write_text(ind.tree)
-
-            # Save CSV
             if self.objective_names:
                 headers = ["id", *self.objective_names]
-                if any(hasattr(ind, "used_codons") for ind in front):
+                if any(
+                    IndividualLogHelper.get_used_codons(ind) is not None
+                    for ind in front
+                ):
                     headers.append("used_codons")
 
-                with open(front_dir / "front.csv", "w", newline="") as f:
-                    writer = csv.writer(f)
-                    writer.writerow(headers)
-                    writer.writerows(rows)
+                LogIOHelper.write_csv(front_dir / "front.csv", headers, rows)
 
-            # Save front metadata
             front_metadata = {
                 "front_size": len(front),
                 "objective_names": self.objective_names,
                 "timestamp": run_end_time.isoformat(),
             }
-            with open(front_dir / "metadata.json", "w") as f:
-                json.dump(front_metadata, f, indent=2)
+            LogIOHelper.write_json(front_dir / "metadata.json", front_metadata)
 
-        # Save generation history
-        if self.generation_history:
-            history_path = self.log_dir / "generation_history.json"
-            with open(history_path, "w") as f:
-                json.dump(self.generation_history, f, indent=2, default=str)
+        LogIOHelper.write_json(self.log_dir / "run_summary.json", summary)
 
-        # Save final summary
-        summary_path = self.log_dir / "run_summary.json"
-        with open(summary_path, "w") as f:
-            json.dump(summary, f, indent=2, default=str)
-
-        print(f"[ExperimentLogger] Run completed. Results saved to: {self.log_dir}")
-        print(f"[ExperimentLogger] Run duration: {run_duration:.2f} seconds")
+        logging.info(
+            f"[ExperimentLogger] Run completed. Results saved to: {self.log_dir}"
+        )
+        logging.info(f"[ExperimentLogger] Run duration: {run_duration:.2f} seconds")

@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from typing import Any, Iterable, Optional, Sequence, Union
 
@@ -13,12 +14,16 @@ from finchge.utils.random_mixin import RandomStateMixin
 class MappingResult:
     """Result of genotype to phenotype mapping."""
 
-    phenotype: str
+    phenotype: str | None
     used_genome: list[int]
     used_codon_count: int
     invalid: bool
     tree: TreeNode
     tree_str: str
+
+    @property
+    def is_valid(self) -> bool:
+        return not self.invalid and self.phenotype is not None
 
 
 class GenotypeMapper(RandomStateMixin):
@@ -63,8 +68,9 @@ class GenotypeMapper(RandomStateMixin):
         self,
         *,
         grammar: Grammar,
-        max_recursion_depth: int = 20,
-        max_wraps: int = 6,
+        max_tree_depth: Optional[int] = None,
+        max_recursion_depth: Optional[int] = None,
+        max_wraps: int = 0,
         repair_strategy: Optional[RepairStrategy] = None,
         random_state: Optional[int] = None,
     ) -> None:
@@ -74,6 +80,8 @@ class GenotypeMapper(RandomStateMixin):
         Args:
             grammar (Grammar):
                 Grammar defining production rules and non-terminals used for mapping.
+            max_tree_depth (Optional[int]):
+                Max depth limit for resulting trees.
             max_recursion_depth (int, optional):
                 Maximum depth allowed during derivation tree expansion.
                 Mapping is marked invalid if exceeded. Defaults to 20.
@@ -93,8 +101,28 @@ class GenotypeMapper(RandomStateMixin):
         self.non_terminals = grammar.non_terminals
         self.start_rule: str | None = getattr(grammar, "start_rule", None)
         self.max_recursion_depth = max_recursion_depth
+        self.max_tree_depth = max_tree_depth
         self.max_wraps = max_wraps
         self.repair_strategy = repair_strategy
+
+        if (
+            self.max_tree_depth is not None
+            and self.max_recursion_depth is not None
+            and self.max_recursion_depth <= self.max_tree_depth
+        ):
+            logging.warning(
+                "GenotypeMapper: max_recursion_depth (%s) <= max_tree_depth (%s). "
+                "Recursion depth may become the effective mapping limit before the "
+                "tree-depth constraint.",
+                self.max_recursion_depth,
+                self.max_tree_depth,
+            )
+
+        elif self.max_tree_depth is None and self.max_recursion_depth is not None:
+            logging.warning(
+                "GenotypeMapper: max_recursion_depth is set without max_tree_depth. "
+                "Mapping is constrained by recursion depth only."
+            )
 
     def map(self, genotype: list[int]) -> MappingResult:
         """
@@ -140,7 +168,7 @@ class GenotypeMapper(RandomStateMixin):
         root = TreeNode(self.start_rule)
 
         # Stack holds (node, depth)
-        stack: list[tuple[TreeNode, int]] = [(root, 0)]
+        stack: list[tuple[TreeNode, int]] = [(root, 1)]
 
         genotype_len = len(genotype)
         current_codon_index = 0
@@ -158,15 +186,23 @@ class GenotypeMapper(RandomStateMixin):
             current_symbol = current_node.symbol
 
             # Enforce recursion depth constraint
-            if depth > self.max_recursion_depth:
+            if (
+                self.max_recursion_depth is not None
+                and depth > self.max_recursion_depth
+            ):
+                return self._invalid_result(root, used_genome, used_codons_count)
+
+            # Max tree depth limit
+            if self.max_tree_depth is not None and depth > self.max_tree_depth:
                 return self._invalid_result(root, used_genome, used_codons_count)
 
             # Terminal symbol - nothing to expand
             if current_symbol not in self.rules:
                 continue
 
-            # Handle codon wrapping
-            if current_codon_index >= genotype_len:
+            # if we have exhausted the genome and still need to expand a non-terminal,
+            # wrap back to the start and count a wrap.
+            if current_codon_index > 0 and current_codon_index % genotype_len == 0:
                 wraps += 1
                 if wraps > self.max_wraps:
                     return self._invalid_result(root, used_genome, used_codons_count)
@@ -191,10 +227,9 @@ class GenotypeMapper(RandomStateMixin):
             children: list[TreeNode] = []
 
             for symbol in selected_production:
-                if symbol.strip():  # ignore empty tokens
-                    child_node = TreeNode(symbol)
-                    current_node.add_child(child_node)
-                    children.append(child_node)
+                child_node = TreeNode(symbol)
+                current_node.add_child(child_node)
+                children.append(child_node)
 
             # Stack is LIFO - push reversed order to expand leftmost first
             for child in reversed(children):
@@ -267,7 +302,7 @@ class GenotypeMapper(RandomStateMixin):
             if node.symbol in self.rules:
                 rule = self.rules[node.symbol]
 
-                rhs = [c.symbol for c in node.children if c.symbol.strip()]
+                rhs = [c.symbol for c in node.children]
 
                 choice_index = self._find_production_index(rule.choices, rhs)
 
@@ -301,7 +336,7 @@ class GenotypeMapper(RandomStateMixin):
         used_codon_count: int,
     ) -> MappingResult:
         return MappingResult(
-            phenotype="",
+            phenotype=None,
             used_genome=used_genome,
             used_codon_count=used_codon_count,
             invalid=True,
@@ -429,7 +464,7 @@ class GenotypeMapper(RandomStateMixin):
             info_str = "GenotypeMapper:<br />"
         else:
             info_str = "GenotypeMapper:\n"
-        table_data = [
+        table_data: list[list[str | int | None]] = [
             ["Max Recursion Depth", self.max_recursion_depth],
             ["Max Wraps", self.max_wraps],
         ]

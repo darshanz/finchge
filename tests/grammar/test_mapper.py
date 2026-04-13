@@ -28,8 +28,6 @@ def test_genotype_mapper_determinism():
     assert result1.phenotype == result2.phenotype
     assert result1.used_genome == result2.used_genome
 
-    print(f"Mapper test: {result1.phenotype == result2.phenotype}")
-
 
 def test_genotype_mapper_round_trip_consistency() -> None:
     """

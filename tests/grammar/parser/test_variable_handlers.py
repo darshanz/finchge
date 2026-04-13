@@ -1,329 +1,297 @@
 import re
 
 import numpy as np
-import sympy as sp
 
 from finchge.grammar.range_handlers import (
     RangeHandler,
     SymbolicVariableRangeHandler,
     SymolicVariableHandler,
 )
-
-
-def test_sympy_compatibility():
-    """Test that generated expressions actually work with SymPy."""
-    handler = SymbolicVariableRangeHandler()
-
-    test_cases = [
-        ("x[0..2]", ["x0", "|", "x1", "|", "x2"]),
-        ("x[1..3 step 2]", ["x1", "|", "x3"]),
-    ]
-
-    for token, expected_expansion in test_cases:
-        expanded = handler.expand(token)
-        assert expanded == expected_expansion
-
-        # Test each expanded variable works with SymPy
-        for item in expanded:
-            if item != "|":
-                # Try to create a sympy symbol
-                symbol = sp.symbols(item)  # Should work for x0, x1, etc.
-                assert isinstance(symbol, sp.Symbol)
-
-                # Try to use in an expression
-                expr = sp.sympify(f"{item} + 1")
-                assert isinstance(expr, sp.Expr)
+from finchge.symbolic import SymbolicExpression
 
 
 def test_expression_evaluation():
-    """Test that expanded variables can be used in actual evaluation."""
-    from sympy.utilities.lambdify import lambdify
-
     handler = SymbolicVariableRangeHandler()
     expanded = handler.expand("x[0..2]")
-
-    # Create symbols
-    symbols = [sp.symbols(var) for var in expanded if var != "|"]
-
-    # Create and evaluate expression
-    expr = sum(symbols)  # x0 + x1 + x2
-    func = lambdify(symbols, expr, "numpy")
-
-    # Test evaluation
+    symbols = [var for var in expanded if var != "|"]
+    expr = SymbolicExpression("+".join(symbols))  # x0 + x1 + x2)
     X = np.array([[1, 2, 3], [4, 5, 6]])
-    result = func(*X.T)
-
+    result = expr.eval(X)
     assert np.array_equal(result, [1 + 2 + 3, 4 + 5 + 6])
 
-    class TestSymbolicVariableHandler:
-        """Test the SymolicVariableHandler for fixed variables in terminals.
-        important for symbolic regression.
+
+class TestSymbolicVariableHandler:
+    """Test the SymolicVariableHandler for fixed variables in terminals.
+    important for symbolic regression.
+    """
+
+    def setup_method(self):
+        self.handler = SymolicVariableHandler()
+
+    def test_can_handle_valid_variable(self):
+        """
+        Test that handler recognizes valid symbols.
+        - should handle all numbers
+        - should handle large numbers
+        """
+        valid_cases = [
+            "x1",  # Single digit
+            "x10",  # Multiple digits
+            "x42",  # Larger number
+        ]
+
+        for case in valid_cases:
+            assert self.handler.can_handle(case), f"Failed: {case}"
+
+    def test_cannot_handle_invalid_patterns(self):
+        """
+        Test that handler rejects invalid patterns.
+        - plain variable handler does not handle ranges this is done by variable range handler
+        - alphabets can not be used in the column index
+        - if missing column index , it should fail
+        - variable name is always x other letters for denoting dataset are not allowed
+        - float index is not allowed
+
+        """
+        invalid_cases = [
+            "x[0..4]",  # Range (should be handled by RangeHandler)
+            "xa",  # Non-numeric
+            "x",  # Missing index
+            "x[",  # Wrong syntax
+            "y0",  # Wrong variable name
+            "x-1",  # Negative index
+            "x1.5",  # Float index
+            "x0 + 1",  # Expression, not just variable
+        ]
+
+        for case in invalid_cases:
+            assert not self.handler.can_handle(case), f"Should reject: {case}"
+
+    def test_pattern_property(self):
+        """
+        Test the regex pattern matches expected cases
+
+        - Test to see if regex used is correct
+         - see if the regex suports different cases.
+        """
+        pattern = self.handler.pattern
+
+        # Should match valid cases
+        assert re.fullmatch(pattern, "x0")
+        assert re.fullmatch(pattern, "x10")
+        assert re.fullmatch(pattern, "x1")
+
+        # Should not match invalid cases
+        assert not re.fullmatch(pattern, "x[0..4]")
+        assert not re.fullmatch(pattern, "xa")
+        assert not re.fullmatch(pattern, "y0")
+
+    def test_priority(self):
+        """Test that handler has appropriate priority."""
+        assert (
+            self.handler.priority == 50
+        )  # It is set only after SymbolicVariableRangeHandler
+        assert isinstance(self.handler, RangeHandler)
+
+
+class TestSymbolicVariableRangeHandler:
+    """
+    Test the SymbolicVariableRangeHandler for expanding variable ranges.
+    """
+
+    def setup_method(self):
+        self.handler = SymbolicVariableRangeHandler()
+
+    def test_can_handle_variablee_ranges(self):
+        """Test that handler recognizes rymbolic rariable range  patterns."""
+        valid_cases = [
+            "x[0..4]",  # Basic range
+            "x[0..10]",  # Larger range
+            "x[0..10 step 2]",  # With step
+            "x[5..15 step 3]",  # Different step
+            "x[1..1]",  # Single value range
+            "x[ 0..4 ]",  # With spaces
+            "x[0..4 step 2 ]",  # Spaces with step
+        ]
+
+        for case in valid_cases:
+            assert self.handler.can_handle(case), f"Failed: {case}"
+
+    def test_cannot_handle_invalid_range_patterns(self):
+        """Test that handler rejects invalid range patterns."""
+        invalid_cases = [
+            "x0",  # Single slice (no range)
+            "x[a..z]",  # Character range
+            "x[]",  # Missing range
+            "x[0..]",  # Incomplete range
+            "x[..4]",  # Incomplete range
+            "x[0..4 step]",  # Missing step value
+            "y[0..4]",  # Wrong variable
+        ]
+
+        for case in invalid_cases:
+            assert not self.handler.can_handle(case), f"Should reject: {case}"
+
+    def test_expand_basic_range(self):
+        """Test expansion of basic variable range."""
+        result = self.handler.expand("x[0..4]")
+
+        # Should expand to individual slices with | separators
+        expected = [
+            "x0",
+            "|",
+            "x1",
+            "|",
+            "x2",
+            "|",
+            "x3",
+            "|",
+            "x4",
+        ]
+
+        assert result == expected
+
+    def test_expand_with_step(self):
+        """Test expansion of variable range with step."""
+        result = self.handler.expand("x[0..10 step 2]")
+
+        expected = [
+            "x0",
+            "|",
+            "x2",
+            "|",
+            "x4",
+            "|",
+            "x6",
+            "|",
+            "x8",
+            "|",
+            "x10",
+        ]
+
+        assert result == expected
+
+    def test_expand_single_value_range(self):
+        """Test expansion of range with single value."""
+        result = self.handler.expand("x[5..5]")
+
+        # Single value, no separators
+        assert result == ["x5"]
+
+    def test_invalid_range_returns_original(self):
+        """Test that invalid range expression returns original token."""
+        # Mock a case where range extraction fails
+        invalid_token = "x[invalid]"
+        result = self.handler.expand(invalid_token)
+
+        # Should return token as-is
+        assert result == [invalid_token]
+
+    def test_pattern_property(self):
+        """Test the regex pattern matches range patterns."""
+        pattern = self.handler.pattern
+
+        # Should match range patterns
+        assert re.fullmatch(pattern, "x[0..4]")
+        assert re.fullmatch(pattern, "x[0..10 step 2]")
+        assert re.fullmatch(pattern, "x[0..4 ]")
+
+        # Should not match single slices
+        assert not re.fullmatch(pattern, "x0")
+        assert not re.fullmatch(pattern, "x[a..z]")
+
+    def test_priority_higher_than_numeric_handler(self):
+        """Test that this handler has higher priority than numeric range handler."""
+        # Array slice ranges should be handled before generic numeric ranges
+        assert self.handler.priority == 52
+
+
+class TestIntegrationWithParser:
+    """Test integration of array slice handlers with the parser."""
+
+    def test_parser_with_variable_handler(self):
+        """Test that parser correctly handles variables with the handler."""
+        from finchge.grammar import Grammar
+
+        # Grammar with array slices
+        grammar = """
+        <expr> ::= <var> | <const>
+        <var> ::= x0 | x1 | x2
+        <const> ::= 1.0 | 2.0
         """
 
-        def setup_method(self):
-            self.handler = SymolicVariableHandler()
+        grammar = Grammar(grammar)
+        terminals = grammar.terminals
 
-        def test_can_handle_valid_variable(self):
-            """
-            Test that handler recognizes valid symbols.
-            - should handle all numbers
-            - should handle large numbers
-            """
-            valid_cases = [
-                "x1",  # Single digit
-                "x10",  # Multiple digits
-                "x42",  # Larger number
-            ]
+        # Check terminals include array slices
+        assert "x0" in terminals
+        assert "x1" in terminals
+        assert "x2" in terminals
 
-            for case in valid_cases:
-                assert self.handler.can_handle(case), f"Failed: {case}"
+    def test_parser_with_variable_range_handler(self):
+        """Test that parser expands variable ranges."""
+        from finchge.grammar.parser import BNFGrammarParser
 
-        def test_cannot_handle_invalid_patterns(self):
-            """
-            Test that handler rejects invalid patterns.
-            - plain variable handler does not handle ranges this is done by variable range handler
-            - alphabets can not be used in the column index
-            - if missing column index , it should fail
-            - variable name is always x other letters for denoting dataset are not allowed
-            - float index is not allowed
-
-            """
-            invalid_cases = [
-                "x[0..4]",  # Range (should be handled by RangeHandler)
-                "xa",  # Non-numeric
-                "x",  # Missing index
-                "x[",  # Wrong syntax
-                "y0",  # Wrong variable name
-                "x-1",  # Negative index
-                "x1.5",  # Float index
-                "x0 + 1",  # Expression, not just variable
-            ]
-
-            for case in invalid_cases:
-                assert not self.handler.can_handle(case), f"Should reject: {case}"
-
-        def test_pattern_property(self):
-            """
-            Test the regex pattern matches expected cases
-
-            - Test to see if regex used is correct
-             - see if the regex suports different cases.
-            """
-            pattern = self.handler.pattern
-
-            # Should match valid cases
-            assert re.fullmatch(pattern, "x0")
-            assert re.fullmatch(pattern, "x10")
-            assert re.fullmatch(pattern, "x1")
-
-            # Should not match invalid cases
-            assert not re.fullmatch(pattern, "x[0..4]")
-            assert not re.fullmatch(pattern, "xa")
-            assert not re.fullmatch(pattern, "y0")
-
-        def test_priority(self):
-            """Test that handler has appropriate priority."""
-            assert (
-                self.handler.priority == 50
-            )  # It is set only after SymbolicVariableRangeHandler
-            assert isinstance(self.handler, RangeHandler)
-
-    class TestSymbolicVariableRangeHandler:
-        """
-        Test the SymbolicVariableRangeHandler for expanding variable ranges.
+        # Grammar with array slice range
+        grammar = """
+        <expr> ::= <var> | <const>
+        <var> ::= x[0..2]
+        <const> ::= 1.0 | 2.0
         """
 
-        def setup_method(self):
-            self.handler = SymbolicVariableRangeHandler()
+        parser = BNFGrammarParser(grammar)
+        # Register the range handler
+        parser.range_registry.register(SymbolicVariableRangeHandler())
 
-        def test_can_handle_variablee_ranges(self):
-            """Test that handler recognizes rymbolic rariable range  patterns."""
-            valid_cases = [
-                "x[0..4]",  # Basic range
-                "x[0..10]",  # Larger range
-                "x[0..10 step 2]",  # With step
-                "x[5..15 step 3]",  # Different step
-                "x[1..1]",  # Single value range
-                "x[ 0..4 ]",  # With spaces
-                "x[0..4 step 2 ]",  # Spaces with step
-            ]
+        rules, expanded, start, terminals, non_terminals = parser.parse()
 
-            for case in valid_cases:
-                assert self.handler.can_handle(case), f"Failed: {case}"
+        # Check terminals include expanded array slices
+        assert "x0" in terminals
+        assert "x1" in terminals
+        assert "x2" in terminals
 
-        def test_cannot_handle_invalid_range_patterns(self):
-            """Test that handler rejects invalid range patterns."""
-            invalid_cases = [
-                "x0",  # Single slice (no range)
-                "x[a..z]",  # Character range
-                "x[]",  # Missing range
-                "x[0..]",  # Incomplete range
-                "x[..4]",  # Incomplete range
-                "x[0..4 step]",  # Missing step value
-                "y[0..4]",  # Wrong variable
-            ]
+        # Check var rule was expanded to three alternatives
+        var_rule = expanded["<var>"]
+        assert len(var_rule.choices) == 3
 
-            for case in invalid_cases:
-                assert not self.handler.can_handle(case), f"Should reject: {case}"
+    def test_handler_priority_resolution(self):
+        """Test that range handler takes priority over single variable handler."""
+        from finchge.grammar.parser import RangeHandlerRegistry
 
-        def test_expand_basic_range(self):
-            """Test expansion of basic variable range."""
-            result = self.handler.expand("x[0..4]")
+        registry = RangeHandlerRegistry()
 
-            # Should expand to individual slices with | separators
-            expected = [
-                "x0",
-                "|",
-                "x1",
-                "|",
-                "x2",
-                "|",
-                "x3",
-                "|",
-                "x4",
-            ]
+        # Register both handlers
+        single_handler = SymolicVariableHandler()
+        range_handler = SymbolicVariableRangeHandler()
 
-            assert result == expected
+        registry.register(single_handler)
+        registry.register(range_handler)
 
-        def test_expand_with_step(self):
-            """Test expansion of variable range with step."""
-            result = self.handler.expand("x[0..10 step 2]")
+        # Range handler should have higher priority
+        assert range_handler.priority > single_handler.priority
 
-            expected = [
-                "x0",
-                "|",
-                "x2",
-                "|",
-                "x4",
-                "|",
-                "x6",
-                "|",
-                "x8",
-                "|",
-                "x10",
-            ]
 
-            assert result == expected
+class TestEdgeCases:
+    """Test edge cases and error handling."""
 
-        def test_expand_single_value_range(self):
-            """Test expansion of range with single value."""
-            result = self.handler.expand("x[5..5]")
+    def test_variable_with_large_numbers(self):
+        """Test array slices with large column indices."""
+        handler = SymolicVariableHandler()
 
-            # Single value, no separators
-            assert result == ["x5"]
+        # Should handle large numbers
+        assert handler.can_handle("x100")
+        assert handler.can_handle("x999")
 
-        def test_invalid_range_returns_original(self):
-            """Test that invalid range expression returns original token."""
-            # Mock a case where range extraction fails
-            invalid_token = "x[invalid]"
-            result = self.handler.expand(invalid_token)
+        result = handler.expand("x100")
+        assert result == ["x100"]
 
-            # Should return token as-is
-            assert result == [invalid_token]
+    def test_variable_range_with_large_step(self):
+        """Test range expansion with step larger than range."""
+        handler = SymbolicVariableRangeHandler()
 
-        def test_pattern_property(self):
-            """Test the regex pattern matches range patterns."""
-            pattern = self.handler.pattern
-
-            # Should match range patterns
-            assert re.fullmatch(pattern, "x[0..4]")
-            assert re.fullmatch(pattern, "x[0..10 step 2]")
-            assert re.fullmatch(pattern, "x[0..4 ]")
-
-            # Should not match single slices
-            assert not re.fullmatch(pattern, "x0")
-            assert not re.fullmatch(pattern, "x[a..z]")
-
-        def test_priority_higher_than_numeric_handler(self):
-            """Test that this handler has higher priority than numeric range handler."""
-            # Array slice ranges should be handled before generic numeric ranges
-            assert self.handler.priority == 51
-
-    class TestIntegrationWithParser:
-        """Test integration of array slice handlers with the parser."""
-
-        def test_parser_with_variable_handler(self):
-            """Test that parser correctly handles variables with the handler."""
-            from finchge.grammar import Grammar
-
-            # Grammar with array slices
-            grammar = """
-            <expr> ::= <var> | <const>
-            <var> ::= x0 | x1 | x2
-            <const> ::= 1.0 | 2.0
-            """
-
-            grammar = Grammar(grammar)
-            terminals = grammar.terminals
-
-            # Check terminals include array slices
-            assert "x0" in terminals
-            assert "x1" in terminals
-            assert "x2" in terminals
-
-        def test_parser_with_variable_range_handler(self):
-            """Test that parser expands variable ranges."""
-            from finchge.grammar.parser import BNFGrammarParser
-
-            # Grammar with array slice range
-            grammar = """
-            <expr> ::= <var> | <const>
-            <var> ::= x[0..2]
-            <const> ::= 1.0 | 2.0
-            """
-
-            parser = BNFGrammarParser(grammar)
-            # Register the range handler
-            parser.range_registry.register(SymbolicVariableRangeHandler())
-
-            rules, expanded, start, terminals, non_terminals = parser.parse()
-
-            # Check terminals include expanded array slices
-            assert "x0" in terminals
-            assert "x1" in terminals
-            assert "x2" in terminals
-
-            # Check var rule was expanded to three alternatives
-            var_rule = expanded["<var>"]
-            assert len(var_rule.choices) == 3
-
-        def test_handler_priority_resolution(self):
-            """Test that range handler takes priority over single variable handler."""
-            from finchge.grammar.parser import RangeHandlerRegistry
-
-            registry = RangeHandlerRegistry()
-
-            # Register both handlers
-            single_handler = SymolicVariableHandler()
-            range_handler = SymbolicVariableRangeHandler()
-
-            registry.register(single_handler)
-            registry.register(range_handler)
-
-            # Range handler should have higher priority
-            assert range_handler.priority > single_handler.priority
-
-    class TestEdgeCases:
-        """Test edge cases and error handling."""
-
-        def test_variable_with_large_numbers(self):
-            """Test array slices with large column indices."""
-            handler = SymolicVariableHandler()
-
-            # Should handle large numbers
-            assert handler.can_handle("x100")
-            assert handler.can_handle("x999")
-
-            result = handler.expand("x100")
-            assert result == ["x100"]
-
-        def test_variable_range_with_large_step(self):
-            """Test range expansion with step larger than range."""
-            handler = SymbolicVariableRangeHandler()
-
-            result = handler.expand("x[0..5 step 10]")
-            # Step 10 from 0 to 5: only 0 is included
-            assert result == ["x0"]
+        result = handler.expand("x[0..5 step 10]")
+        # Step 10 from 0 to 5: only 0 is included
+        assert result == ["x0"]
 
 
 def test_grammar_parsing_with_mixed_syntax():

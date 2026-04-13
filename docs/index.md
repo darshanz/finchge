@@ -71,7 +71,7 @@ ge.run()
 For further details and more advanced usage, please check. [Getting Started](getting_started.md), [API Reference](api.md) and [Examples](examples.md)
 
 ## Development Status
-Note: This is version ```1.0.1-beta.8``` - a beta release. Expect breaking changes and bugs.
+Note: This is version ```1.0.1-beta.9``` - a beta release. Expect breaking changes and bugs.
 
 What to expect:
 

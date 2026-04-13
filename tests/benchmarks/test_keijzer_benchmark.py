@@ -72,8 +72,9 @@ class TestKeijzerFunctionDefinitions:
         expected = k5_manual(X.flatten())
         actual = KeijzerBenchmark(5).func(X)
 
-        # At x=2, function should be inf
-        assert np.isinf(actual[3])
+        # At x=2, function is undefined but protected evaluation would return 1
+        assert np.isinf(expected[3])
+        assert actual[3] == 1  # protected
         # Other values should match
         assert_array_almost_equal(
             actual[[0, 1, 2, 4]].flatten(), expected[[0, 1, 2, 4]], decimal=10

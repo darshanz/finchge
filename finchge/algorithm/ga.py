@@ -100,6 +100,9 @@ class GeneticAlgorithm(BaseAlgorithm):
             new_pop_size=population.population_size,
         )
 
+        # remap
+        self.fitness_evaluator.refresh_mapping_all(offsprings)
+
         # Mutation
         offspring_population = self.apply_mutation(
             mutation_strategy=self.mutation, individuals=offsprings
@@ -132,10 +135,11 @@ class GeneticAlgorithm(BaseAlgorithm):
                 "GeneticAlgorithm only supports single-objective optimization. "
                 f"Provided {len(fitness_functions)} fitness functions."
             )
-
+        # check valids only for best Invalids do not have fitness to compare they are not valuated
+        valid_inds = [ind for ind in population.individuals if ind.has_usable_fitness()]
         if fitness_functions[0].maximize:
-            return max(population.individuals, key=lambda ind: ind.fitness[0])
-        return min(population.individuals, key=lambda ind: ind.fitness[0])
+            return max(valid_inds, key=lambda ind: ind.fitness[0])
+        return min(valid_inds, key=lambda ind: ind.fitness[0])
 
     def get_pareto_front(self, population: Population) -> list[Individual]:
         raise NotImplementedError("Pareto front is not defined for single-objective GA")
@@ -159,11 +163,11 @@ class GeneticAlgorithm(BaseAlgorithm):
             )
 
         fitness_fn = fitness_functions[0]
+        maximize = fitness_fn.maximize if hasattr(fitness_fn, "maximize") else False
 
-        reverse = fitness_fn.maximize if hasattr(fitness_fn, "maximize") else False
         population.individuals.sort(
-            key=lambda ind: ind.fitness if ind.fitness is not None else float("-inf"),
-            reverse=reverse,
+            key=lambda ind: ind.sort_key(maximize),
+            reverse=maximize,
         )
 
     def _validate_selection_requirements(self, individuals: list[Individual]) -> None:

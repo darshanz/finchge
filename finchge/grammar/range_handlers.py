@@ -248,8 +248,8 @@ class SymbolicVariableRangeHandler(RangeHandler):
         # Get expanded numbers
         numbers = [item for item in num_handler.expand(range_expr) if item != "|"]
 
-        # Create SymPy supported variables like x0, x1, x2, so even if the grammar uses numpy array slice style,
-        # SymbolicRegression class accepts both and uses sympy style internally
+        # Create variables in xN style like x0, x1, x2, so even if the grammar uses numpy array slice style,
+        # SymbolicRegression class accepts both and uses xN-style internally
         result = []
         for i, num in enumerate(numbers):
             result.append(f"x{num}")  # x0

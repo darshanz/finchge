@@ -1,9 +1,6 @@
 from typing import Optional
 
-from finchge.algorithm.utils import (
-    calculate_crowding_distance,
-    fast_non_dominated_sort,
-)
+from finchge.algorithm.utils import calculate_crowding_distance, fast_non_dominated_sort
 from finchge.core.individual import Individual
 from finchge.operators.base import GEReplacementStrategy
 
@@ -66,10 +63,18 @@ class GenerationalReplacement(GEReplacementStrategy):
         Returns:
             list: New population with elites
         """
-        old_population.sort(key=lambda ind: ind.fitness, reverse=self.max_best)
-        elites = old_population[:elite_size]
+        valid_old = [ind for ind in old_population if ind.has_usable_fitness()]
+        valid_old.sort(key=lambda ind: ind.get_scalar_fitness(), reverse=self.max_best)
+
+        elites = valid_old[:elite_size]
+
         combined_population = new_population + elites
-        combined_population.sort(key=lambda ind: ind.fitness, reverse=self.max_best)
+
+        combined_population.sort(
+            key=lambda ind: ind.sort_key(self.max_best),
+            reverse=self.max_best,
+        )
+
         return combined_population[:population_size]
 
 
@@ -124,11 +129,17 @@ class SteadyStateReplacement(GEReplacementStrategy):
         Replaces worst individuals in old population with new individuals.
         Preserves elite_size best individuals.
         """
-        old_population.sort(key=lambda ind: ind.fitness, reverse=self.max_best)
-        preserved = old_population[:elite_size]  # preserve best individuals (elites)
+        valid_old = [ind for ind in old_population if ind.has_usable_fitness()]
+        valid_old.sort(key=lambda ind: ind.get_scalar_fitness(), reverse=self.max_best)
 
-        new_population.sort(key=lambda ind: ind.fitness, reverse=self.max_best)
-        replacements = new_population[: population_size - elite_size]  # take elites
+        preserved = valid_old[:elite_size]
+
+        new_population.sort(
+            key=lambda ind: ind.sort_key(self.max_best),
+            reverse=self.max_best,
+        )
+
+        replacements = new_population[: population_size - elite_size]
         return preserved + replacements
 
 
@@ -198,9 +209,11 @@ class RandomElitistReplacement(GEReplacementStrategy):
                     "(fitness must be a list of length 1)"
                 )
 
+        valid_old = [ind for ind in old_population if ind.has_usable_fitness()]
+
         sorted_old = sorted(
-            old_population,
-            key=lambda ind: ind.fitness[0],
+            valid_old,
+            key=lambda ind: ind.get_scalar_fitness(),
             reverse=self.max_best,
         )
 

@@ -129,8 +129,13 @@ class GERegressor(RandomStateMixin, BaseEstimator, RegressorMixin):  # type: ign
         self.selected_individual_ = ge_result.best_individual
 
         if self.selected_individual_ is not None:
-            self.selected_expression_: SymbolicExpression | None = SymbolicExpression(
+            phenotype = (
                 self.selected_individual_.phenotype
+                if self.selected_individual_.phenotype
+                else ""
+            )
+            self.selected_expression_: SymbolicExpression | None = SymbolicExpression(
+                phenotype
             )
         else:
             self.selected_expression_ = None
@@ -149,6 +154,8 @@ class GERegressor(RandomStateMixin, BaseEstimator, RegressorMixin):  # type: ign
                 as the prediction expression.
         """
         self.selected_individual_ = individual
+        if not individual.phenotype:
+            raise ValueError("Phenotype can not be None")
         self.selected_expression_ = SymbolicExpression(individual.phenotype)
 
     def predict(self, X: Any) -> NDArray[np.float64]:
