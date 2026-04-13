@@ -73,6 +73,10 @@ class RVDInitialiser(GEInitialiser):
     Generates individuals by sampling random genomes while rejecting
     invalid mappings and duplicate phenotypes.
     - RVD initialisation [[Nicolau, 2017](https://link.springer.com/article/10.1007/s10710-017-9309-9#Bib1)].
+
+    Note:
+        RVD initializer instance is supposed to be used once per run or the stored RVD state may cause issues.
+        To reset the stored state call reset() , if same RVDInitializer instance has to be reused.
     """
 
     def __init__(
@@ -97,6 +101,14 @@ class RVDInitialiser(GEInitialiser):
         self.mapper = mapper
         # RVD state
         self._seen_phenotypes: set[str] = set()
+        self._attempts = 0
+
+    def reset(self) -> None:
+        """
+        If same RVD instance is used for multiple runs. must reset
+
+        """
+        self._seen_phenotypes.clear()
         self._attempts = 0
 
     @classmethod
@@ -372,23 +384,16 @@ class RHHInitialiser(GETreeInitialiser):
 
     def __init__(
         self,
-        init_min_depth: int,
         init_max_depth: int,
         population_size: int,
         strict_full: bool = True,
         random_state: Optional[int] = None,
     ) -> None:
         super().__init__(random_state=random_state)
-        if init_min_depth <= 0:
-            raise ValueError(f"init_min_depth must be > 0, got {init_min_depth}")
+
         if init_max_depth <= 0:
             raise ValueError(f"init_max_depth must be > 0, got {init_max_depth}")
-        if init_min_depth > init_max_depth:
-            raise ValueError(
-                f"init_min_depth ({init_min_depth}) cannot exceed init_max_depth ({init_max_depth})"
-            )
 
-        self.init_min_depth = init_min_depth
         self.init_max_depth = init_max_depth
         self.population_size = population_size
         self.strict_full = strict_full
@@ -419,7 +424,6 @@ class RHHInitialiser(GETreeInitialiser):
         """
         try:
             random_state = config.experiment[Keys.RANDOM_SEED]
-            init_min_depth = config.ge[Keys.INIT_MIN_DEPTH]
             init_max_depth = config.ge[Keys.INIT_MAX_DEPTH]
             population_size = config.ge[Keys.POPULATION_SIZE]
             strict_full = config.ge.get(Keys.INIT_TREE_STRICT_FULL, True)
@@ -429,12 +433,37 @@ class RHHInitialiser(GETreeInitialiser):
             )
 
         return cls(
-            init_min_depth=init_min_depth,
             init_max_depth=init_max_depth,
             strict_full=strict_full,
             population_size=population_size,
             random_state=random_state,
         )
+
+    def _get_depths(self) -> list[int]:
+        if self.tree_generator is None:
+            raise RuntimeError(
+                "TreeGenerator must be set before building RHH schedule."
+            )
+
+        grammar = self.tree_generator.grammar
+        grammar.analyze()
+
+        min_ramp = grammar.compute_min_ramp(
+            population_size=self.population_size,
+            max_init_depth=self.init_max_depth,
+        )
+
+        if min_ramp is None:
+            raise RuntimeError("Grammar cannot compute a valid minimum ramp depth.")
+
+        # ramping starts from min_ramp + 1
+        depths = list(range(min_ramp + 1, self.init_max_depth + 1))
+        if not depths:
+            raise RuntimeError(
+                f"No valid RHH ramp depths available. Computed min_ramp={min_ramp} and init_max_depth={self.init_max_depth}. "
+                "Increase init_max_depth or check grammar ramp feasibility."
+            )
+        return depths
 
     def _build_koza_schedule(self) -> None:
         """
@@ -442,7 +471,7 @@ class RHHInitialiser(GETreeInitialiser):
         """
 
         # depth definition based on min and max depth params
-        depths = list(range(self.init_min_depth + 1, self.init_max_depth + 1))
+        depths = self._get_depths()
 
         if self.population_size < 2:
             raise RuntimeError("Population size too small for RHH.")
@@ -535,12 +564,20 @@ class PIGrowInitialiser(GETreeInitialiser):
     position-independent expansion.
     """
 
-    def __init__(self, init_max_depth: int, random_state: Optional[int] = None) -> None:
+    def __init__(
+        self,
+        init_max_depth: int,
+        population_size: int,
+        random_state: Optional[int] = None,
+    ) -> None:
         super().__init__(random_state=random_state)
+
         if init_max_depth <= 0:
-            raise ValueError(f"init_max_depth must be > 0, got {init_max_depth}")
+            raise ValueError("Depth values must be > 0")
 
         self.init_max_depth = init_max_depth
+        self.population_size = population_size
+        self._index = 0
         self.tree_generator: TreeGenerator | None = None
 
     @classmethod
@@ -560,12 +597,17 @@ class PIGrowInitialiser(GETreeInitialiser):
         try:
             random_state = config.experiment[Keys.RANDOM_SEED]
             init_max_depth = config.ge[Keys.INIT_MAX_DEPTH]
-        except KeyError:
+            population_size = config.ge[Keys.POPULATION_SIZE]
+        except KeyError as e:
             raise ConfigError(
-                "Missing required GE config key: 'init_max_depth' for PI-Grow initialiser"
+                f"Missing required GE config key for PI-Grow initialiser: {e.args[0]}"
             )
 
-        return cls(init_max_depth=init_max_depth, random_state=random_state)
+        return cls(
+            init_max_depth=init_max_depth,
+            population_size=population_size,
+            random_state=random_state,
+        )
 
     def set_tree_generator(self, tree_generator: TreeGenerator) -> None:
         self.tree_generator = tree_generator
@@ -577,15 +619,41 @@ class PIGrowInitialiser(GETreeInitialiser):
                 f"{self.__class__.__name__}. "
                 "Call set_tree_generator() before initialize()."
             )
+        depth = self._pick_depth()
 
         tree = self.tree_generator.generate_tree(
-            max_depth=self.init_max_depth,
+            max_depth=depth,
             force_full=False,
             position_independent=True,
             rng=self.rng,
         )
 
         return Individual.from_tree(tree)
+
+    def _pick_depth(self) -> int:
+        if self.tree_generator is None:
+            raise RuntimeError(
+                "TreeGenerator must be set before PI-Grow initialisation."
+            )
+
+        grammar = self.tree_generator.grammar
+        grammar.analyze()
+
+        min_ramp = grammar.compute_min_ramp(
+            population_size=self.population_size,
+            max_init_depth=self.init_max_depth,
+        )
+
+        if min_ramp is None:
+            raise RuntimeError("Grammar cannot compute a valid minimum ramp depth.")
+
+        depths = list(range(min_ramp + 1, self.init_max_depth + 1))
+        if not depths:
+            raise RuntimeError("No valid PI-Grow ramp depths available.")
+
+        depth = depths[self._index % len(depths)]
+        self._index += 1
+        return depth
 
 
 class PTC2Initialiser(GETreeInitialiser):

@@ -26,7 +26,6 @@ def tree_generator(grammar):
 def test_rhh_generates_individual(tree_generator):
     # does not crash
     init = RHHInitialiser(
-        init_min_depth=2,
         init_max_depth=4,
         population_size=10,
         strict_full=False,
@@ -44,7 +43,6 @@ def test_rhh_respects_max_depth(tree_generator):
     max_depth = 4
 
     init = RHHInitialiser(
-        init_min_depth=2,
         init_max_depth=max_depth,
         population_size=20,
         strict_full=False,
@@ -60,7 +58,6 @@ def test_rhh_respects_max_depth(tree_generator):
 
 def test_rhh_uses_depth_range(tree_generator):
     init = RHHInitialiser(
-        init_min_depth=2,
         init_max_depth=5,
         population_size=40,
         strict_full=False,
@@ -80,7 +77,6 @@ def test_rhh_uses_depth_range(tree_generator):
 
 def test_rhh_deterministic_reproducible(tree_generator):
     init1 = RHHInitialiser(
-        init_min_depth=2,
         init_max_depth=4,
         population_size=10,
         strict_full=False,
@@ -88,7 +84,6 @@ def test_rhh_deterministic_reproducible(tree_generator):
     )
 
     init2 = RHHInitialiser(
-        init_min_depth=2,
         init_max_depth=4,
         population_size=10,
         strict_full=False,
@@ -106,7 +101,6 @@ def test_rhh_deterministic_reproducible(tree_generator):
 
 def test_rhh_stochastic_diversity(tree_generator):
     init = RHHInitialiser(
-        init_min_depth=2,
         init_max_depth=4,
         population_size=30,
         strict_full=False,
@@ -122,8 +116,7 @@ def test_rhh_stochastic_diversity(tree_generator):
 
 def test_rhh_deterministic_alternates_modes(tree_generator):
     init = RHHInitialiser(
-        init_min_depth=2,
-        init_max_depth=3,
+        init_max_depth=20,
         population_size=10,
         strict_full=False,
         random_state=42,
@@ -138,7 +131,6 @@ def test_rhh_deterministic_alternates_modes(tree_generator):
 
 def test_rhh_strict_full_internal_nodes(tree_generator, grammar):
     init = RHHInitialiser(
-        init_min_depth=2,
         init_max_depth=4,
         population_size=20,
         strict_full=False,
@@ -159,7 +151,6 @@ def test_rhh_strict_full_internal_nodes(tree_generator, grammar):
 
 def test_rhh_produces_valid_grammar(tree_generator, grammar):
     init = RHHInitialiser(
-        init_min_depth=2,
         init_max_depth=4,
         population_size=15,
         strict_full=False,
@@ -179,7 +170,6 @@ def test_rhh_produces_valid_grammar(tree_generator, grammar):
 
 def test_rhh_tree_shape_diversity(tree_generator):
     init = RHHInitialiser(
-        init_min_depth=2,
         init_max_depth=4,
         population_size=40,
         strict_full=False,
@@ -202,7 +192,6 @@ def test_rhh_deterministic_schedule_reproducible(grammar):
     tg2 = TreeGenerator(grammar, 10)
 
     init1 = RHHInitialiser(
-        init_min_depth=2,
         init_max_depth=3,
         population_size=4,
         strict_full=False,
@@ -210,7 +199,6 @@ def test_rhh_deterministic_schedule_reproducible(grammar):
     )
 
     init2 = RHHInitialiser(
-        init_min_depth=2,
         init_max_depth=3,
         population_size=4,
         strict_full=False,
@@ -234,7 +222,6 @@ def test_rhh_consistent_schedule_cycles_deterministic_verison(grammar):
     tg = TreeGenerator(grammar, 10)
 
     init = RHHInitialiser(
-        init_min_depth=2,
         init_max_depth=3,
         population_size=4,
         strict_full=False,
@@ -253,7 +240,6 @@ def test_rhh_deterministic_schedule_cycles_koza_style(grammar):
     tg = TreeGenerator(grammar, 10)
 
     init = RHHInitialiser(
-        init_min_depth=2,
         init_max_depth=3,
         population_size=4,
         strict_full=False,

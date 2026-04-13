@@ -76,7 +76,9 @@ def create_deterministic_components(ge_config, grammar_bnf, seed=42):
     tree_generator = TreeGenerator(
         grammar=grammar_bnf, max_tree_depth=ge_config.ge[Keys.MAX_TREE_DEPTH]
     )
-    initialiser = PIGrowInitialiser(init_max_depth=12, random_state=shared_rng)
+    initialiser = PIGrowInitialiser(
+        init_max_depth=12, population_size=10, random_state=shared_rng
+    )
     initialiser.set_tree_generator(tree_generator)
     subtree_crossover_ = SubtreeCrossover(
         crossover_proba=ge_config.ge[Keys.CROSSOVER_PROBABILITY],

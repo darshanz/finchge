@@ -157,7 +157,7 @@ class TreeGenerator:
         last_error: Exception | None = None
 
         for _ in range(max_tries):
-            root = TreeNode(start_symbol, depth=0)
+            root = TreeNode(start_symbol, depth=1)
             try:
                 if position_independent:
                     self._expand_pi(
@@ -415,7 +415,7 @@ class TreeGenerator:
             start_symbol = grammar.start_rule
 
         # Initialize the tree with the root symbol
-        root = TreeNode(start_symbol, depth=0)
+        root = TreeNode(start_symbol, depth=1)
 
         # The 'frontier' stores all currently active non-terminals in the derivation tree.
         frontier: list[TreeNode] = [root]
