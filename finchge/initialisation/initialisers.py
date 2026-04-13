@@ -252,11 +252,9 @@ class FullTreeInitialiser(GETreeInitialiser):
 
         depth = self._pick_depth()
 
-        tree = self.tree_generator.generate_tree(
+        tree = self.tree_generator.generate_tree_full(
             max_depth=depth,
-            force_full=True,
-            position_independent=False,
-            strict_full=self.strict_full,
+            strict=self.strict_full,
             rng=self.rng,
         )
 
@@ -329,10 +327,8 @@ class GrowTreeInitialiser(GETreeInitialiser):
 
         depth = self._pick_depth()
 
-        tree = self.tree_generator.generate_tree(
+        tree = self.tree_generator.generate_tree_grow(
             max_depth=depth,
-            force_full=False,
-            position_independent=False,
             rng=self.rng,
         )
 
@@ -538,13 +534,17 @@ class RHHInitialiser(GETreeInitialiser):
 
         depth, force_full = self._pick_params()
 
-        tree = self.tree_generator.generate_tree(
-            max_depth=depth,
-            force_full=force_full,
-            strict_full=self.strict_full,
-            position_independent=False,
-            rng=self.rng,
-        )
+        if force_full:
+            tree = self.tree_generator.generate_tree_full(
+                max_depth=depth,
+                strict=self.strict_full,
+                rng=self.rng,
+            )
+        else:
+            tree = self.tree_generator.generate_tree_grow(
+                max_depth=depth,
+                rng=self.rng,
+            )
 
         return Individual.from_tree(tree)
 

@@ -123,6 +123,9 @@ class GrammaticalEvolution(RandomStateMixin):
         else:
             self.grammar = grammar
 
+        # fitness evaluator
+        self.fitness_evaluator = fitness_evaluator
+
         # use inititalizer passed by Grammatical Evolution or make one if can be created from config.
         # initialiser passed through GrammaticalEvolution should always get priority and config will be ignored..
         # if neither of them are provided make_initialiser takes empty dict
@@ -148,7 +151,9 @@ class GrammaticalEvolution(RandomStateMixin):
                 )
                 self.initialiser.set_tree_generator(self.tree_generator)
 
-        self.fitness_evaluator = fitness_evaluator
+            if hasattr(self.initialiser, "set_mapper"):
+                self.initialiser.set_mapper(self.fitness_evaluator.mapper)
+
         self.objective_names = self.fitness_evaluator.get_objective_names()
         self.multi_obj = self.fitness_evaluator.is_multi_objective()
 
@@ -245,8 +250,22 @@ class GrammaticalEvolution(RandomStateMixin):
 
         # Initial evaluation
         self.fitness_evaluator.evaluate_population(population)
-
         self.algorithm.sort_population(population)
+
+        # Logging Generation 0
+        initial_fitness_stats: list[dict[str, Any]] = StatsHelper.compute_fitness_stats(
+            individuals=population.individuals
+        )
+        initial_best = self.algorithm.get_best_individual(population)
+
+        if self.expt_logger:
+            self.expt_logger.on_generation_end(
+                generation=0,
+                population=population,
+                best=initial_best,
+                fitness_stats=initial_fitness_stats,
+            )
+
         # Resume if checkpoint exists
         if self.checkpoint_manager and self.checkpoint_manager.exists():
             expected_hash = stable_config_hash(self.config.to_dict())
