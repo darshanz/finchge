@@ -21,6 +21,10 @@ class MappingResult:
     tree: TreeNode
     tree_str: str
 
+    @property
+    def is_valid(self) -> bool:
+        return not self.invalid and self.phenotype is not None
+
 
 class GenotypeMapper(RandomStateMixin):
     """

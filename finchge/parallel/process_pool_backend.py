@@ -38,7 +38,10 @@ def process_train_and_evaluate(
 ) -> EvaluationRecord:
     """Process a single individual in a process pool."""
     try:
-        phenotype = context.get("phenotype", "")
+        phenotype = context.get("phenotype")
+        if not isinstance(phenotype, str):
+            raise ValueError("ProcessPoolBackend received non-string phenotype")
+
         seed = context.get("seed", 0)
 
         # Set seed for reproducibility

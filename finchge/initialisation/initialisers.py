@@ -575,8 +575,11 @@ class PIGrowInitialiser(GETreeInitialiser):
         if init_max_depth <= 0:
             raise ValueError("Depth values must be > 0")
 
+        # configuration for intiializaers
         self.init_max_depth = init_max_depth
         self.population_size = population_size
+
+        # pre run mutable state
         self._index = 0
         self.tree_generator: TreeGenerator | None = None
 

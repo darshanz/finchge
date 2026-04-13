@@ -182,15 +182,14 @@ class FitnessEvaluator:
         phenotypes: list[str] = []
         for i, ind in enumerate(population.individuals):
             self.refesh_mapping(ind)
-            if ind.invalid:
+
+            # skip un mapped or invalids from evaluation
+            if not ind.is_evaluable():
+                continue
+            if ind.has_fitness():
                 continue
 
-            phenotype = ind.phenotype
-            if phenotype is None:
-                continue
-
-            if ind.fitness:
-                continue
+            phenotype = ind.require_phenotype()
             #  cache check
             if self.cache_manager is not None:
                 cached = self.cache_manager.get_fitness(
@@ -264,8 +263,6 @@ class FitnessEvaluator:
         phenotype_to_record = dict(zip(phenotypes, unique_records))
         # Propagate fitness to all individuals (including duplicates)
         for phenotype, idxs in phenotype_to_indices.items():
-            if phenotype is None:
-                continue
             record = phenotype_to_record[phenotype]
 
             for idx in idxs:
@@ -290,15 +287,15 @@ class FitnessEvaluator:
             list: A list of fitness scores corresponding to each fitness function.
         """
         self.refesh_mapping(individual)
-        if individual.invalid:
+        if not individual.is_evaluable():
             return
-        # to mute mypy typechecking issue
-        phenotype = individual.phenotype
-        if phenotype is None:
-            return
+
+        phenotype = individual.require_phenotype()
 
         # Build cache key
         if self.cache_manager is not None:
+            # env version will protect against using wrong fitness from cache in dynamic systems
+            # if data changes env should change
             cached = self.cache_manager.get_fitness(
                 phenotype=phenotype,
                 env_version=self.get_env_version(),
@@ -322,9 +319,7 @@ class FitnessEvaluator:
         # Keys required by the fitness function
         required_keys = self._get_required_keys()
 
-        phenotype = individual.phenotype
-        if phenotype is None:
-            raise ValueError("Cannot evaluate individual with None phenotype.")
+        phenotype = individual.require_phenotype()
 
         # prepare context for evaluation
         eval_context: dict[str, Any] = {
@@ -359,9 +354,14 @@ class FitnessEvaluator:
     def refesh_mapping(self, ind: "Individual") -> None:
         """
         Ensure that genotype, phenotype, and tree are consistent.
-        - If genotype exists - map to phenotype and tree
-        - If tree exists and encode_trees=True - reverse map to genotype
-        - Update used_genome, used_codon_count, invalid, etc.
+
+        Rules:
+            - If already mapped, do nothing.
+            - If tree exists and genotype is absent:
+                - reverse-map genotype when encode_trees=True
+                - otherwise derive phenotype directly from tree
+            - If genotype exists, map through the mapper
+
         """
         if ind.genotype is None and ind.tree is None:
             raise RuntimeError("Individual has neither genotype nor tree.")
@@ -371,8 +371,8 @@ class FitnessEvaluator:
                 "Mapper is required. No mapper was passed to the constructor of FitnessEvaluator"
             )
 
-        # If phenotype already exists, DO NOT remap
-        if ind.phenotype is not None:
+        # Already mapped: either valid phenotype exists or the individual is known invalid.
+        if ind.is_mapped():
             return
 
         # When there is tree and no genotype :
@@ -393,6 +393,9 @@ class FitnessEvaluator:
             ind.invalid = mapping_result.invalid
             ind.tree = mapping_result.tree_str
 
+            if mapping_result.invalid:
+                ind.mark_invalid()
+
     def refresh_mapping_all(self, individuals: list[Individual]) -> None:
         for ind in individuals:
             self.refesh_mapping(ind)
@@ -401,9 +404,7 @@ class FitnessEvaluator:
         if self.cache_manager:
             self.cache_manager.clear()
 
-    def derive_eval_seed(
-        self, base_seed: int, phenotype: str | None, env_version: str
-    ) -> int:
+    def derive_eval_seed(self, base_seed: int, phenotype: str, env_version: str) -> int:
         """
         Although we share same random state using private RNG shared in different components,
         It will not work for parallelized evaluation.
@@ -418,10 +419,6 @@ class FitnessEvaluator:
         h = hashlib.blake2b(digest_size=8)  # 64-bit digest
         h.update(str(base_seed).encode("utf-8"))
         h.update(b"|")
-        if phenotype is None:
-            raise ValueError(
-                "derive_eval_seed() received None phenotype for invalid individual."
-            )
         h.update(str(phenotype).encode("utf-8"))
         if env_version is not None:
             h.update(b"|")

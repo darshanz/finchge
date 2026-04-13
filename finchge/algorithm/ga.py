@@ -136,9 +136,7 @@ class GeneticAlgorithm(BaseAlgorithm):
                 f"Provided {len(fitness_functions)} fitness functions."
             )
         # check valids only for best Invalids do not have fitness to compare they are not valuated
-        valid_inds = [
-            ind for ind in population.individuals if self._has_usable_fitness(ind)
-        ]
+        valid_inds = [ind for ind in population.individuals if ind.has_usable_fitness()]
         if fitness_functions[0].maximize:
             return max(valid_inds, key=lambda ind: ind.fitness[0])
         return min(valid_inds, key=lambda ind: ind.fitness[0])
@@ -167,12 +165,10 @@ class GeneticAlgorithm(BaseAlgorithm):
         fitness_fn = fitness_functions[0]
         maximize = fitness_fn.maximize if hasattr(fitness_fn, "maximize") else False
 
-        def sort_key(ind: Individual) -> float:
-            if not self._has_usable_fitness(ind) or ind.invalid:
-                return float("-inf") if maximize else float("inf")
-            return ind.fitness[0]
-
-        population.individuals.sort(key=sort_key, reverse=maximize)
+        population.individuals.sort(
+            key=lambda ind: ind.sort_key(maximize),
+            reverse=maximize,
+        )
 
     def _validate_selection_requirements(self, individuals: list[Individual]) -> None:
         if not getattr(self.selection, "requires_case_data", False):

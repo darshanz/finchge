@@ -229,6 +229,48 @@ class Individual:
         case_store = self.meta.get(self.CASE_DATA_META_KEY)
         return isinstance(case_store, dict) and key in case_store
 
+    def is_mapped(self) -> bool:
+        return self.invalid or self.phenotype is not None
+
+    def is_valid(self) -> bool:
+        return self.is_mapped() and not self.invalid
+
+    def is_evaluable(self) -> bool:
+        return self.is_valid() and self.phenotype is not None
+
+    def has_usable_fitness(self) -> bool:
+        return (
+            self.is_valid()
+            and bool(self.fitness)
+            and all(np.isfinite(v) for v in self.fitness)
+        )
+
+    def require_phenotype(self) -> str:
+        if self.phenotype is None:
+            raise ValueError("Individual does not have a concrete phenotype.")
+        return self.phenotype
+
+    def get_scalar_fitness(self) -> float:
+        if not self.has_usable_fitness():
+            raise ValueError("Individual does not have usable scalar fitness.")
+        return self.fitness[0]
+
+    def sort_key(self, maximize: bool) -> float:
+        """
+        Return a scalar key suitable for sorting individuals by fitness.
+        Invalid or unevaluable individuals are always pushed to the end
+        for minimization use +inf and for maximization: use -inf
+        """
+        if not self.has_usable_fitness():
+            return float("-inf") if maximize else float("inf")
+        return self.get_scalar_fitness()
+
+    def mark_invalid(self) -> None:
+        self.invalid = True
+        self.phenotype = None
+        self.used_genome = self.used_genome or []
+        self.used_codon_count = int(self.used_codon_count or 0)
+
     def __str__(self) -> str:
         """
         Return a human-readable string representation of the individual.
