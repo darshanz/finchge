@@ -84,6 +84,15 @@ docs = [
 "finchge.cli.templates.logic" = ["*"]
 "finchge.cli.templates.symbolic_regression" = ["*"]
 "finchge.cli.templates.notebook" = ["*"]
+"finchge.benchmarks.control.cartpole" = ["specs.json"]
+"finchge.benchmarks.control.maze" = ["specs.json"]
+"finchge.benchmarks.control.santafe" = ["specs.json"]
+"finchge.benchmarks.logic.multiplexer" = ["specs.json"]
+"finchge.benchmarks.regression.keijzer" = ["functions.json"]
+"finchge.benchmarks.regression.koza_quartic" = ["functions.json"]
+"finchge.benchmarks.regression.nguyen" = ["functions.json"]
+"finchge.benchmarks.regression.vladislavleva" = ["functions.json"]
+
 
 # Black configuration
 [tool.black]

@@ -1,11 +1,9 @@
-from fitness import StringMatchFitness
-
 from finchge.config import FinchConfig, Keys
 from finchge.core.engine import GrammaticalEvolution
 from finchge.fitness import FitnessEvaluator
+from finchge.fitness.fitness_functions import StringMatchFitness
 from finchge.grammar import Grammar
 from finchge.grammar.mapper import GenotypeMapper
-from finchge.utils.logger import ExperimentLogger
 
 
 def main() -> None:
@@ -28,13 +26,8 @@ def main() -> None:
     # Initialize Fitness Evaluator
     fitness_evaluator = FitnessEvaluator(fitness_functions=fitness_fn, mapper=mapper)
 
-    # setup Experiment Logger
-    expt_logger = ExperimentLogger()
-
     # create Grammatical Evolution instance and run
-    ge = GrammaticalEvolution(
-        fitness_evaluator=fitness_evaluator, expt_logger=expt_logger
-    )
+    ge = GrammaticalEvolution(grammar=grammar, fitness_evaluator=fitness_evaluator)
     result = ge.run()
 
     print("Best Solution:", result.best_individual.phenotype)
