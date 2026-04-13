@@ -646,7 +646,15 @@ class TreeGenerator:
         """
         rule = self.grammar.rules[node.symbol]
         productions_all = rule.choices
-        remaining_depth = max_depth - node.depth
+
+        # Children created by this production will be at node.depth + 1.
+        # remaining_depth is max_depth - (node.depth + 1)
+        remaining_depth = max_depth - (node.depth + 1)
+
+        # If children would be placed at the maximum allowed depth, then only
+        # terminal-only productions are allowed.
+        if node.depth >= max_depth - 1:
+            return [p for p in productions_all if self._is_terminal_only(p)]
 
         feasible = [
             p for p in productions_all if self._is_depth_feasible(p, remaining_depth)
