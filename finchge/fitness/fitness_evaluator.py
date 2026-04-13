@@ -225,22 +225,15 @@ class FitnessEvaluator:
                 base_seed=seed, phenotype=phenotype, env_version=self.get_env_version()
             )
 
+            context = {
+                "phenotype": phenotype,
+                "seed": eval_seed,
+                "required_keys": required_keys,
+                "require_case_data": self.require_case_data,
+            }
+
             if self.runner:
-                # Classic case: runner converts phenotype to predictions
-                context = {
-                    "phenotype": phenotype,
-                    "runner": self.runner,
-                    "seed": eval_seed,
-                    "required_keys": required_keys,
-                    "require_case_data": self.require_case_data,
-                }
-            else:
-                context = {
-                    "phenotype": phenotype,
-                    "seed": eval_seed,
-                    "required_keys": required_keys,
-                    "require_case_data": self.require_case_data,
-                }
+                context["runner"] = self.runner
             contexts.append(context)
 
         # Evaluate unique phenotypes in parallel

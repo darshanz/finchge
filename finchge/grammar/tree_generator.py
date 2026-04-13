@@ -113,6 +113,105 @@ class TreeGenerator:
             strict_full=strict_full,
         )
 
+    def generate_tree_pi_grow(
+        self,
+        *,
+        max_depth: int,
+        rng: Any,
+        start_symbol: str | None = None,
+    ) -> "TreeNode":
+        """
+        Generate a derivation tree using PI-Grow.
+
+        PI-Grow expands non-terminals in random queue order and keeps forcing
+        growth until at least one branch reaches the requested depth.
+
+        PI-Grow is implemented separately from generic tree generation.
+        Although it is also "position independent", the literature defines a
+        specific growth policy that differs from ordinary random frontier expansion.
+
+        Reference : PonyGE2
+        """
+        if not start_symbol:
+            start_symbol = self.grammar.start_rule
+
+        effective_depth = min(max_depth, self.max_tree_depth)
+        return self._generate_pi_grow_tree(
+            start_symbol=start_symbol,
+            max_depth=effective_depth,
+            rng=rng,
+        )
+
+    def _generate_pi_grow_tree(
+        self,
+        *,
+        start_symbol: str,
+        max_depth: int,
+        rng: Any,
+    ) -> TreeNode:
+        """
+        Generate a tree using PI-Grow.
+
+        PI-Grow expands non-terminals in random queue order and keeps forcing
+        recursive growth until at least one branch reaches the requested depth.
+        After that, it relaxes to grow-style expansion.
+        """
+        root = TreeNode(start_symbol)
+
+        # Queue holds currently expandable non-terminals.
+        queue: list[TreeNode] = [root]
+
+        while queue:
+            chosen_index = rng.randrange(len(queue))
+            node = queue.pop(chosen_index)
+
+            if node.symbol not in self.grammar.non_terminals:
+                continue
+
+            overall_depth = root.max_depth
+            recursive_in_queue = any(
+                self._is_recursive_symbol(item.symbol) for item in queue
+            )
+
+            legal = self._get_pi_grow_legal_productions(
+                node=node,
+                max_depth=max_depth,
+                overall_depth=overall_depth,
+                recursive_in_queue=recursive_in_queue,
+            )
+
+            if not legal:
+                raise RuntimeError(
+                    f"No valid PI-Grow productions for symbol={node.symbol!r} "
+                    f"at depth={node.depth} with max_depth={max_depth}."
+                )
+
+            must_force_growth = (overall_depth < max_depth) or (
+                self._is_recursive_symbol(node.symbol) and not recursive_in_queue
+            )
+
+            if must_force_growth:
+                production = rng.choice(legal)
+            else:
+                recursive = [p for p in legal if self._has_any_nonterminal(p)]
+                terminating = [p for p in legal if self._is_terminal_only(p)]
+
+                if recursive and terminating:
+                    production = rng.choice(
+                        recursive if rng.random() < 0.5 else terminating
+                    )
+                else:
+                    production = rng.choice(legal)
+
+            for symbol in production:
+                child = TreeNode(symbol)
+                node.add_child(child)
+
+                if symbol in self.grammar.non_terminals:
+                    queue.append(child)
+
+        return root
+
     def generate_subtree(self, *, symbol: str, max_depth: int, rng: Any) -> "TreeNode":
         """
         Generate a subtree rooted at the given non-terminal symbol.
@@ -157,7 +256,7 @@ class TreeGenerator:
         last_error: Exception | None = None
 
         for _ in range(max_tries):
-            root = TreeNode(start_symbol, depth=1)
+            root = TreeNode(start_symbol)
             try:
                 if position_independent:
                     self._expand_pi(
@@ -246,6 +345,12 @@ class TreeGenerator:
         if node.depth >= max_depth:
             # Depth limit reached :: must terminate immediately
             candidates = [p for p in productions_all if is_terminal_only(p)]
+
+            if not candidates:
+                raise RuntimeError(
+                    f"Depth limit reached for symbol={node.symbol!r} at depth={node.depth}, "
+                    f"but no terminating productions exist under max_depth={max_depth}."
+                )
 
         elif force_full:
             # Full initialisation:
@@ -415,7 +520,7 @@ class TreeGenerator:
             start_symbol = grammar.start_rule
 
         # Initialize the tree with the root symbol
-        root = TreeNode(start_symbol, depth=1)
+        root = TreeNode(start_symbol)
 
         # The 'frontier' stores all currently active non-terminals in the derivation tree.
         frontier: list[TreeNode] = [root]
@@ -501,7 +606,7 @@ class TreeGenerator:
 
             # Step 4: Update tree structure and frontier.
             for sym in production:
-                child = TreeNode(sym, depth=node.depth + 1)
+                child = TreeNode(sym)
                 node.add_child(child)
                 if sym in grammar.non_terminals:
                     frontier.append(child)
@@ -510,3 +615,76 @@ class TreeGenerator:
             expansions_done += 1
 
         return root
+
+    def _is_terminal_only(self, production: list[str]) -> bool:
+        return all(sym not in self.grammar.non_terminals for sym in production)
+
+    def _has_any_nonterminal(self, production: list[str]) -> bool:
+        return any(sym in self.grammar.non_terminals for sym in production)
+
+    def _is_recursive_symbol(self, symbol: str) -> bool:
+        """
+        Check if the node is recursive
+        PI-Grow cares about whether a queued node is recursive.
+        """
+        if symbol not in self.grammar.rules:
+            return False
+        return bool(self.grammar.rules[symbol].recursive)
+
+    def _get_pi_grow_legal_productions(
+        self,
+        *,
+        node: TreeNode,
+        max_depth: int,
+        overall_depth: int,
+        recursive_in_queue: bool,
+    ) -> list[list[str]]:
+        """
+        Return legal productions for PI-Grow.
+        Before one branch reaches max_depth, PI-Grow behaves like Full:
+        it prefers recursive growth. After that, it behaves like Grow.
+        """
+        rule = self.grammar.rules[node.symbol]
+        productions_all = rule.choices
+        remaining_depth = max_depth - node.depth
+
+        feasible = [
+            p for p in productions_all if self._is_depth_feasible(p, remaining_depth)
+        ]
+
+        if node.depth >= max_depth:
+            return [p for p in productions_all if self._is_terminal_only(p)]
+
+        must_force_growth = (overall_depth < max_depth) or (
+            self._is_recursive_symbol(node.symbol) and not recursive_in_queue
+        )
+
+        # it should still be allowed to terminate if it can not grow
+        # PI-Grow’s global queue can still keep another branch growing later
+        # this avoids falsely declaring grammatically valid PI-Grow trees impossible
+        if must_force_growth:
+            growing = [p for p in feasible if self._has_any_nonterminal(p)]
+            if growing:
+                return growing
+            return feasible
+
+        recursive = [p for p in feasible if self._has_any_nonterminal(p)]
+        terminating = [p for p in feasible if self._is_terminal_only(p)]
+
+        if recursive and terminating:
+            return recursive + terminating
+        if recursive:
+            return recursive
+        if terminating:
+            return terminating
+        return []
+
+    def _is_depth_feasible(self, production: list[str], remaining_depth: int) -> bool:
+        for sym in production:
+            if sym in self.grammar.non_terminals:
+                child_rule = self.grammar.rules[sym]
+                if child_rule.min_path is None:
+                    return False
+                if child_rule.min_path > remaining_depth:
+                    return False
+        return True

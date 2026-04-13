@@ -13,14 +13,18 @@ class TreeNode:
     max_depth should be used with caution. The property`depth` is the depth of current node,
      while `max_depth` should be used to get the depth of the tree.
 
+    Tree depth is derived dynamically from parent links.
+    The property `depth` gives the depth of the current node,
+    while `max_depth` gives the maximum depth of the full tree.
+
+
     Each node holds a symbol (terminal or non-terminal) and may have children.
     The tree supports JSON and string (CSV-like) serialization.
     Args:
         symbol (str): The symbol associated with this node.
-        depth (int, optional): The depth of this node in the tree. Defaults to 0.
     """
 
-    def __init__(self, symbol: str, depth: int = 0):
+    def __init__(self, symbol: str):
         self.symbol = symbol
         self.children: list["TreeNode"] = []
         self.parent: Optional["TreeNode"] = None
@@ -29,7 +33,7 @@ class TreeNode:
 
     @property
     def depth(self) -> int:
-        d = 0
+        d = 1
         node = self
         while node.parent is not None:
             node = node.parent

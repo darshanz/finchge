@@ -624,10 +624,8 @@ class PIGrowInitialiser(GETreeInitialiser):
             )
         depth = self._pick_depth()
 
-        tree = self.tree_generator.generate_tree(
+        tree = self.tree_generator.generate_tree_pi_grow(
             max_depth=depth,
-            force_full=False,
-            position_independent=True,
             rng=self.rng,
         )
 
