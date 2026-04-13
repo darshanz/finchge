@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.0.1-beta.9] - 2026-04-13
+
+### Added
+- Test cases to verify population related properties of tree based initialisers
+- Documentation added in API docs, comments and docstrings.
+
+### Changed
+- Refactored code for checking incompatible operators
+- updated docs related to tree based initialization and operators
+- updated experiment logger to support logging for multiobjective experiments
+- Updated mutation and crossover to handle within_used
+- Tree generator updated for tree-based population initialisers
+- Invalid individuals handing updated.
+
+### Fixed
+-  Fixed toml file to include non-pyton files like yaml, bnf in project templates
+-  Logging issues fixed by connecting global logging
+-  Fixed RVD intializer to remove hard-coded codon size value
+
+
 ## [1.0.1-beta.8] - 2026-04-10
 
 ### Added
