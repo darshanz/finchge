@@ -77,6 +77,14 @@ docs = [
     "mkdocstrings[python]>=0.21.0",
 ]
 
+[tool.setuptools.package-data]
+"finchge.cli.templates" = ["*.yaml", "*.md", "*.bnf", "*.ipynb"]
+"finchge.cli.templates.basic" = ["*"]
+"finchge.cli.templates.control" = ["*"]
+"finchge.cli.templates.logic" = ["*"]
+"finchge.cli.templates.symbolic_regression" = ["*"]
+"finchge.cli.templates.notebook" = ["*"]
+
 # Black configuration
 [tool.black]
 line-length = 88
