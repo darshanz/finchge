@@ -355,37 +355,46 @@ class TreeNode:
         Returns the new roots of both trees.
         """
 
+        # parents for the crosover
         p0, p1 = self.parent, other.parent
 
+        # parent is None means it's a root node
+        # if both parents are roots: just return them swapping fully
         if p0 is None and p1 is None:
             return other, self
 
+        # if only self is root , the other is not
         if p0 is None and p1 is not None:
+            # find the position of other in the parent and replace
             idx1 = p1.children.index(other)
             p1.children[idx1] = self
             self.parent = p1
             other.parent = None
-            return other, self
-
+            return other, p1.root
+        # if other is the root, self is not
         if p1 is None and p0 is not None:
             idx0 = p0.children.index(self)
             p0.children[idx0] = other
             other.parent = p0
-            self.parent = None
-            return self, other
 
+            # detatch self
+            self.parent = None
+            return p0.root, self
+
+        # both are non-root
         assert p0 is not None  # to silent mypy errors
         assert p1 is not None
-
+        # find the position of each subtree in its parent's childlist
         idx0 = p0.children.index(self)
         idx1 = p1.children.index(other)
-
+        # swap subtrees
         p0.children[idx0] = other
         p1.children[idx1] = self
 
+        # update the parent pointers
         other.parent = p0
         self.parent = p1
-
+        # return the roots
         return self.root, other.root
 
     def replace_subtree_with(self, new_subtree: "TreeNode") -> "TreeNode":
