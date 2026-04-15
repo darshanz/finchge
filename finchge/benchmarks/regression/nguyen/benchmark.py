@@ -97,10 +97,10 @@ class NguyenBenchmark(Benchmark):
         return r
 
     def grammar(self) -> Grammar:
-        return Grammar(get_nguyen_grammar(self.version, self.dim))
+        return Grammar(get_nguyen_grammar(self.dim))
 
     def grammar_str(self) -> str:
-        return get_nguyen_grammar(self.version, self.dim)
+        return get_nguyen_grammar(self.dim)
 
     def _generate_data(self) -> Tuple[FloatArray, FloatArray, FloatArray, FloatArray]:
         X_train = generate_nguyen_points(

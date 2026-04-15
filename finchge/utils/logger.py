@@ -159,9 +159,9 @@ class ExperimentLogger(BaseLogger):
         self.compress_genotypes: bool = compress_genotypes
         self.log_population_samples: bool = log_population_samples
         self.sample_size: int = sample_size
-        self.custom_log_hook: Optional[
-            Callable[[dict[str, Any]], None]
-        ] = custom_log_hook
+        self.custom_log_hook: Optional[Callable[[dict[str, Any]], None]] = (
+            custom_log_hook
+        )
 
         self.log_dir: Optional[Path] = None
         self.csv_path: Optional[Path] = None

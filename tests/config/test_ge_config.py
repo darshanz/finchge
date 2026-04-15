@@ -5,15 +5,13 @@ from finchge.config.config import FinchConfig, Keys
 
 def test_geconfig_from_ini(tmp_path):
     ini = tmp_path / "ge_config.ini"
-    ini.write_text(
-        """
+    ini.write_text("""
         [ge]
         codon_size = 127
 
         [experiment]
         verbose = True
-        """
-    )
+        """)
 
     cfg = FinchConfig.from_ini(str(ini))
 
@@ -23,14 +21,12 @@ def test_geconfig_from_ini(tmp_path):
 
 def test_geconfig_from_yaml(tmp_path):
     yaml_file = tmp_path / "ge_config.yaml"
-    yaml_file.write_text(
-        """
+    yaml_file.write_text("""
         ge:
           codon_size: 127
         experiment:
           verbose: true
-        """
-    )
+        """)
 
     cfg = FinchConfig.from_yaml(str(yaml_file))
 
@@ -62,14 +58,12 @@ def test_copy_is_deep():
 
 def test_type_parsing_ini(tmp_path):
     ini = tmp_path / "ge.ini"
-    ini.write_text(
-        """
+    ini.write_text("""
         [experiment]
         verbose = True
         num_generations = 100
         mutation_probability = 0.01
-        """
-    )
+        """)
 
     cfg = FinchConfig.from_ini(str(ini))
 

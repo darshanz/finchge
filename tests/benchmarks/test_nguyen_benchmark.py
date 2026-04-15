@@ -331,7 +331,7 @@ class TestNguyenGrammars:
         grammar = bench.grammar_str()
 
         if restricted:
-            assert "const" in grammar
+            assert "pdiv" in grammar
         else:
             # Should have standard functions
             assert "sin" in grammar

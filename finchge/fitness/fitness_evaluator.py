@@ -375,12 +375,18 @@ class FitnessEvaluator:
                 genome_length = getattr(self, "_genome_length", None)
                 codon_size = getattr(self, "_codon_size", 127)
 
-                ind.genotype = self.mapper.reverse_map(
-                    tree=ind.tree,
-                    codon_size=codon_size,
-                    pad_to_length=genome_length,
-                    pad_mode="random",
-                )
+                try:
+                    ind.genotype = self.mapper.reverse_map(
+                        tree=ind.tree,
+                        codon_size=codon_size,
+                        pad_to_length=genome_length,
+                        pad_mode="random",
+                    )
+                except ValueError:
+                    ind.genotype = None
+                    ind.phenotype = None
+                    ind.invalid = True
+                    return
 
             else:
                 ind.phenotype = TreeNode.from_string(ind.tree).to_phenotype()

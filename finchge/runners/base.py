@@ -26,11 +26,9 @@ YType = TypeVar("YType")
 class DatasetProtocol(Protocol):
     """Protocol for PyTorch-like datasets."""
 
-    def __getitem__(self, idx: int) -> Tuple[Any, Any]:
-        ...
+    def __getitem__(self, idx: int) -> Tuple[Any, Any]: ...
 
-    def __len__(self) -> int:
-        ...
+    def __len__(self) -> int: ...
 
 
 class PhenotypeRunner(RandomStateMixin, ABC):
