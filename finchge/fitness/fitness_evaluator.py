@@ -372,7 +372,22 @@ class FitnessEvaluator:
         # genotypes are not needed , however encode_trees flag can be used to reverse map to genotype anyway
         if ind.genotype is None and ind.tree is not None:
             if self.encode_trees:
-                ind.genotype = self.mapper.reverse_map(tree=ind.tree)
+                genome_length = getattr(self, "_genome_length", None)
+                codon_size = getattr(self, "_codon_size", 127)
+
+                try:
+                    ind.genotype = self.mapper.reverse_map(
+                        tree=ind.tree,
+                        codon_size=codon_size,
+                        pad_to_length=genome_length,
+                        pad_mode="random",
+                    )
+                except ValueError:
+                    ind.genotype = None
+                    ind.phenotype = None
+                    ind.invalid = True
+                    return
+
             else:
                 ind.phenotype = TreeNode.from_string(ind.tree).to_phenotype()
                 ind.invalid = False  # trees are always valid

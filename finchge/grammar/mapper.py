@@ -262,7 +262,7 @@ class GenotypeMapper(RandomStateMixin):
         *,
         codon_size: int = 127,
         pad_to_length: Optional[int] = None,
-        pad_mode: str = "zeros",
+        pad_mode: str = "random",
     ) -> list[int]:
         """
         Encode a derivation tree into a genotype that reproduces the same tree.

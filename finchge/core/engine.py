@@ -221,6 +221,13 @@ class GrammaticalEvolution(RandomStateMixin):
         self.cache_manager: CacheManager[Any] = CacheManager.from_config(self.config)
         self.fitness_evaluator.set_cache_manager(self.cache_manager)
 
+        # tail related settings during reverse map
+        # TODO Needs better way of handling this later
+        self.fitness_evaluator._configured_genome_length = self.config.ge[
+            Keys.GENOME_LENGTH
+        ]
+        self.fitness_evaluator._configured_codon_size = self.config.ge[Keys.CODON_SIZE]
+
         self.result_helper = ResultHelper()
 
         self._inject_rng()  # inject rng into all components that use randomness

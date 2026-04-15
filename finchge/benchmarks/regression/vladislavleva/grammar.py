@@ -1,15 +1,25 @@
 def get_vlad_grammar(dim: int) -> str:
-    vars_list = " | ".join([f"x{i}" for i in range(dim)])
-
-    # Literature standard: 2D uses different constants than high-D
-    consts = (
-        "0.1 | 0.5 | 1.0 | 1.2 | 2.5" if dim == 2 else "0.1 | 0.5 | 1.0 | 2.0 | 5.0"
-    )
+    vars_str = " | ".join([f"x{i}" for i in range(dim)])
 
     return f"""
-    <expr>  ::= <expr> <op> <expr> | <func>(<expr>) | <var> | <const>
-    <op>    ::= + | - | * | pdiv
-    <func>  ::= sin | cos | exp | plog | psqrt
-    <var>   ::= {vars_list}
-    <const> ::= {consts}
+    <e> ::= (<e> + <e>)
+          | (<e> - <e>)
+          | (<e> * <e>)
+          | pdiv(<e>, <e>)
+          | pow(<e>, <e>)
+          | sin(<e>)
+          | cos(<e>)
+          | exp(<e>)
+          | plog(<e>)
+          | psqrt(<e>)
+          | abs(<e>)
+          | sinh(<e>)
+          | cosh(<e>)
+          | asinh(<e>)
+          | <v>
+          | <c>
+
+    <v> ::= {vars_str}
+
+    <c> ::= 0.0 | 0.1 | 0.2 | 0.3 | 0.5 | 1.0 | 1.2 | 2.5 | 2.0 | 3.0 | 4.0 | 5.0 | 6.0 | 8.0 | 10.0 | 30.0 | pi
     """

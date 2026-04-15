@@ -101,6 +101,7 @@ class SymbolicExpression:
         "atanh": pmath.atanh,
         "exp": pmath.exp,
         "log": pmath.log,
+        "plog": pmath.log,
         "ln": pmath.log,
         "log1p_abs": pmath.log1p_abs,
         "sqrt": pmath.sqrt,
