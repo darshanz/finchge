@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1-beta.11] - 2026-04-15
+
+### Fixed
+- Fixed tail appending during reverse-mapping
+- Fixed subtree crossover returning incomplete trees
+- Default grammar changed to make same for Keijzer, Nguyen Vladislavleva benchmarks
+
 ## [1.0.1-beta.10] - 2026-04-13
 
 ### Fixed

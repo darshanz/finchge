@@ -43,7 +43,6 @@ def validate_config_file(config_path: str) -> bool:
 def validate_grammar_file(grammar_path: str) -> bool:
     """
     Quick check to make sure a grammar file is actually valid BNF format.
-    Don't want to pass garbage to the parser later.
     """
     try:
         # Basic grammar validation
