@@ -257,21 +257,35 @@ class GrammaticalEvolution(RandomStateMixin):
 
         # Initial evaluation
         self.fitness_evaluator.evaluate_population(population)
-        self.algorithm.sort_population(population)
+        self.algorithm.sort_population(
+            population
+        )  # Not used by NSGA3 but won't be any problem calling this
 
         # Logging Generation 0
         initial_fitness_stats: list[dict[str, Any]] = StatsHelper.compute_fitness_stats(
             individuals=population.individuals
         )
-        initial_best = self.algorithm.get_best_individual(population)
+        # Logging initial population info
+        if not self.multi_obj:
+            initial_best = self.algorithm.get_best_individual(population)
+            if self.expt_logger:
+                self.expt_logger.on_generation_end(
+                    generation=0,
+                    population=population,
+                    best=initial_best,
+                    fitness_stats=initial_fitness_stats,
+                )
+        else:
+            # multi objective
+            initial_front = self.algorithm.get_pareto_front(population)
 
-        if self.expt_logger:
-            self.expt_logger.on_generation_end(
-                generation=0,
-                population=population,
-                best=initial_best,
-                fitness_stats=initial_fitness_stats,
-            )
+            if self.expt_logger:
+                self.expt_logger.on_generation_end(
+                    generation=0,
+                    population=population,
+                    pareto_front=initial_front,
+                    fitness_stats=initial_fitness_stats,
+                )
 
         # Resume if checkpoint exists
         if self.checkpoint_manager and self.checkpoint_manager.exists():
