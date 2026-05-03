@@ -72,7 +72,7 @@ For further details and more advanced usage, please check. [Getting Started](get
 
 !!! info "Development Status"
 
-    Note: This is version ```1.0.1-beta.11``` - a beta release. Expect breaking changes and bugs.
+    Note: This is version ```1.0.1-beta.12``` - a beta release. Expect breaking changes and bugs.
 
     What to expect:
 
