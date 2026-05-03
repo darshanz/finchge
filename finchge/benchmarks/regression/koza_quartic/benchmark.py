@@ -2,8 +2,6 @@ import json
 from pathlib import Path
 from typing import Callable, Literal, Optional, Tuple, Union
 
-import numpy as np
-
 from finchge.benchmarks import Benchmark, BenchmarkMetadata
 from finchge.benchmarks.regression.koza_quartic.data import generate_koza_points
 from finchge.benchmarks.regression.koza_quartic.grammar import get_koza_grammar
@@ -83,7 +81,7 @@ class KozaQuarticBenchmark(Benchmark):
     def grammar_str(self) -> str:
         return get_koza_grammar()
 
-    def _generate_data(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    def _generate_data(self) -> Tuple[FloatArray, FloatArray, FloatArray, FloatArray]:
         if not isinstance(self.x_range[0], (float, int)):
             raise TypeError(
                 f"Koza expects a 1D range (tuple[float, float]), got {type(self.x_range[0])}"

@@ -2,6 +2,7 @@ from typing import Optional, Tuple
 
 import numpy as np
 from numpy.random import RandomState
+from numpy.typing import NDArray
 
 
 def calc_keijzer_size(
@@ -20,7 +21,7 @@ def generate_keijzer_points(
     step: Optional[float],
     grid: bool,
     np_rng: RandomState,
-) -> np.ndarray:
+) -> NDArray[np.float64]:
     if dim == 1:
         if step is not None:
             # Fixed step sampling (deterministic)

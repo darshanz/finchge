@@ -2,6 +2,7 @@ from typing import Literal
 
 import numpy as np
 from numpy.random import RandomState
+from numpy.typing import NDArray
 
 
 def generate_koza_points(
@@ -9,7 +10,7 @@ def generate_koza_points(
     x_range: tuple[float, float],
     sample_type: Literal["uniform", "grid", "random"],
     np_rng: RandomState,
-) -> np.ndarray:
+) -> NDArray[np.float64]:
     low, high = x_range
 
     if sample_type in ("uniform", "random"):

@@ -1,11 +1,12 @@
 from typing import Tuple
 
 import numpy as np
+from numpy.typing import NDArray
 
 
 def generate_multiplexer_table(
     n_bits: int, n_address: int
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> Tuple[NDArray[np.int8], NDArray[np.int8]]:
     n_combinations = 2**n_bits
     X = np.zeros((n_combinations, n_bits), dtype=np.int8)
     y = np.zeros(n_combinations, dtype=np.int8)

@@ -2,8 +2,6 @@ import json
 from pathlib import Path
 from typing import Callable, Optional, Tuple
 
-import numpy as np
-
 from finchge.benchmarks import Benchmark, BenchmarkMetadata
 from finchge.benchmarks.regression.keijzer.data import (
     calc_keijzer_size,
@@ -66,7 +64,7 @@ class KeijzerBenchmark(Benchmark):
     def grammar_str(self) -> str:
         return get_keijzer_grammar(self.dim)
 
-    def _generate_data(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    def _generate_data(self) -> Tuple[FloatArray, FloatArray, FloatArray, FloatArray]:
         # X generation
         X_train = generate_keijzer_points(
             self.dim,

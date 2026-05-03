@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
+from numpy.typing import NDArray
 
 from finchge.benchmarks.control.base import ControlEnvironment
 
@@ -10,7 +11,7 @@ from finchge.benchmarks.control.base import ControlEnvironment
 class SantaFeEnvironment(ControlEnvironment):
     def __init__(
         self,
-        grid: np.ndarray,
+        grid: NDArray[np.int8],
         max_steps: int,
         total_food: int,
         start_pos: Tuple[int, int],

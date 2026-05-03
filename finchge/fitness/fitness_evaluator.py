@@ -55,6 +55,8 @@ class FitnessEvaluator:
         self.mapper = mapper
         self.cache_manager: CacheManager[Any] | None = None
         self.encode_trees = encode_trees
+        self._configured_genome_length: int | None = None
+        self._configured_codon_size: int = 127
         self.runner = runner
         # require_case_data flag determines whether case wise evaluation is required. It will be set True for lexicase
         self.require_case_data = require_case_data

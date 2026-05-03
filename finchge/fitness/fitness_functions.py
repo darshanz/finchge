@@ -372,11 +372,11 @@ class RMSEFitness(GEFitnessFunction):
         # When Lexicase Selection is used
         if context.get("require_case_data", False):
             return Fitness(
-                value=rmse,
+                value=float(rmse),
                 case_data={"errors": np.abs(residuals).tolist()},
             )
 
-        return Fitness(value=rmse)
+        return Fitness(value=float(rmse))
 
 
 class RewardFitness(GEFitnessFunction):

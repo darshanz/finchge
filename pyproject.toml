@@ -57,6 +57,7 @@ dev = [
     "mkdocstrings[python]>=0.21.0",
     "markdown-katex",
     "pandas-stubs",
+    "types-PyYAML",
     "types-tqdm",
     "types-tabulate",
     "black[jupyter]",
