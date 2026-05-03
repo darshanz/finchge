@@ -422,7 +422,7 @@ class GrammaticalEvolution(RandomStateMixin):
         )
         for generation in generation_progress:
             population = self.algorithm.evolve_one_generation(population)
-            front = self.algorithm.get_pareto_front(population)
+            best_front = self.algorithm.get_pareto_front(population)
             # Update progress tqdm
             avg_fitness = np.mean([ind.fitness for ind in best_front], axis=0)
             generation_progress.set_description(
@@ -432,7 +432,9 @@ class GrammaticalEvolution(RandomStateMixin):
             # Log experiment
             if self.expt_logger:
                 self.expt_logger.on_generation_end(
-                    generation=generation, pareto_front=front, population=population
+                    generation=generation,
+                    pareto_front=best_front,
+                    population=population,
                 )
 
             # Save checkpoint if applies to this generation
