@@ -323,7 +323,7 @@ class GrammaticalEvolution(RandomStateMixin):
         # handle single-objective and multi-objective
         if not self.multi_obj:
             # Run evolution
-            fittest_individual = self.__find_best_individual(
+            fittest_individual, population = self.__find_best_individual(
                 start_generation, population
             )
             # Round fitness to 4 decimal values
@@ -341,7 +341,9 @@ class GrammaticalEvolution(RandomStateMixin):
                     )
                 )
         else:
-            pareto_front = self.__find_best_front(start_generation, population)
+            pareto_front, population = self.__find_best_front(
+                start_generation, population
+            )
 
             if self.expt_logger:
                 self.expt_logger.on_run_end(
@@ -365,7 +367,7 @@ class GrammaticalEvolution(RandomStateMixin):
 
     def __find_best_individual(
         self, start_generation: int, population: Population
-    ) -> Individual:
+    ) -> tuple[Individual, Population]:
         fittest: Individual = self.algorithm.get_best_individual(population)
 
         generation_progress = tqdm(
@@ -402,11 +404,11 @@ class GrammaticalEvolution(RandomStateMixin):
 
         # Clear cache
         self.cache_manager.clear()
-        return fittest
+        return fittest, population
 
     def __find_best_front(
         self, start_generation: int, population: Population
-    ) -> list[Individual]:
+    ) -> tuple[list[Individual], Population]:
         # Create log directories if they are not excluded
         # exclude_log_config = self.config.experiment.get("exclude_log", [])
 
@@ -438,7 +440,7 @@ class GrammaticalEvolution(RandomStateMixin):
 
         # Clear cache before returning
         self.cache_manager.clear()
-        return best_front
+        return best_front, population
 
     def _checkpoint_generation(self, generation: int, population: Population) -> None:
         # If checkpointing is enablled and current generation needs checkpointing
