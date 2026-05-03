@@ -70,70 +70,65 @@ The parameters include:
 
     The algorithm supports two distinct operational modes based on the presence of structural constraints.
 
-    === "YAML"
+    YAML example:
 
-        ```yaml
-            experiment:
-              random_seed: 42
-              num_generations: 200
-              verbose: true
-              cache_type: lru
-              cache_size: 128
+    ```yaml
+    experiment:
+      random_seed: 42
+      num_generations: 200
+      verbose: true
+      cache_type: lru
+      cache_size: 128
 
-            ge:
-              population_size: 100
-              grammar_file: grammar.bnf
-              codon_size: 127
-              max_wraps: 6
-              max_recursion_depth: 20
-              genome_length: 100
+    ge:
+      population_size: 100
+      grammar_file: grammar.bnf
+      codon_size: 127
+      max_wraps: 6
+      max_recursion_depth: 20
+      genome_length: 100
+      init_type: pi_grow
+      max_depth: 6
+      mutation_probability: 0.01
+      crossover_probability: 0.5
+      elite_size: 1
 
-              init_type: pi_grow
-              max_depth: 6
+    parallel:
+      parallel_enabled: true
+      executor_type: process
+      max_workers: 4
+      batch_size: 25
+    ```
 
-              mutation_probability: 0.01
-              crossover_probability: 0.5
-              elite_size: 1
+    INI example:
 
-            parallel:
-              parallel_enabled: true
-              executor_type: process
-              max_workers: 4
-              batch_size: 25
+    ```ini
+    [experiment]
+    random_seed = 42
+    num_generations = 200
+    verbose = true
+    cache_type = "lru"
+    cache_size = 128
 
-        ```
+    [ge]
+    population_size = 100
+    grammar_file = grammar.bnf
+    codon_size = 127
+    max_wraps = 6
+    max_recursion_depth = 20
+    genome_length = 100
+    init_type = pi_grow
+    max_depth = 6
+    mutation_probability = 0.01
+    crossover_probability = 0.5
+    elite_size = 1
 
-    === "INI"
-
-
-        ```ini
-            [experiment]
-            random_seed = 42
-            num_generations = 200
-            verbose = true
-            cache_type = "lru"
-            cache_size = 128
-
-            [ge]
-            population_size = 100
-            grammar_file = grammar.bnf
-            codon_size = 127
-            max_wraps = 6
-            max_recursion_depth = 20
-            genome_length = 100
-            init_type = pi_grow
-            max_depth = 6
-            mutation_probability = 0.01
-            crossover_probability = 0.5
-            elite_size = 1
-
-            [parallel]
-            parallel_enabled = true
-            executor_type = process
-            max_workers = 4
-            batch_size = 25
-
-        ```
+    [parallel]
+    parallel_enabled = true
+    executor_type = process
+    max_workers = 4
+    batch_size = 25
+    ```
 
 #### Required vs Optional Parameters
 

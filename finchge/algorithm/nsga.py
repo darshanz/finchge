@@ -30,15 +30,16 @@ class NSGA2(BaseAlgorithm):
         random_state: Optional[int] = None,
     ) -> None:
         """
-        NSGA2  class.
+        NSGA-II algorithm.
 
         Args:
-            selection: Selection strategy instance or function.
-            crossover: Crossover strategy instance or function.
-            mutation: Mutation strategy instance or function.
-            replacement: Replacement strategy instance or function.
-            elite_size (int): Number of elite individuals to carry over.
-            random_state (int) : random state
+            selection: Selection strategy.
+            crossover: Crossover strategy.
+            mutation: Mutation strategy.
+            replacement: Replacement strategy.
+            elite_size: Number of elite individuals to carry over.
+            fitness_evaluator: Evaluator used to score individuals.
+            random_state: Seed for reproducible randomness.
         """
         super().__init__(random_state=random_state)
         self.selection = selection
@@ -110,13 +111,10 @@ class NSGA2(BaseAlgorithm):
 
     def sort_population(self, population: Population) -> None:
         """
-        Sort population using NSGA-II criteria
+        Sort the population using NSGA-II rank and crowding distance.
 
         Args:
             population (Population): The population to sort.
-
-        Returns:
-            Population: The sorted population.
         """
         maximize_flags = self.fitness_evaluator.get_maximize_flags()
         fronts = fast_non_dominated_sort(population.individuals, maximize_flags)
@@ -171,16 +169,16 @@ class NSGA3(BaseAlgorithm):
         random_state: Optional[int] = None,
     ) -> None:
         """
-        NSGA-III class
+        NSGA-III algorithm.
 
 
         Args:
-            selection (GESelectionStrategy: Selection strategy instance or function.
-            crossover (GECrossoverStrategy): Crossover strategy instance or function.
-            mutation (GEMutationStrategy): Mutation strategy instance or function.
-            fitness_evaluator (FitnessEvaluator): Fitness Evaluator for performing Evaluation
-            num_divisions (int): Number of divisions for reference points.
-            random_state (Optional[int]) : Random state
+            selection: Selection strategy.
+            crossover: Crossover strategy.
+            mutation: Mutation strategy.
+            fitness_evaluator: Evaluator used to score individuals.
+            num_divisions: Number of divisions for reference points.
+            random_state: Seed for reproducible randomness.
         """
         super().__init__(random_state=random_state)
         self.num_divisions = num_divisions
@@ -276,12 +274,13 @@ class NSGA3(BaseAlgorithm):
 
     def get_pareto_front(self, population: Population) -> list[Individual]:
         """
-        Return the Pareto front (individuals with rank 0)
-        Args:
-            population (Population): The population to extract the Pareto front from.
-        Returns:
-            list[Individual]: List of individuals in the Pareto front.
+        Return the Pareto front.
 
+        Args:
+            population: Population to extract the Pareto front from.
+
+        Returns:
+            Individuals in the first non-dominated front.
         """
         fronts = fast_non_dominated_sort(
             population.individuals,

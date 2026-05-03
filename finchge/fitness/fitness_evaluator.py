@@ -30,13 +30,14 @@ class FitnessEvaluator:
     and phenotype-only evaluation (e.g., string matching or symbolic tasks).
 
     Args:
-        fitness_functions (GEFitnessFunction or list): One or more fitness function instances.
-        mapper (GenotypeMapper) : Genotype mapper
-        runner (PhenotypeRunner) : Runner for running (evaluating) the phenotype models on data
-        encode_trees (bool) : whether to encode trees to integer genotype,
-                                needed if genome-based operators are used after tree-based initialisation
-        parallel_config (dict) : parallel section of config
-        require_case_data (book) : determines whether case based evaluation is required. eg.True when using Lexicase
+        fitness_functions: One or more fitness function instances.
+        mapper: Genotype mapper.
+        runner: Runner for evaluating phenotypes.
+        encode_trees: Whether to encode trees to integer genotypes. This is
+            needed if genome-based operators are used after tree-based initialization.
+        parallel_config: Parallel section of the config.
+        require_case_data: Whether case-based evaluation is required, for example
+            when using lexicase selection.
     """
 
     def __init__(
@@ -416,7 +417,7 @@ class FitnessEvaluator:
         """
         Although we share same random state using private RNG shared in different components,
         It will not work for parallelized evaluation.
-        Each process/ or even machines will be runing evaluations in different order so random state will fail
+        Each process, or even each machine, will run evaluations in a different order, so random state will fail.
 
         So, we must use some deterministic way to evaluate. One way is to use different seeds in deterministic way
         Same phenotype and base seed combination should result in same seed in each run.

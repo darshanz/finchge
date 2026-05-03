@@ -8,7 +8,7 @@ parallel executors, and benchmark runners to handle the evaluation process effic
 By decoupling fitness evaluation from the main evolutionary loop, FinchGE allows different evaluation strategies
 to be applied across diverse problem domains, all while exposing a consistent interface to the rest of the evolutionary machinery.
 
-A fitness evaluator can be created as following:
+A fitness evaluator can be created as follows:
 
 
 ```python
@@ -153,7 +153,7 @@ Full Initialisation constructs trees where all internal nodes expand using produ
 
 ####  Ramped Half-and-Half Initialization (Sensible Initialisation)
 
-Ramped Half-and-Half Initialization in FinchGE is implemented based on Sensible Initialziation
+Ramped Half-and-Half Initialization in FinchGE is implemented based on Sensible Initialisation
 [[Ryan and Azad, 2003](https://link.springer.com/chapter/10.1007/3-540-36599-0_37)] which
 is the Grammatical Evolution adaptation of Koza’s Ramped Half-and-Half (RHH) method.
 It generates individuals using both Full and Grow strategies across a range of depth limits.
@@ -301,7 +301,7 @@ print("Phenotype:", phenotype)
 
 ```
 
-Initializers can also be declared in config file with `init_type` key under the section `ge` as following:
+Initializers can also be declared in a config file with the `init_type` key under the `ge` section:
 
 
 ```yaml
@@ -312,8 +312,8 @@ ge:
   codon_size: 127
 ```
 
-All the intialser support initialisation using config files through `from_config()` method.
-For example  [`RandomGenomeInitialiser`][finchge.initialisation.RandomGenomeInitialiser] can be used as following.
+All initialisers support config-based construction through the `from_config()` method.
+For example, [`RandomGenomeInitialiser`][finchge.initialisation.RandomGenomeInitialiser] can be used as follows.
 
 ```python
 from finchge.initialisation import  RandomGenomeInitialiser
@@ -324,4 +324,4 @@ initialiser = RandomGenomeInitialiser.from_config(config=config)
 
 ```
 
-Note: To intitialise using config, all the parameters required by the respective initializers must be provided in the config files.
+Note: To initialise using config, all parameters required by the selected initializer must be provided in the config file.

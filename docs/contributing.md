@@ -10,10 +10,8 @@ We welcome and value contributions to finchGE. To report a bug or submit a fix, 
 ## How to Contribute
 
 
-<div class="admonition info">
-<p class="admonition-title">First Time? </p>
-<p>If you're new to open source, check out <a href="https://github.com/firstcontributions/first-contributions">First Contributions</a></p>
-</div>
+!!! info "First Time?"
+    If you're new to open source, check out [First Contributions](https://github.com/firstcontributions/first-contributions).
 
 
 ### 1. Report Bugs
@@ -156,9 +154,9 @@ flake8 finchge/ tests/
 
 ### Docstrings
 Use Google-style docstrings:
-```python
+<pre><code>
 def function_name(param1: type, param2: type) -> return_type:
-    """Brief description of function.
+    '''Brief description of function.
 
     Args:
         param1: Description of param1.
@@ -173,8 +171,8 @@ def function_name(param1: type, param2: type) -> return_type:
     Examples:
         >>> function_name(1, 2)
         3
-    """
-```
+    '''
+</code></pre>
 
 ## Testing
 
@@ -182,17 +180,18 @@ We are constantly improving the library with tests. We encourage you to write te
 
 ## Documentation
 
-During current beta relase the documents may not be up-to-date, however we are constantly improving the documentation. Any contribution to documentation are welcome.
+During the current beta release, the docs may not be fully up to date. We are actively improving them, and documentation contributions are welcome.
 
 ## Recommended Development Workflow
 
 1. **Sync your fork** with upstream:
-   ```bash
-   git remote add upstream https://github.com/finchGE/finchge.git
-   git fetch upstream
-   git checkout main
-   git merge upstream/main
-   ```
+
+```bash
+git remote add upstream https://github.com/finchGE/finchge.git
+git fetch upstream
+git checkout main
+git merge upstream/main
+```
 2. **Create a new branch** for your changes
 3. **Make your changes** with tests and documentation
 4. **Run tests** to ensure nothing breaks

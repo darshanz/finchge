@@ -1,9 +1,6 @@
 site_name: finchGE
 repo_url: https://github.com/finchGE/finchge
 repo_name: finchge/finchge
-extra:
-  version:
-    provider: mike
 theme:
   name: material
   features:
@@ -56,12 +53,11 @@ markdown_extensions:
         - name: mermaid
           class: mermaid
           format: pymdownx.superfences.fence_code_format
-        - pymdownx.tabbed:
-        - alternate_style: true
   - toc:
       toc_depth: 3
   - pymdownx.highlight:
       use_pygments: true
+      auto_title: true
       pygments_style: material
       linenums: false
       anchor_linenums: true
@@ -74,5 +70,4 @@ markdown_extensions:
         generic: true
 
 extra_javascript:
-  - javascripts/mathjax.js
   - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js

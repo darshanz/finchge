@@ -12,19 +12,19 @@ You can begin working with finchGE in **two primary ways**, depending on your go
 - **Interactive usage** using a Jupyter notebook
 - **Project-based usage** using the recommended finchGE experiment structure
 
-Both approaches use the same underlying components, however experiment-style workflow is designed to have better organized control and tooling for experiments.
+Both approaches use the same underlying components; however, the experiment-style workflow is designed to provide better organized control and tooling for experiments.
 
-To get started, simply create a finchGE project using following commands.
+To get started, create a finchGE project using the following command.
 ```bash
 finchge new my_experiment --notebook
 ```
 
 This will create a sample project with a starter notebook and a project for project-based workflow.
 
-Use `--template` option for different project templates. Following templates are available.
+Use the `--template` option for different project templates. The following templates are available.
 
 - `--template basic`  (default template): StringMatch problem
-- `--template control`: SantaFE Trail Problem
+- `--template control`: Santa Fe Trail problem
 - `--template logic`  : Multiplexer problem
 - `--template symbolic_regression`  : Symbolic Regression problem (Nguyen-6)
 
@@ -57,7 +57,7 @@ my_experiment/
 ├── fitness.py
 └── logs/
 ```
-Once the project is created using ```finchge new NAME``` command, either open it on your favorite IDE or use ```finchge run``` to run from commandline. This will create experiment outputs in logs directory.
+Once the project is created using the ```finchge new NAME``` command, either open it in your preferred IDE or use ```finchge run``` to run it from the command line. This will create experiment outputs in the `logs` directory.
 
 ### Key Files
 
@@ -68,7 +68,7 @@ Once the project is created using ```finchge new NAME``` command, either open it
   Defines the experiment configuration and evolutionary parameters such as population size, number of generations,
   mutation probability, crossover probability, and elite size.
   Using a config file makes experiments easy to reproduce and modify without
-  changing code. For configuration `.yaml` and  `.ini`  files are supported.
+  changing code. `.yaml` and `.ini` configuration files are supported.
   For more information, check out [Configuration](configuration.md) section.
 
 - **`grammar.bnf`**
@@ -80,7 +80,7 @@ Once the project is created using ```finchge new NAME``` command, either open it
 ---
 
 The basic project layout presented here is a minimal example intended to illustrate finchGE usage.
-In practice, experiments may adopt more elaborate structures depending on scale, reproducibility requirements.
+In practice, experiments may adopt more elaborate structures depending on scale and reproducibility requirements.
 
 ## Experiment Logs and Outputs
 

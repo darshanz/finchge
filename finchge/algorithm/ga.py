@@ -46,7 +46,7 @@ class GeneticAlgorithm(BaseAlgorithm):
 
         self.inject_operator_rng()
 
-        # Quick Check for evaluation and selection compatiblity
+        # Quick check for evaluation and selection compatibility.
         # Fitness evaluator must have require_case_data=False
         if (
             self.selection.requires_case_data

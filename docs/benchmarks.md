@@ -69,7 +69,7 @@ bench = NguyenBenchmark(version=6, random_state=42)
 ```
 
 The mixin provides `self.rng` (Python random) and `self.np_rng` (NumPy RandomState) for all the random needs.
-Any custom cumponent requiring randomnes should use these RNGs instead of global `random` or `np.random` to ensure
+Any custom component requiring randomness should use these RNGs instead of global `random` or `np.random` to ensure
 deterministic experiments.
 
 
@@ -77,24 +77,53 @@ deterministic experiments.
 A typical experiment flows like this:
 
 ```python
-benchmark = SantaFeTrailBenchmark(random_state=42)
-grammar = Grammar.from_string(benchmark.grammar())
-runner = benchmark.create_runner()
-fitness = RewardFitness(maximize=True)
+# instantiate the benchmark
+benchmark = SantaFeTrailBenchmark()
 
-ge = GrammaticalEvolution(runner, fitness, grammar)
-result = ge.run()
+# prepare benchmark runner
+runner = benchmark.create_runner("train")
+
+# setup reward fitness function
+fitness = RewardFitness(maximize=True, optimal_fitness=89)
+
+# This example uses the default grammar from the benchmark.
+# Custom grammar can be used sing Grammar class eg. Grammar.from_file("grammar.bnf")
+grammar = benchmark.grammar()
+
+# get experiment config
+ge_config = FinchConfig.from_yaml("config.yaml")
+
+# prepare genotype mapper
+mapper = GenotypeMapper(
+    grammar=grammar,
+    max_wraps=ge_config.ge[Keys.MAX_WRAPS],
+    max_recursion_depth=ge_config.ge[Keys.MAX_RECURSION_DEPTH],
+    random_state=ge_config.experiment[Keys.RANDOM_SEED],
+)
+
+# instantiate fitness evaluator
+fitness_evaluator = FitnessEvaluator(
+    runner=runner,
+    fitness_functions=fitness,
+    mapper=mapper,
+    parallel_config=ge_config.parallel,
+)
+
+#  run experiment
+ge_ = GrammaticalEvolution(grammar=grammar, fitness_evaluator=fitness_evaluator)
+result = ge_.run()
+
 
 ```
 
 
-??? Pro Tip  "Using Custom Benchmarks"
+??? tip "Using Custom Benchmarks"
 
     To add a new problem, implement:
 
-        1. An `Environment` class (for control problems)
-        2. A `Runner` that knows how to evaluate phenotypes
-        3. A `Benchmark` that brings it all together
+    1. An `Environment` class (for control problems)
+    2. A `Runner` that knows how to evaluate phenotypes
+    3. A `Benchmark` that brings it all together
 
     The base classes handle the rest, including random state management and parallelization support.
 
@@ -144,7 +173,7 @@ print(f"Test samples: {len(X_test)}")  # 1000 points
 
 15 functions including rational functions, harmonic series, and multi-dimensional problems.
 
-??? info "Keizjer Benchmark Suite"
+??? info "Keijzer Benchmark Suite"
 
     The Keijzer suite includes 15 functions of varying complexity. All implementations follow the exact specifications from Keijzer (2003).
 
@@ -225,7 +254,7 @@ The Vladislavleva benchmarks are designed to evaluate extrapolation and interpol
     * **Features:** These problems are specifically chosen to test "bloat" control and the ability to handle rational functions (fractions) and exponentials.
 
 **Reference:** Vladislavleva, et al. (2008) Order of nonlinearity as a complexity measure for models generated
-by symbolic regression via pareto genetic programming. IEEE Transactions on Evolutionary Computation, 13(2), pp.333-349.
+by symbolic regression via Pareto genetic programming. IEEE Transactions on Evolutionary Computation, 13(2), pp.333-349.
 
 ### Logic Benchmarks
 

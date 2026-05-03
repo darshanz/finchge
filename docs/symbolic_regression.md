@@ -6,16 +6,15 @@
 validating, and evaluating symbolic mathematical expressions
 used in symbolic regression workflows.
 
-The class converts string-based mathematical expressions into *SymPy* symbolic objects and compiles them into efficient
-*NumPy-based* numerical evaluators. It supports multi-variable expressions, custom function sets, and automatic detection of required input features.
+The class parses string-based mathematical expressions using Python's `ast` module and evaluates them numerically with FinchGE's protected mathematical operators. It supports multi-variable expressions, constant expressions, NumPy-style column syntax such as `x[:, 0]`, and automatic detection of required input features.
 
 ##### Key Features
 
 - Parse mathematical expressions from strings (e.g., `sin(x0) + x1**2`)
 - Automatic variable detection (`x0`, `x1`, `x2`, ... OR in array slice format `x[: 0]`, `x[: 1]`, `x[: 2]`, ...)
-- Support for user-defined symbolic functions
+- Protected numerical functions for common symbolic regression operators
 - Structural complexity metrics (node count and depth)
-- Optional symbolic simplification
+- Restricted AST validation to reject unsupported Python syntax
 - Safe handling of constant-only expressions
 
 ##### Basic Usage

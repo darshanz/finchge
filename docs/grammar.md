@@ -67,7 +67,7 @@ This grammar ensures that all evolved solutions are syntactically valid by const
 ### Defining a Grammar in finchGE
 
 FinchGE uses an extended Backus-Naur Form (BNF) syntax for defining grammars. However, finchGE's BNFParser does not
-fully support the every syntax of eBNF. The syntax followed by finchGE is as following:
+fully support every eBNF syntax. The syntax followed by finchGE is:
 
 #### Basic Syntax
 
@@ -257,7 +257,7 @@ The parser comes with built-in handlers for common range types:
 <float> ::= 0.0..1.0          # Floating point ranges
 ```
 
-3. Character Ranges (elepsis noation)
+3. Character Ranges (ellipsis notation)
 
 ```bnf
 
@@ -274,7 +274,7 @@ The parser comes with built-in handlers for common range types:
      While finchGE supports various range notations in grammar, custom ranges can be used if any special range is required by any problem.
     FinchGE uses a plugin-based architecture for range handling. Using [```RangeHandler```][finchge.grammar.range_handlers.RangeHandler]
     interface for creating custom range handlers which can be registered
-    with [`BNFGrammarParser`][finchge.grammar.parser.BNFGrammarParser] as following:
+    with [`BNFGrammarParser`][finchge.grammar.parser.BNFGrammarParser] as follows:
     ```python
 
     # create a custom range handler
@@ -331,7 +331,7 @@ evolved mathematical expressions to directly reference the dataset columns using
 In symbolic regression, we need expressions that can operate on real data.
 Array slicers bridge this gap by providing clear mapping from symbolic variables to actual dataset columns
 so that the expressions can be executed without parsing transformations. Array slicers, in FinchGE, can be written
-in grammar as following:
+in grammar as follows:
 
 ```bnf
 
@@ -342,7 +342,7 @@ in grammar as following:
 
 ```
 
-Here, `x[:, 4]` represents the 4rth column in the data x. Similarly, to allow multiple columns as
+Here, `x[:, 4]` represents the fourth column in the data `x`. Similarly, to allow multiple columns as
 production choices, desired columns can be separated by choice operator `|` .
 
 *This syntax is particularly useful when we are interested in selected columns only from the dataset.*
@@ -376,14 +376,14 @@ FinchGE expands the rule `<var> ::= x[:, 0..2]` into:
 <var> ::= x[:, 0] | x[:, 1] | x[:, 2]
 <const> ::= 1.0 | 2.0
 ```
-during parsing process.
+during parsing.
 
 Similarly, for less common use cases, stepped range pattern is also supported for array slices. For example `
 x[:, 0..10 step 2]` is expanded to `x[:, 0] | x[:, 2] | x[:, 4] | x[:, 6] | x[:, 8] | x[:, 10]`.
 
 ### Genotype Mapper
 
-Grammatical Evolution is primarily driven an important process of _genotype-phenotype mapping_.
+Grammatical Evolution is primarily driven by _genotype-phenotype mapping_.
 In FinchGE, this responsibility is handled by the [`GenotypeMapper`][finchge.grammar.GenotypeMapper].
 
 !!! info "NOTE"

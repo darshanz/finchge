@@ -1,8 +1,8 @@
 ## Experiment Utilities
 
-finchGE provides utilities for logging, result tracking and visualization of results.
-Apart from the interactive notebook-based workflow finchGE provides a recommended experiment structure
-designed for efficient experimentation for various use cases.
+finchGE provides utilities for logging, result tracking, and visualization.
+Apart from the interactive notebook-based workflow, finchGE provides a recommended experiment structure
+designed for efficient experimentation across various use cases.
 Read more about [finchGE Experiments](getting_started.md#project-based-workflow)
 
 
@@ -67,7 +67,7 @@ logger = ExperimentLogger(exclude=["trees"])
 
 #### Using experiment logger
 
-When using [`GrammaticalEvolution`][finchge.core.GrammaticalEvolution] for running project, logger is managed
+When using [`GrammaticalEvolution`][finchge.core.GrammaticalEvolution] to run a project, the logger is managed
 automatically.
 
 ```python
@@ -82,10 +82,10 @@ result = ge.run()
 
 ```
 
-However, for more advanced usage or custom logging Experiment Loggers provide callbacks such as `on_run_start()` ,
+However, for more advanced usage or custom logging, experiment loggers provide callbacks such as `on_run_start()`,
 `on_generation_end()` and `on_run_end()`.
 
-The logging behavior logs relevant logs automatically based on the single objective or multi-objective algorithm used.
+The logging behavior records relevant information automatically based on whether a single-objective or multi-objective algorithm is used.
 
 
 !!! info "Note"
@@ -190,18 +190,18 @@ This guarantees exact reproducibility when resuming.
     resume from an incompatible checkpoint and raise an error.
 
 
-    CAUTION: Although this configuration safety features prevents accidental misuse of checkpoints,
+    CAUTION: Although this configuration safety feature prevents accidental misuse of checkpoints,
     **it may not be helpful in use cases where configuration itself is allowed to evolve.**
-    Alternative ways of handling config is such situation is strongly recommended.
+    Alternative ways of handling config in such situations are strongly recommended.
 
 
 ### Result Aggregation and Visualization
 
-FinchGE includes [`ExperimentLogger`][finchge.utils.logger.ExperimentLogger] to log the results which can be aggregated using
+FinchGE includes [`ExperimentLogger`][finchge.utils.logger.ExperimentLogger] to log results that can be aggregated using
  [`ResultHelper`][finchge.utils.results.ResultHelper] and [`StatsHelper`][finchge.utils.results.StatsHelper] utilities.
 
-NOTE *At this point Result Aggregating and Visualization utils
+NOTE *At this point, result aggregation and visualization utilities
 provide limited functionality to work with GrammaticalEvolution,
-for advanced result analysis, custom analysis and visualation is used based on the requirement.*
+for advanced result analysis, custom analysis and visualization are used based on the requirement.*
 
 ---

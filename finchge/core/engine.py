@@ -30,25 +30,31 @@ from finchge.utils.results import ResultHelper, StatsHelper
 
 class GrammaticalEvolution(RandomStateMixin):
     """
-    Grammatical evolution class for running the evolution. This is the Evolution controller class responsible for runing
+    Grammatical evolution class for running the evolution. This is the evolution controller class responsible for running
     FinchGE utils. This class is responsible for wiring up different components. This includes loading experiment configurations,
-    Loading grammar, initializing initial population, setting up fitness evaluator, and using gentic algorithm to
+    loading grammar, initializing the initial population, setting up the fitness evaluator, and using a genetic algorithm to
     run the evolution.  GrammaticalEvolution class is also responsible for running the evolution loop.
 
     Args:
-        fitness_evaluator (FitnessEvaluator):
+        fitness_evaluator:
             Evaluator to evaluate the fitness of individuals.
-        grammar (Optional[Grammar]):
+        grammar:
             BNF Grammar to be used. If not provided config must be available and must contain grammar_file value
-        config (Any | None = None):
+        config:
             Configuration settings for the GE algorithm.
-        initialiser (Optional[GEInitialiser]) :
+        initialiser:
             Initializer class either integer based or tree based initializer
-        algorithm (BaseAlgorithm):
+        algorithm:
             Evolutionary algorithm to be used e.g., GA, NSGA.
+        expt_logger:
+            Logger used for experiment-level records.
+        checkpoint_manager:
+            Checkpoint manager used to save and resume runs.
+        random_state:
+            Seed for reproducible randomness.
 
     Note:
-    If agorithm is not provided, GA will be used (provided that config is available)
+    If algorithm is not provided, GA will be used (provided that config is available)
 
     """
 

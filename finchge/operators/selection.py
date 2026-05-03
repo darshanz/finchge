@@ -15,11 +15,11 @@ class TournamentSelection(GESelectionStrategy):
     pressure increases with larger tournament sizes.
 
     Args:
-        max_best (bool): Whether higher fitness values are better. True for maximization,
+        max_best: Whether higher fitness values are better. True for maximization,
             False for minimization.
-        tournament_size (int): The number of individuals competing in each tournament.
+        tournament_size: The number of individuals competing in each tournament.
             Must be >= 2. Defaults to 3.
-        random_state (int) : Random State
+        random_state: Random seed.
 
     """
 
@@ -95,9 +95,9 @@ class RouletteWheelSelection(GESelectionStrategy):
     algorithms by John Holland.
 
     Args:
-        max_best (bool): Whether higher fitness values are better. True for maximization,
+        max_best: Whether higher fitness values are better. True for maximization,
             False for minimization.
-        random_state (int): Random state
+        random_state: Random seed.
     """
 
     def __init__(self, max_best: bool, random_state: Optional[int] = None) -> None:
@@ -161,11 +161,11 @@ class RankSelection(GESelectionStrategy):
     pressure makes the selection more biased toward higher-ranked individuals.
 
     Args:
-        max_best (bool): Whether higher fitness values are better. True for maximization,
+        max_best: Whether higher fitness values are better. True for maximization,
             False for minimization.
-        selection_pressure (float): The selection pressure that controls the bias toward
+        selection_pressure: The selection pressure that controls the bias toward
             higher-ranked individuals. Must be between 1.0 and 2.0. Defaults to 1.5.
-        random_state (int) : random state
+        random_state: Random seed.
 
     Raises:
         ValueError: If selection_pressure is not between 1.0 and 2.0.
@@ -235,10 +235,10 @@ class TruncationSelection(GESelectionStrategy):
     pool may then occur randomly or deterministically.
 
     Args:
-        max_best (bool): Whether higher fitness values are better. True for maximization,
+        max_best: Whether higher fitness values are better. True for maximization,
             False for minimization.
-        truncation_threshold (float):  threshold value
-        random_state (int) : random state
+        truncation_threshold: Threshold value.
+        random_state: Random seed.
     """
 
     def __init__(
