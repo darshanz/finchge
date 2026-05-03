@@ -230,12 +230,13 @@ class Grammar:
 
     def compute_permutations_by_depth(self, max_depth: int) -> dict[int, int]:
         """
-        Estimate the number of distinct derivation trees available at each depth.
+        Estimate the number of distinct derivation trees available at each exact depth.
 
-        permutations means:
-            how many derivations can be generated with exact tree depth d
-            starting from the grammar start rule.
+        The internal count is cumulative up to a depth budget. The stored
+        permutation count subtracts the previous depth budget so each entry
+        represents trees whose maximum depth is exactly that depth.
         """
+
         start_rule = self.rules[self.start_rule]
 
         if start_rule.min_path is None:
@@ -278,9 +279,13 @@ class Grammar:
             memo[key] = total
             return total
 
+        # count_symbol() is cumulative: counts trees with depth <= depth.
+        # Store exact-depth counts for ramping.
         self.permutations = {}
         for depth in range(start_rule.min_path, max_depth + 1):
-            self.permutations[depth] = count_symbol(self.start_rule, depth)
+            within_depth = count_symbol(self.start_rule, depth)
+            within_prev_depth = count_symbol(self.start_rule, depth - 1)
+            self.permutations[depth] = within_depth - within_prev_depth
 
         return self.permutations
 
