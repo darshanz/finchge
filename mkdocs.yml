@@ -18,8 +18,17 @@ theme:
     primary: blue
     accent: indigo
 nav:
-  - Home: index.md
-  - Introduction: introduction.md
+  - Introduction: index.md
+  - Core Concepts:
+      - Grammatical Evolution: grammatical_evolution.md
+      - Grammar and Mapping: grammar.md
+      - Fitness and Populations: fitness_and_populations.md
+      - Operators: operators.md
+      - Algorithms: algorithms.md
+      - Configuration: configuration.md
+      - Experiment Utilities: experiment_utilities.md
+      - Symbolic Regression: symbolic_regression.md
+      - Benchmarks: benchmarks.md
   - Installation: installation.md
   - Getting Started: getting_started.md
   - Examples: examples.md

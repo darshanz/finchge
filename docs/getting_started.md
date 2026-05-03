@@ -69,7 +69,7 @@ Once the project is created using ```finchge new NAME``` command, either open it
   mutation probability, crossover probability, and elite size.
   Using a config file makes experiments easy to reproduce and modify without
   changing code. For configuration `.yaml` and  `.ini`  files are supported.
-  For more information, check out [Configuration](introduction.md#configuration) section.
+  For more information, check out [Configuration](configuration.md) section.
 
 - **`grammar.bnf`**
   Defines the grammar used for genotype-phenotype mapping and constrains the search space.
@@ -107,6 +107,6 @@ This logging system is designed to support **reproducibility**, **analysis**, an
   - Project-based experiment examples
 
 - For a deeper explanation of finchGE’s design and core components, see the
-  **Introduction** section.
+  **Core Concepts** section.
 
 That’s all you need to start working with finchGE.
