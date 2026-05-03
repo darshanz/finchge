@@ -16,7 +16,7 @@ class TreeGenerator:
     def __init__(self, grammar: "Grammar", max_tree_depth: int) -> None:
         self.grammar = grammar
         self.max_tree_depth = max_tree_depth
-        # Analyze grammar ONCE
+        # Keep grammar metadata ready for the generation methods below.
         self.grammar.analyze()
 
     def generate_tree_grow(
@@ -74,7 +74,7 @@ class TreeGenerator:
         Although it is also "position independent", the literature defines a
         specific growth policy that differs from ordinary random frontier expansion.
 
-        Reference : PonyGE2
+        Reference: PonyGE2.
         """
         if not start_symbol:
             start_symbol = self.grammar.start_rule
@@ -269,16 +269,12 @@ class TreeGenerator:
         max_depth: int | None = None,
     ) -> TreeNode:
         """
-        Generates a derivation tree using the Probabilistic Tree-creation 2 (PTC2) algorithm.
+        Generate a derivation tree using Probabilistic Tree Creation 2 (PTC2).
 
-        This implementation follows the 'refined' version of PTC2 recommended by Nicolau (2017).
-        It treats the target size as the number of non-terminal expansions. By default, it
-        operates without a depth limit to avoid structural bias, but it can be constrained
-        to behave as the PTC2D variant by providing a `max_depth`.
-
-        Note:
-            "The best results were obtained by a refined version of the PTC2 algorithm...
-            as it sampled a wider variety of tree shapes and solution lengths." (Nicolau, 2017).
+        `target_size` is counted in non-terminal expansions. Without
+        `max_depth` this follows the refined PTC2 variant described by
+        Nicolau (2017); with `max_depth` it uses the depth-limited PTC2D
+        variant.
 
         Args:
             target_size: The target number of non-terminal expansions to perform.
@@ -300,25 +296,38 @@ class TreeGenerator:
         if start_symbol is None:
             start_symbol = grammar.start_rule
 
-        # Initialize the tree with the root symbol
+        # Start with the root as the only open non-terminal.
         root = TreeNode(start_symbol)
 
-        # The 'frontier' stores all currently active non-terminals in the derivation tree.
+        # Open non-terminals that still need to be expanded.
         frontier: list[TreeNode] = [root]
         expansions_done = 0
 
-        # Helper function to get the minimum expansions required to terminate a symbol.
-        # PTC2 uses a pre-calculated table of min-depth to ensure validity. (Ref: Section 3.4, Nicolau, 2017)
-        def get_min_exp(sym: str) -> int:
+        min_expansions = self._compute_min_expansions()
+
+        # Minimum expansions needed to make a symbol terminal.
+        def get_min_expansions(sym: str) -> int:
+            if sym not in grammar.non_terminals:
+                return 0
+
+            value = min_expansions.get(sym)
+            if value is None:
+                raise RuntimeError(f"Symbol {sym!r} cannot be terminated.")
+
+            return value
+
+        # A smaller target could never produce a complete tree.
+        target_size = max(target_size, get_min_expansions(start_symbol))
+
+        # PTC2D uses minimum derivation depth to keep trees within max_depth.
+        # Size feasibility uses minimum non-terminal expansion counts.
+        def get_min_depth(sym: str) -> int:
             rule = grammar.rules.get(sym)
             return rule.min_path if (rule and rule.min_path is not None) else 0
 
         while frontier:
-            # Random Node Selection.
-
-            # "In the case of PTC2, the next non-terminal to be expanded is chosen
-            # randomly from the list of all currently open non-terminals." (Nicolau, 2017).
-            # This is important to avoid the 'leftmost' bias found in standard GE mapping.
+            # PTC2 samples from all open non-terminals instead of expanding
+            # left-to-right; see Nicolau (2017), Section 3.4.
             node = frontier.pop(rng.randrange(len(frontier)))
 
             if node.symbol not in grammar.non_terminals:
@@ -326,35 +335,31 @@ class TreeGenerator:
 
             rule = grammar.rules[node.symbol]
 
-            # RE = Remaining Expansions budget.
+            # Remaining expansion budget.
             RE = target_size - expansions_done
 
-            # f_cost = The minimum number of expansions needed to close the rest of the tree.
-            f_cost = sum(get_min_exp(n.symbol) for n in frontier)
+            # Minimum expansions needed to close the rest of the frontier.
+            f_cost = sum(get_min_expansions(n.symbol) for n in frontier)
 
-            # Filter productions based on feasibility.
+            # Keep productions that fit both the depth and size constraints.
             feasible = []
             for prod in rule.choices:
-                # PTC2D Logic: Enforce a strict maximum depth if provided.
-                #  "depth-limited versions (PTC2D) often create "bushy" trees
-                #  that perform worse than the refined version." - (Nicolau, 2017).
+                # PTC2D only: enforce the derivation depth limit
+                # separately from the PTC2 size budget.
                 if max_depth is not None:
                     if node.depth + 1 > max_depth:
                         continue
-                    # Depth-Feasibility
                     # Can all children terminate before max_depth?
                     if any(
-                        get_min_exp(s) + node.depth + 1 > max_depth
+                        get_min_depth(s) + node.depth + 1 > max_depth
                         for s in prod
                         if s in grammar.non_terminals
                     ):
                         continue
 
-                # Size-Feasibility
-                # Can we expand this and still terminate all other branches?
-                # Cost = 1 (current expansion) + minimum expansions needed for children.
+                # Current expansion plus the minimum work left under its children.
                 prod_cost = 1 + sum(
-                    get_min_exp(s) for s in prod if s in grammar.non_terminals
+                    get_min_expansions(s) for s in prod if s in grammar.non_terminals
                 )
 
                 if prod_cost + f_cost <= RE:
@@ -362,37 +367,34 @@ class TreeGenerator:
 
             # Select the production.
             if not feasible:
-                # Fallback: If budget is exhausted, choose the production with minimum growth.
-                # "If no production is feasible... the one with the smallest
-                # required number of expansions is chosen." (Nicolau, 2017).
+                # If the size budget is exhausted, choose the least expansive production.
                 production = min(
                     rule.choices,
                     key=lambda p: sum(
-                        get_min_exp(s) for s in p if s in grammar.non_terminals
+                        get_min_expansions(s) for s in p if s in grammar.non_terminals
                     ),
                 )
             else:
-                # Probabilistic Choice: Bias toward recursion if expansion budget remains.
-                # "PTC2 allows a user to specify a requested size... and distributes
-                # that size across a variety of tree shapes." (Nicolau, 2017).
+                # Prefer recursion half the time while there is budget left.
                 recursive = [
                     p for p in feasible if any(s in grammar.non_terminals for s in p)
                 ]
 
-                # Use the 50/50 group-selection probability recommended by Luke (2000) and Nicolau.
+                # Luke-style 50/50 group selection, also used in Nicolau's
+                # refined PTC2 setup.
                 if RE > 1 and recursive and rng.random() < 0.5:
                     production = rng.choice(recursive)
                 else:
                     production = rng.choice(feasible)
 
-            # Step 4: Update tree structure and frontier.
+            # Add the chosen production and keep any new non-terminals open.
             for sym in production:
                 child = TreeNode(sym)
                 node.add_child(child)
                 if sym in grammar.non_terminals:
                     frontier.append(child)
 
-            # Increment global expansion counter
+            # Count this non-terminal expansion.
             expansions_done += 1
 
         return root
@@ -445,9 +447,8 @@ class TreeGenerator:
             self._is_recursive_symbol(node.symbol) and not recursive_in_queue
         )
 
-        # it should still be allowed to terminate if it can not grow
-        # PI-Grow’s global queue can still keep another branch growing later
-        # this avoids falsely declaring grammatically valid PI-Grow trees impossible
+        # If this node cannot grow, allow it to terminate; another queued
+        # branch may still be able to reach the requested depth.
         if must_force_growth:
             growing = [p for p in feasible if self._has_any_nonterminal(p)]
             if growing:
@@ -474,6 +475,43 @@ class TreeGenerator:
                 if child_rule.min_path > remaining_depth:
                     return False
         return True
+
+    def _compute_min_expansions(self) -> dict[str, int | None]:
+        """
+        Minimum non-terminal expansions needed to fully terminate each symbol.
+        """
+
+        min_exp: dict[str, int | None] = {nt: None for nt in self.grammar.non_terminals}
+
+        changed = True
+        while changed:
+            changed = False
+
+            for nt, rule in self.grammar.rules.items():
+                candidates: list[int] = []
+
+                for prod in rule.choices:
+                    total = 1
+                    valid = True
+
+                    for sym in prod:
+                        if sym in self.grammar.non_terminals:
+                            child_min = min_exp[sym]
+                            if child_min is None:
+                                valid = False
+                                break
+                            total += child_min
+
+                    if valid:
+                        candidates.append(total)
+
+                if candidates:
+                    new_value = min(candidates)
+                    if min_exp[nt] != new_value:
+                        min_exp[nt] = new_value
+                        changed = True
+
+        return min_exp
 
     def _get_depthfirst_legal_productions(
         self,

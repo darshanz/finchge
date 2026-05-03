@@ -205,7 +205,6 @@ def environmental_selection_nsga3(
         return chosen
 
     if last_front is None:
-        # jsut in case
         return chosen[:population_size]
 
     # Normalize objectives (on ALL candidates involved in niching)
@@ -380,7 +379,7 @@ def niching_select(
     return selected
 
 
-# ---------------- Reference points ----------------
+# Reference points
 
 
 def generate_reference_points(
