@@ -3,6 +3,7 @@ from pathlib import Path
 import typer
 
 from finchge.config.config import FinchConfig, validate_config
+from finchge.grammar import Grammar
 
 app = typer.Typer()
 
@@ -42,43 +43,36 @@ def validate_config_file(config_path: str) -> bool:
 
 def validate_grammar_file(grammar_path: str) -> bool:
     """
-    Quick check to make sure a grammar file is actually valid BNF format.
+    Validate that FinchGE can parse and analyse a grammar file.
     """
     try:
-        # Basic grammar validation
-        with open(grammar_path, "r") as f:
-            content = f.read()
+        grammar = Grammar.from_file(grammar_path)
+        grammar.analyze()
 
-        # first check - file shouldn't be completely empty
-        if not content.strip():
-            typer.secho(f"Grammar file '{grammar_path}' is empty", fg=typer.colors.RED)
-            return False
+        summary = (
+            f"Parsed grammar with {len(grammar.rules)} rules, "
+            f"start rule {grammar.start_rule}, "
+            f"can terminate: {grammar.can_terminate}"
+        )
 
-        # try to spot if there are actual grammar rules in here
-        has_rules = False
-        for line in content.split("\n"):
-            line = line.strip()
-            # skip comments, look for rule definitions
-            if line and not line.startswith("#"):
-                if "::=" in line or "->" in line or ":" in line:
-                    has_rules = True
-                    break
-
-        if not has_rules:
+        if not grammar.can_terminate:
             typer.secho(
-                f"Grammar file '{grammar_path}' doesn't appear to contain rules",
+                f"Grammar file '{grammar_path}' is invalid. {summary}.",
                 fg=typer.colors.RED,
             )
             return False
-        # looks good
-        typer.secho(f"Grammar file '{grammar_path}' looks valid", fg=typer.colors.GREEN)
+
+        typer.secho(
+            f"Grammar file '{grammar_path}' is valid. {summary}.",
+            fg=typer.colors.GREEN,
+        )
         return True
 
     except FileNotFoundError:
         typer.secho(f"Grammar file not found: {grammar_path}", fg=typer.colors.RED)
         return False
     except Exception as e:
-        typer.secho(f"Error reading grammar file: {e}", fg=typer.colors.RED)
+        typer.secho(f"Invalid grammar file '{grammar_path}': {e}", fg=typer.colors.RED)
         return False
 
 

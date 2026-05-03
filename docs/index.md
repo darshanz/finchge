@@ -31,7 +31,7 @@ FinchGE is a modern, modular, and user-friendly Python library for Grammatical E
 ## Installation
 [![PyPI](https://img.shields.io/pypi/v/finchge?t=1234567890&color=blue)](https://pypi.org/project/finchge/)
 ```bash
-pip install finchge
+python -m pip install finchge
 ```
 For further details on installation, please check. [Installation](installation.md)
 

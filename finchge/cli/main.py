@@ -3,7 +3,8 @@ from pathlib import Path
 import typer
 
 from finchge import __version__
-from finchge.cli.project import create_project
+from finchge.cli.doctor import run_doctor
+from finchge.cli.project import create_project, list_templates
 from finchge.cli.run import run_project
 from finchge.cli.validate import (
     find_files_non_recursive,
@@ -31,12 +32,30 @@ def cli(
 
 @app.command()
 def new(
-    name: str = typer.Argument(..., help="Name of the project directory"),
+    name: str = typer.Argument(None, help="Name of the project directory"),
     template: str = typer.Option("basic", help="Project template to use"),
     notebook: bool = typer.Option(
         False, "--notebook", help="Include a starter Jupyter notebook"
     ),
+    list_templates_flag: bool = typer.Option(
+        False,
+        "--list-templates",
+        help="Show available project templates and exit",
+    ),
 ):
+    if list_templates_flag:
+        typer.echo("Available templates:")
+        for template_name, title in list_templates():
+            typer.echo(f"  {template_name}: {title}")
+        raise typer.Exit(0)
+
+    if name is None:
+        typer.secho(
+            "Project name is required unless --list-templates is used.",
+            fg=typer.colors.RED,
+        )
+        raise typer.Exit(1)
+
     create_project(name, template, notebook)
 
 
@@ -201,9 +220,8 @@ def check_config(path: str = typer.Argument(..., help="Path to configuration fil
         finchge check-config my_config.yaml
     """
     if validate_config_file(path):
-        typer.Exit(0)
-    else:
-        typer.Exit(1)
+        raise typer.Exit(0)
+    raise typer.Exit(1)
 
 
 @app.command()
@@ -215,9 +233,8 @@ def check_grammar(path: str = typer.Argument(..., help="Path to grammar file")):
         finchge check-grammar syntax.bnf
     """
     if validate_grammar_file(path):
-        typer.Exit(0)
-    else:
-        typer.Exit(1)
+        raise typer.Exit(0)
+    raise typer.Exit(1)
 
 
 @app.command()
@@ -228,5 +245,17 @@ def run():
     run_project()
 
 
+@app.command()
+def doctor():
+    """
+    Show environment and package diagnostics.
+    """
+    run_doctor()
+
+
 def main():
     app()
+
+
+if __name__ == "__main__":
+    main()

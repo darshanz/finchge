@@ -49,7 +49,7 @@ python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install in development mode with all dependencies
-pip install -e ".[dev]"
+python -m pip install -e ".[dev]"
 
 # Verify installation
 python -c "import finchge; print(f'finchGE {finchge.__version__} ready for development!')"
