@@ -393,29 +393,28 @@ class ConfigError(Exception):
 
 
 class ConfigValidator:
-    class ConfigValidator:
-        """
-        Defines validation rules for FinchGE configuration files.
+    """
+    Defines validation rules for FinchGE configuration files.
 
-        This class contains the schema and validation logic used to verify
-        the structure and values of a FinchGE configuration.
+    This class contains the schema and validation logic used to verify
+    the structure and values of a FinchGE configuration.
 
-        Attributes:
-            MANDATORY_SECTIONS (set[str]):
-                Sections that must be present for a valid configuration.
+    Attributes:
+        MANDATORY_SECTIONS (set[str]):
+            Sections that must be present for a valid configuration.
 
-            RECOMMENDED_SECTIONS (set[str]):
-                Sections that are optional but strongly recommended.
+        RECOMMENDED_SECTIONS (set[str]):
+            Sections that are optional but strongly recommended.
 
-            OPTIONAL_SECTIONS (set[str]):
-                Fully optional sections.
+        OPTIONAL_SECTIONS (set[str]):
+            Fully optional sections.
 
-            REQUIRED_FIELDS (dict[str, set[str]]):
-                Required fields for each configuration section.
+        REQUIRED_FIELDS (dict[str, set[str]]):
+            Required fields for each configuration section.
 
-            FIELD_VALIDATORS (dict[str, dict[str, Callable]]):
-                Field-level validators keyed by section and field name.
-        """
+        FIELD_VALIDATORS (dict[str, dict[str, Callable]]):
+            Field-level validators keyed by section and field name.
+    """
 
     # Sections
     MANDATORY_SECTIONS: set[str] = {"experiment", "ge"}
