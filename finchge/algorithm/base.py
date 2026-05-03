@@ -16,16 +16,20 @@ class BaseAlgorithm(RandomStateMixin, ABC):
         super().__init__(random_state=random_state)
 
     @abstractmethod
-    def sort_population(self, population: Population) -> None: ...
+    def sort_population(self, population: Population) -> None:
+        ...
 
     @abstractmethod
-    def get_best_individual(self, population: Population) -> Individual: ...
+    def get_best_individual(self, population: Population) -> Individual:
+        ...
 
     @abstractmethod
-    def get_pareto_front(self, population: Population) -> list[Individual]: ...
+    def get_pareto_front(self, population: Population) -> list[Individual]:
+        ...
 
     @abstractmethod
-    def evolve_one_generation(self, population: Population) -> Population: ...
+    def evolve_one_generation(self, population: Population) -> Population:
+        ...
 
     def apply_crossover(
         self,
@@ -43,7 +47,12 @@ class BaseAlgorithm(RandomStateMixin, ABC):
                 selected_individuals[i],
                 selected_individuals[j],
             )
-            offsprings.extend([offspring1, offspring2])
+            # offspring 1 is first added, second is added only if the population size is not met
+            # just to avoid extra  individual
+            # which would be removed during replacement but may affect benchmarking comparisons
+            offsprings.append(offspring1)
+            if len(offsprings) < new_pop_size:
+                offsprings.append(offspring2)
         return offsprings
 
     def apply_mutation(
