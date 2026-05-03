@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
+from numpy.typing import NDArray
 
 from finchge.benchmarks.control.base import ControlEnvironment
 
@@ -10,7 +11,7 @@ from finchge.benchmarks.control.base import ControlEnvironment
 class MazeEnvironment(ControlEnvironment):
     def __init__(
         self,
-        grid: np.ndarray,
+        grid: NDArray[np.int8],
         max_steps: int = 200,
         step_penalty: float = -1.0,
         goal_reward: float = 100.0,
@@ -28,8 +29,14 @@ class MazeEnvironment(ControlEnvironment):
         if len(start_indices) == 0 or len(goal_indices) == 0:
             raise ValueError("Maze must contain a start (2) and goal (3)")
 
-        self.start_pos: Tuple[int, int] = tuple(start_indices[0])  # type: ignore
-        self.goal_pos: Tuple[int, int] = tuple(goal_indices[0])  # type: ignore
+        self.start_pos: Tuple[int, int] = (
+            int(start_indices[0][0]),
+            int(start_indices[0][1]),
+        )
+        self.goal_pos: Tuple[int, int] = (
+            int(goal_indices[0][0]),
+            int(goal_indices[0][1]),
+        )
 
         self.directions = {
             "up": (-1, 0),
@@ -38,7 +45,7 @@ class MazeEnvironment(ControlEnvironment):
             "right": (0, 1),
         }
 
-        self.maze: np.ndarray = None  # type: ignore
+        self.maze: NDArray[np.int8] = self.original_maze.copy()
         self.pos: Tuple[int, int] = (0, 0)
         self.steps_taken: int = 0
         self.episode_reward: float = 0.0

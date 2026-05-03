@@ -267,10 +267,8 @@ class GenotypeMapper(RandomStateMixin):
         """
         Encode a derivation tree into a genotype that reproduces the same tree.
 
-        This method traverses the tree in the exact same order as codons
-        are consumed in `map()`, which corresponds to:
-
-            Leftmost depth-first expansion of non-terminals.
+        This method traverses the tree in the same order that `map()` consumes
+        codons: leftmost depth-first expansion of non-terminals.
 
         Args:
             tree:

@@ -1,9 +1,6 @@
 site_name: finchGE
 repo_url: https://github.com/finchGE/finchge
 repo_name: finchge/finchge
-extra:
-  version:
-    provider: mike
 theme:
   name: material
   features:
@@ -18,8 +15,17 @@ theme:
     primary: blue
     accent: indigo
 nav:
-  - Home: index.md
-  - Introduction: introduction.md
+  - Introduction: index.md
+  - Core Concepts:
+      - Grammatical Evolution: grammatical_evolution.md
+      - Grammar and Mapping: grammar.md
+      - Fitness and Populations: fitness_and_populations.md
+      - Operators: operators.md
+      - Algorithms: algorithms.md
+      - Configuration: configuration.md
+      - Experiment Utilities: experiment_utilities.md
+      - Symbolic Regression: symbolic_regression.md
+      - Benchmarks: benchmarks.md
   - Installation: installation.md
   - Getting Started: getting_started.md
   - Examples: examples.md
@@ -47,12 +53,11 @@ markdown_extensions:
         - name: mermaid
           class: mermaid
           format: pymdownx.superfences.fence_code_format
-        - pymdownx.tabbed:
-        - alternate_style: true
   - toc:
       toc_depth: 3
   - pymdownx.highlight:
       use_pygments: true
+      auto_title: true
       pygments_style: material
       linenums: false
       anchor_linenums: true
@@ -65,5 +70,4 @@ markdown_extensions:
         generic: true
 
 extra_javascript:
-  - javascripts/mathjax.js
   - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js

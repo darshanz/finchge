@@ -30,13 +30,14 @@ class FitnessEvaluator:
     and phenotype-only evaluation (e.g., string matching or symbolic tasks).
 
     Args:
-        fitness_functions (GEFitnessFunction or list): One or more fitness function instances.
-        mapper (GenotypeMapper) : Genotype mapper
-        runner (PhenotypeRunner) : Runner for running (evaluating) the phenotype models on data
-        encode_trees (bool) : whether to encode trees to integer genotype,
-                                needed if genome-based operators are used after tree-based initialisation
-        parallel_config (dict) : parallel section of config
-        require_case_data (book) : determines whether case based evaluation is required. eg.True when using Lexicase
+        fitness_functions: One or more fitness function instances.
+        mapper: Genotype mapper.
+        runner: Runner for evaluating phenotypes.
+        encode_trees: Whether to encode trees to integer genotypes. This is
+            needed if genome-based operators are used after tree-based initialization.
+        parallel_config: Parallel section of the config.
+        require_case_data: Whether case-based evaluation is required, for example
+            when using lexicase selection.
     """
 
     def __init__(
@@ -54,6 +55,8 @@ class FitnessEvaluator:
         self.mapper = mapper
         self.cache_manager: CacheManager[Any] | None = None
         self.encode_trees = encode_trees
+        self._configured_genome_length: int | None = None
+        self._configured_codon_size: int = 127
         self.runner = runner
         # require_case_data flag determines whether case wise evaluation is required. It will be set True for lexicase
         self.require_case_data = require_case_data
@@ -372,8 +375,8 @@ class FitnessEvaluator:
         # genotypes are not needed , however encode_trees flag can be used to reverse map to genotype anyway
         if ind.genotype is None and ind.tree is not None:
             if self.encode_trees:
-                genome_length = getattr(self, "_genome_length", None)
-                codon_size = getattr(self, "_codon_size", 127)
+                genome_length = getattr(self, "_configured_genome_length", None)
+                codon_size = getattr(self, "_configured_codon_size", 127)
 
                 try:
                     ind.genotype = self.mapper.reverse_map(
@@ -416,7 +419,7 @@ class FitnessEvaluator:
         """
         Although we share same random state using private RNG shared in different components,
         It will not work for parallelized evaluation.
-        Each process/ or even machines will be runing evaluations in different order so random state will fail
+        Each process, or even each machine, will run evaluations in a different order, so random state will fail.
 
         So, we must use some deterministic way to evaluate. One way is to use different seeds in deterministic way
         Same phenotype and base seed combination should result in same seed in each run.

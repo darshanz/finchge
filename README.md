@@ -31,11 +31,11 @@ FinchGE is a modern, modular, and user-friendly Python library for Grammatical E
 
 ```bash
 # Basic installation
-pip install finchge
+python -m pip install finchge
 
 # With optional dependencies
-pip install finchge[pytorch]    # PyTorch support for using pytorch models (for HPO or NAS)
-pip install finchge[all]        # All optional dependencies
+python -m pip install finchge[pytorch]    # PyTorch support for using pytorch models (for HPO or NAS)
+python -m pip install finchge[all]        # All optional dependencies
 ```
 
 
@@ -78,7 +78,7 @@ at [finchge.readthedocs.io](https://finchge.readthedocs.io/), including [Getting
 
 
 ## Development Status
-Note: This is version ```1.0.1-beta.11``` - a beta release. Expect breaking changes and bugs.
+Note: This is version ```1.0.1-beta.12``` - a beta release. Expect breaking changes and bugs.
 
 What to expect:
 

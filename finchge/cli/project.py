@@ -5,6 +5,32 @@ from pathlib import Path
 import typer
 
 
+def _template_title(template_ref) -> str:
+    readme_ref = template_ref / "README.md"
+    if not readme_ref.is_file():
+        return template_ref.name
+
+    with resources.as_file(readme_ref) as readme_path:
+        for line in readme_path.read_text(encoding="utf-8").splitlines():
+            title = line.strip()
+            if title.startswith("#"):
+                return title.lstrip("#").strip()
+
+    return template_ref.name
+
+
+def list_templates() -> list[tuple[str, str]]:
+    templates_root = resources.files("finchge.cli.templates")
+
+    ignored = {"notebook", "__pycache__"}
+
+    return sorted(
+        (item.name, _template_title(item))
+        for item in templates_root.iterdir()
+        if item.is_dir() and item.name not in ignored
+    )
+
+
 def create_project(name: str, template: str, notebook: bool):
     project_path = Path(name)
     templates_root = resources.files("finchge.cli.templates")

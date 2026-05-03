@@ -4,8 +4,31 @@ All notable changes to this project will be documented in this file.
 
 For changelog we follow  [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format and for versioning use  [Semantic Versioning](https://semver.org/)
 
+## [1.0.1-beta.12](https://github.com/finchGE/finchge/releases/tag/v1.0.1-beta.12) - 2026-05-03
+
+### Added
+- Test cases for experiment logging
+- Test cases for CLI
+- Added docstrings to some multiple classes for API docs
+- CLI tools for listing available templates and finchge doctor command for overall health check
+
+### Changed
+- Changed documentation by breaking down introduction page into multiple sub pages
+- Updated CLI tools for improved validation of config and grammar files
+- Refactored to separate the functions for ptc2 and ptc2d
+- Refactoring in mapper for variable name mismatches
+
+### Fixed
+- Fixed experiment logging issue with multi-objective ge
+- Fixed subtree crossover returning incomplete trees
+- Default grammar changed to make same for Keijzer, Nguyen Vladislavleva benchmarks
+- Fixed docstrings supporting strict build mode of mkdocs
+- Fixed permutation counts (storing exact-depth)
+- Fixed crossovers resulting in one extra individual when population size is odd number
+
 
 ## [1.0.1-beta.11](https://github.com/finchGE/finchge/releases/tag/v1.0.1-beta.11) - 2026-04-13
+
 ### Fixed
 - Fixed tail appending during reverse-mapping
 - Fixed subtree crossover returning incomplete trees

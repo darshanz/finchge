@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Optional, Sequence, Set
 
 import numpy as np
+from numpy.typing import NDArray
 
 from finchge.core import Individual, Population
 from finchge.grammar.derivation_tree import TreeNode
@@ -163,7 +164,7 @@ class LogIOHelper:
             writer.writerow(row)
 
     @staticmethod
-    def write_npy(path: Path, array: np.ndarray) -> None:
+    def write_npy(path: Path, array: NDArray[Any]) -> None:
         LogIOHelper.ensure_dir(path.parent)
         np.save(path, array)
 

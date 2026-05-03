@@ -2,8 +2,6 @@ import json
 from pathlib import Path
 from typing import Any, Callable, Optional, Tuple
 
-import numpy as np
-
 from finchge.grammar import Grammar
 from finchge.symbolic import SymbolicExpression
 
@@ -66,7 +64,7 @@ class VladislavlevaBenchmark(Benchmark):
         # Otherwise assume it's already a list of lists
         return tuple((float(sub[0]), float(sub[1])) for sub in r)
 
-    def _generate_data(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    def _generate_data(self) -> Tuple[FloatArray, FloatArray, FloatArray, FloatArray]:
         X_train = generate_vlad_points(
             self.dim, self.train_samples, self.x_range, self.np_rng
         )

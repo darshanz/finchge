@@ -288,9 +288,8 @@ class NSGA2ElitistReplacement(GEReplacementStrategy):
         """
 
         # Sort by rank, handle None values
-        valid_old = [
-            ind for ind in old_population if ind.get_meta("rank", int) is not None
-        ]
+        valid_old = [ind for ind in old_population if ind.has_meta("rank")]
+
         valid_old.sort(key=lambda x: x.get_meta("rank", int))
         elite_individuals = valid_old[:elite_size]
         elite_set = set(elite_individuals)

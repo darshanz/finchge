@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any, Optional, Tuple
 
 import numpy as np
+from numpy.typing import NDArray
 
 from finchge.benchmarks import Benchmark, BenchmarkMetadata
 from finchge.benchmarks.logic.multiplexer.data import generate_multiplexer_table
@@ -35,7 +36,9 @@ class MultiplexerBenchmark(Benchmark):
     def grammar_str(self) -> str:
         return get_logic_grammar(self.n_bits)
 
-    def _generate_data(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    def _generate_data(
+        self,
+    ) -> Tuple[NDArray[np.int8], NDArray[np.int8], NDArray[np.int8], NDArray[np.int8]]:
         X, y = generate_multiplexer_table(self.n_bits, self.n_address)
         return X, y, X.copy(), y.copy()
 

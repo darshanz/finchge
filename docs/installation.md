@@ -33,7 +33,7 @@ The quickest way to get started:
 [![PyPI](https://img.shields.io/pypi/v/finchge?t=1234567890&color=blue)](https://pypi.org/project/finchge/)
 
 ```bash
-pip install finchge
+python -m pip install finchge
 ```
 
 Verify the installation:
@@ -50,10 +50,10 @@ print(f"finchGE {finchge.__version__} installed successfully")
 ### Standard Installation
 ```bash
 # Latest stable version from PyPI
-pip install finchge
+python -m pip install finchge
 
 # Specific version (e.g., beta release)
-pip install finchge==1.0.1-beta.11
+python -m pip install finchge==1.0.1-beta.12
 ```
 
 ### With Optional Dependencies
@@ -63,7 +63,7 @@ finchGE supports optional integrations with pytorch for use cases such as Hyperp
 ```bash
 
 # With PyTorch support (for neural architecture search)
-pip install finchge[pytorch]
+python -m pip install finchge[pytorch]
 
 ```
 
@@ -77,14 +77,14 @@ git clone https://github.com/finchGE/finchge.git
 cd finchge
 
 # Install setup tools if not already installed
-pip install -U pip setuptools wheel
+python -m pip install -U pip setuptools wheel
 
 
 # Install in development mode
-pip install -e ".[dev]"
+python -m pip install -e ".[dev]"
 
 # Or install with specific optional dependencies
-pip install -e ".[pytorch]"
+python -m pip install -e ".[pytorch]"
 ```
 
 ### Using Conda (Alternative)
@@ -95,7 +95,7 @@ conda create -n finchge python=3.9
 conda activate finchge
 
 # Install via pip in conda environment
-pip install finchge
+python -m pip install finchge
 ```
 
 ---
@@ -144,7 +144,7 @@ If you encounter issues during installation:
 1. **Check the [GitHub Issues](https://github.com/finchGE/finchge/issues)** - See if others have similar problems
 2. **Create a New Issue** - Report your specific problem
 3. **Check Python Version** - Ensure you're using Python 3.8 or higher
-4. **Update pip** - Run `pip install --upgrade pip`
+4. **Update pip** - Run `python -m pip install --upgrade pip`
 
 ---
 
@@ -153,14 +153,14 @@ If you encounter issues during installation:
 <p>For hassle-free use and reproducibility, pin your working dependencies in a <code>requirements.txt</code> file:</p>
 
 ```txt
-finchge==1.0.1-beta.11
+finchge==1.0.1-beta.12
 numpy==1.24.0
 scikit-learn==1.3.0
 pandas==2.0.0
 matplotlib==3.7.0
 ```
 
-Install with: <code>pip install -r requirements.txt</code>
+Install with: <code>python -m pip install -r requirements.txt</code>
 
 <p>This ensures consistent results across different environments and over time.</p>
 </div>

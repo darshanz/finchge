@@ -5,48 +5,30 @@ import pytest
 from finchge.symbolic.expression import SymbolicExpression
 
 
-def test_symbolic_expression():
-    """
-    Test symbolic expression
-    """
-    expressions = [
-        "x0 + x1",
-        "sin(x0) + cos(x1)",
-    ]
+@pytest.mark.parametrize("expr", ["x0 + x1", "sin(x0) + cos(x1)"])
+def test_common_expressions_evaluate(expr):
+    X = np.random.default_rng(1).normal(size=(10, 5))
 
-    X = np.random.randn(10, 5)
+    result = SymbolicExpression(expr).eval(X)
 
-    for expr in expressions:
-        try:
-            sym_expr = SymbolicExpression(expression=expr)
-            prediction_ = sym_expr.eval(X)
-            assert prediction_.shape == (10,)
-            assert not np.all(np.isnan(prediction_))
-        except Exception as e:
-            print(f"Expression '{expr}' failed: {e}")
+    assert result.shape == (10,)
+    assert np.all(np.isfinite(result))
 
 
-def test_basic_math_correctness():
-    X = np.random.randn(100, 2)
-    expr = SymbolicExpression("x0 + x1")
-    prediction_ = expr.eval(X)
-    expected = X[:, 0] + X[:, 1]
-    assert np.allclose(prediction_, expected)
+@pytest.mark.parametrize(
+    "expr, expected",
+    [
+        ("x0 + x1", lambda X: X[:, 0] + X[:, 1]),
+        ("sin(x0)", lambda X: np.sin(X[:, 0])),
+        ("x2 + x7", lambda X: X[:, 2] + X[:, 7]),
+    ],
+)
+def test_expression_values(expr, expected):
+    X = np.random.default_rng(2).normal(size=(30, 10))
 
+    result = SymbolicExpression(expr).eval(X)
 
-def test_trigonometric_correctness():
-    X = np.random.randn(100, 2)
-    expr = SymbolicExpression("sin(x0)")
-    prediction_ = expr.eval(X)
-    assert np.allclose(prediction_, np.sin(X[:, 0]))
-
-
-def test_column_subset_usage():
-    X = np.random.randn(20, 10)
-    expr = SymbolicExpression("x2 + x7")
-    prediction_ = expr.eval(X)
-    expected = X[:, 2] + X[:, 7]
-    assert np.allclose(prediction_, expected)
+    assert np.allclose(result, expected(X))
 
 
 def test_missing_column_error():
@@ -72,14 +54,10 @@ def test_constant_expression():
     assert np.all(prediction_ == 5)
 
 
-def test_whitespace_expression():
+@pytest.mark.parametrize("expr", ["", "   "])
+def test_empty_expressions_are_rejected(expr):
     with pytest.raises(ValueError):
-        SymbolicExpression("   ")
-
-
-def test_empty_string_expression():
-    with pytest.raises(ValueError):
-        SymbolicExpression("")
+        SymbolicExpression(expr)
 
 
 def test_single_sample():
@@ -132,3 +110,59 @@ def test_variable_order_consistency():
     e1 = SymbolicExpression("x1 + x0")
     e2 = SymbolicExpression("x0 + x1")
     assert set(map(str, e1.variables)) == set(map(str, e2.variables))
+
+
+def test_protected_division_handles_zero_denominator():
+    X = np.array([[2.0, 0.0], [6.0, 3.0]])
+
+    result = SymbolicExpression("x0 / x1").eval(X)
+
+    assert np.all(np.isfinite(result))
+    assert result[0] == 1.0
+    assert result[1] == 2.0
+
+
+def test_numpy_column_syntax_is_supported():
+    X = np.array([[1.0, 2.0], [3.0, 4.0]])
+
+    result = SymbolicExpression("x[:, 0] + x[:, 1]").eval(X)
+
+    assert np.allclose(result, X[:, 0] + X[:, 1])
+
+
+def test_math_constants_are_supported():
+    X = np.zeros((4, 1))
+
+    result = SymbolicExpression("pi + e").eval(X)
+
+    assert np.allclose(result, np.pi + np.e)
+
+
+@pytest.mark.parametrize(
+    "expr",
+    [
+        "__import__('os')",
+        "x0 if x0 else x1",
+        "[x0]",
+        "sin(x0, bad=1)",
+        "np.sin(x0)",
+    ],
+)
+def test_unsupported_syntax_is_rejected(expr):
+    with pytest.raises(Exception):
+        SymbolicExpression(expr)
+
+
+def test_one_dimensional_input_is_single_sample():
+    result = SymbolicExpression("x0 + x1").eval([2.0, 3.0])
+
+    assert result.shape == (1,)
+    assert result[0] == 5.0
+
+
+def test_wrong_function_arity_raises_evaluation_error():
+    expr = SymbolicExpression("sin(x0, x1)")
+    X = np.ones((3, 2))
+
+    with pytest.raises(Exception):
+        expr.eval(X)

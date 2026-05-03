@@ -204,10 +204,11 @@ class HingeLossFitness(GEFitnessFunction):
         """
 
         Args:
-            context: Context should contain y_true(ground truth labels, encoded as -1 or +1) and  y_pred_score containing
-            raw model outputs, representing the model’s confidence or margin.
+            context: Context containing `y_true` labels encoded as -1 or +1,
+                and `y_pred_score` with raw model outputs.
 
-        Returns: Fitness
+        Returns:
+            Fitness value for the hinge loss.
 
         """
         y_true = np.asarray(context["y_true"])
@@ -371,11 +372,11 @@ class RMSEFitness(GEFitnessFunction):
         # When Lexicase Selection is used
         if context.get("require_case_data", False):
             return Fitness(
-                value=rmse,
+                value=float(rmse),
                 case_data={"errors": np.abs(residuals).tolist()},
             )
 
-        return Fitness(value=rmse)
+        return Fitness(value=float(rmse))
 
 
 class RewardFitness(GEFitnessFunction):

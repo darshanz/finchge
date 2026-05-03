@@ -2,6 +2,7 @@ from typing import Any
 
 import numpy as np
 from numpy.random import RandomState
+from numpy.typing import NDArray
 
 
 def generate_vlad_points(
@@ -9,7 +10,7 @@ def generate_vlad_points(
     n: int,
     x_range: Any,
     np_rng: RandomState,
-) -> np.ndarray:
+) -> NDArray[np.float64]:
     pts = np.zeros((n, dim))
 
     for i in range(dim):

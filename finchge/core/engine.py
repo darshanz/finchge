@@ -30,25 +30,31 @@ from finchge.utils.results import ResultHelper, StatsHelper
 
 class GrammaticalEvolution(RandomStateMixin):
     """
-    Grammatical evolution class for running the evolution. This is the Evolution controller class responsible for runing
+    Grammatical evolution class for running the evolution. This is the evolution controller class responsible for running
     FinchGE utils. This class is responsible for wiring up different components. This includes loading experiment configurations,
-    Loading grammar, initializing initial population, setting up fitness evaluator, and using gentic algorithm to
+    loading grammar, initializing the initial population, setting up the fitness evaluator, and using a genetic algorithm to
     run the evolution.  GrammaticalEvolution class is also responsible for running the evolution loop.
 
     Args:
-        fitness_evaluator (FitnessEvaluator):
+        fitness_evaluator:
             Evaluator to evaluate the fitness of individuals.
-        grammar (Optional[Grammar]):
+        grammar:
             BNF Grammar to be used. If not provided config must be available and must contain grammar_file value
-        config (Any | None = None):
+        config:
             Configuration settings for the GE algorithm.
-        initialiser (Optional[GEInitialiser]) :
+        initialiser:
             Initializer class either integer based or tree based initializer
-        algorithm (BaseAlgorithm):
+        algorithm:
             Evolutionary algorithm to be used e.g., GA, NSGA.
+        expt_logger:
+            Logger used for experiment-level records.
+        checkpoint_manager:
+            Checkpoint manager used to save and resume runs.
+        random_state:
+            Seed for reproducible randomness.
 
     Note:
-    If agorithm is not provided, GA will be used (provided that config is available)
+    If algorithm is not provided, GA will be used (provided that config is available)
 
     """
 
@@ -257,21 +263,35 @@ class GrammaticalEvolution(RandomStateMixin):
 
         # Initial evaluation
         self.fitness_evaluator.evaluate_population(population)
-        self.algorithm.sort_population(population)
+        self.algorithm.sort_population(
+            population
+        )  # Not used by NSGA3 but won't be any problem calling this
 
         # Logging Generation 0
         initial_fitness_stats: list[dict[str, Any]] = StatsHelper.compute_fitness_stats(
             individuals=population.individuals
         )
-        initial_best = self.algorithm.get_best_individual(population)
+        # Logging initial population info
+        if not self.multi_obj:
+            initial_best = self.algorithm.get_best_individual(population)
+            if self.expt_logger:
+                self.expt_logger.on_generation_end(
+                    generation=0,
+                    population=population,
+                    best=initial_best,
+                    fitness_stats=initial_fitness_stats,
+                )
+        else:
+            # multi objective
+            initial_front = self.algorithm.get_pareto_front(population)
 
-        if self.expt_logger:
-            self.expt_logger.on_generation_end(
-                generation=0,
-                population=population,
-                best=initial_best,
-                fitness_stats=initial_fitness_stats,
-            )
+            if self.expt_logger:
+                self.expt_logger.on_generation_end(
+                    generation=0,
+                    population=population,
+                    pareto_front=initial_front,
+                    fitness_stats=initial_fitness_stats,
+                )
 
         # Resume if checkpoint exists
         if self.checkpoint_manager and self.checkpoint_manager.exists():
@@ -309,7 +329,7 @@ class GrammaticalEvolution(RandomStateMixin):
         # handle single-objective and multi-objective
         if not self.multi_obj:
             # Run evolution
-            fittest_individual = self.__find_best_individual(
+            fittest_individual, population = self.__find_best_individual(
                 start_generation, population
             )
             # Round fitness to 4 decimal values
@@ -327,7 +347,9 @@ class GrammaticalEvolution(RandomStateMixin):
                     )
                 )
         else:
-            pareto_front = self.__find_best_front(start_generation, population)
+            pareto_front, population = self.__find_best_front(
+                start_generation, population
+            )
 
             if self.expt_logger:
                 self.expt_logger.on_run_end(
@@ -351,7 +373,7 @@ class GrammaticalEvolution(RandomStateMixin):
 
     def __find_best_individual(
         self, start_generation: int, population: Population
-    ) -> Individual:
+    ) -> tuple[Individual, Population]:
         fittest: Individual = self.algorithm.get_best_individual(population)
 
         generation_progress = tqdm(
@@ -388,11 +410,11 @@ class GrammaticalEvolution(RandomStateMixin):
 
         # Clear cache
         self.cache_manager.clear()
-        return fittest
+        return fittest, population
 
     def __find_best_front(
         self, start_generation: int, population: Population
-    ) -> list[Individual]:
+    ) -> tuple[list[Individual], Population]:
         # Create log directories if they are not excluded
         # exclude_log_config = self.config.experiment.get("exclude_log", [])
 
@@ -406,7 +428,7 @@ class GrammaticalEvolution(RandomStateMixin):
         )
         for generation in generation_progress:
             population = self.algorithm.evolve_one_generation(population)
-            front = self.algorithm.get_pareto_front(population)
+            best_front = self.algorithm.get_pareto_front(population)
             # Update progress tqdm
             avg_fitness = np.mean([ind.fitness for ind in best_front], axis=0)
             generation_progress.set_description(
@@ -416,7 +438,9 @@ class GrammaticalEvolution(RandomStateMixin):
             # Log experiment
             if self.expt_logger:
                 self.expt_logger.on_generation_end(
-                    generation=generation, pareto_front=front, population=population
+                    generation=generation,
+                    pareto_front=best_front,
+                    population=population,
                 )
 
             # Save checkpoint if applies to this generation
@@ -424,7 +448,7 @@ class GrammaticalEvolution(RandomStateMixin):
 
         # Clear cache before returning
         self.cache_manager.clear()
-        return best_front
+        return best_front, population
 
     def _checkpoint_generation(self, generation: int, population: Population) -> None:
         # If checkpointing is enablled and current generation needs checkpointing

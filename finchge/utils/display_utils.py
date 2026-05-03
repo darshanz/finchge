@@ -53,9 +53,9 @@ def display_html(html_content: str) -> None:
     """
     Display HTML content
     """
-    from IPython.display import HTML, display  # type: ignore
+    from IPython.display import HTML, display
 
-    display(HTML(html_content))  # type: ignore
+    display(HTML(html_content))  # type: ignore[no-untyped-call]
 
 
 def display_markdown(md_content: str) -> None:
@@ -64,9 +64,9 @@ def display_markdown(md_content: str) -> None:
     """
     if is_jupyter():
         try:
-            from IPython.display import Markdown, display  # type: ignore
+            from IPython.display import Markdown, display
 
-            display(Markdown(md_content))  # type: ignore
+            display(Markdown(md_content))  # type: ignore[no-untyped-call]
         except ImportError:
             print(md_content)
     else:

@@ -392,36 +392,119 @@ class ConfigError(Exception):
     """Raised when a FinchGE configuration is invalid."""
 
 
+_INIT_TYPES = {
+    "random_genome",
+    "rvd",
+    "full",
+    "grow",
+    "pi_grow",
+    "rhh",
+    "ptc2",
+    "ramped_ptc2",
+}
+_CACHE_TYPES = {"none", "lru", "disk"}
+_EXECUTOR_TYPES = {"process", "thread"}
+
+
+def _is_bool(value: Any) -> bool:
+    return isinstance(value, bool)
+
+
+def _is_int(value: Any, *, min_value: int | None = None) -> bool:
+    if isinstance(value, bool) or not isinstance(value, int):
+        return False
+    return min_value is None or value >= min_value
+
+
+def _is_probability(value: Any) -> bool:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return False
+    return 0.0 <= float(value) <= 1.0
+
+
+def _is_non_empty_string(value: Any) -> bool:
+    return isinstance(value, str) and bool(value.strip())
+
+
+def _is_string_list(value: Any) -> bool:
+    return isinstance(value, list) and all(isinstance(item, str) for item in value)
+
+
+def _is_one_of(value: Any, allowed: set[str]) -> bool:
+    return isinstance(value, str) and value.lower() in allowed
+
+
 class ConfigValidator:
-    class ConfigValidator:
-        """
-        Defines validation rules for FinchGE configuration files.
+    """
+    Defines validation rules for FinchGE configuration files.
 
-        This class contains the schema and validation logic used to verify
-        the structure and values of a FinchGE configuration.
+    This class contains the schema and validation logic used to verify
+    the structure and values of a FinchGE configuration.
 
-        Attributes:
-            MANDATORY_SECTIONS (set[str]):
-                Sections that must be present for a valid configuration.
+    Attributes:
+        MANDATORY_SECTIONS (set[str]):
+            Sections that must be present for a valid configuration.
 
-            RECOMMENDED_SECTIONS (set[str]):
-                Sections that are optional but strongly recommended.
+        RECOMMENDED_SECTIONS (set[str]):
+            Sections that are optional but strongly recommended.
 
-            OPTIONAL_SECTIONS (set[str]):
-                Fully optional sections.
+        OPTIONAL_SECTIONS (set[str]):
+            Fully optional sections.
 
-            REQUIRED_FIELDS (dict[str, set[str]]):
-                Required fields for each configuration section.
+        REQUIRED_FIELDS (dict[str, set[str]]):
+            Required fields for each configuration section.
 
-            FIELD_VALIDATORS (dict[str, dict[str, Callable]]):
-                Field-level validators keyed by section and field name.
-        """
+        FIELD_VALIDATORS (dict[str, dict[str, Callable]]):
+            Field-level validators keyed by section and field name.
+    """
 
-    # Sections
     MANDATORY_SECTIONS: set[str] = {"experiment", "ge"}
-    OPTIONAL_SECTIONS: set[str] = set()  # for custom sections
+    OPTIONAL_SECTIONS: set[str] = {"parallel"}
 
-    # Required fields for each section
+    INIT_TYPES: set[str] = _INIT_TYPES
+    CACHE_TYPES: set[str] = _CACHE_TYPES
+    EXECUTOR_TYPES: set[str] = _EXECUTOR_TYPES
+
+    KNOWN_FIELDS: dict[str, set[str]] = {
+        "experiment": {
+            Keys.RANDOM_SEED,
+            Keys.NUM_GENERATIONS,
+            Keys.VERBOSE,
+            Keys.EXPT_LOGGER_ENABLED,
+            Keys.EXCLUDE_LOGS,
+            Keys.CACHE_TYPE,
+            Keys.CACHE_SIZE,
+        },
+        "ge": {
+            Keys.POPULATION_SIZE,
+            Keys.GRAMMAR_FILE,
+            Keys.CODON_SIZE,
+            Keys.GENOME_LENGTH,
+            Keys.MAX_WRAPS,
+            Keys.MAX_RECURSION_DEPTH,
+            Keys.MAX_TREE_DEPTH,
+            Keys.INIT_MIN_DEPTH,
+            Keys.INIT_MAX_DEPTH,
+            Keys.PTC2_TARGET_SIZE,
+            Keys.INIT_TREE_MIN_SIZE,
+            Keys.INIT_TREE_MAX_SIZE,
+            Keys.DETERMINISTIC_RAMPED_PTC2,
+            Keys.INIT_TREE_STRICT_FULL,
+            Keys.MUTATION_MAX_DEPTH,
+            Keys.INIT_TYPE,
+            Keys.MUTATION_PROBABILITY,
+            Keys.CROSSOVER_PROBABILITY,
+            Keys.ELITE_SIZE,
+            Keys.TOURNAMENT_SIZE,
+        },
+        "parallel": {
+            Keys.PARALLEL_ENABLED,
+            Keys.EXECUTOR_TYPE,
+            Keys.MAX_WORKERS,
+            Keys.BATCH_SIZE,
+        },
+    }
+
     REQUIRED_FIELDS = {
         "experiment": {
             Keys.RANDOM_SEED,
@@ -429,11 +512,6 @@ class ConfigValidator:
         },
         "ge": {
             Keys.POPULATION_SIZE,
-            Keys.GRAMMAR_FILE,
-            Keys.GENOME_LENGTH,
-            Keys.CODON_SIZE,
-            Keys.MAX_WRAPS,
-            Keys.MAX_RECURSION_DEPTH,
             Keys.INIT_TYPE,
             Keys.MUTATION_PROBABILITY,
             Keys.CROSSOVER_PROBABILITY,
@@ -441,23 +519,43 @@ class ConfigValidator:
         },
     }
 
-    # field validators
     FIELD_VALIDATORS: dict[str, dict[str, Any]] = {
         "experiment": {
-            Keys.NUM_GENERATIONS: lambda v: isinstance(v, int) and v > 0,
-            Keys.RANDOM_SEED: lambda v: isinstance(v, int),
+            Keys.NUM_GENERATIONS: lambda v: _is_int(v, min_value=1),
+            Keys.RANDOM_SEED: _is_int,
+            Keys.VERBOSE: _is_bool,
+            Keys.EXPT_LOGGER_ENABLED: _is_bool,
+            Keys.EXCLUDE_LOGS: _is_string_list,
+            Keys.CACHE_TYPE: lambda v: _is_one_of(v, _CACHE_TYPES),
+            Keys.CACHE_SIZE: lambda v: _is_int(v, min_value=1),
         },
         "ge": {
-            Keys.POPULATION_SIZE: lambda v: isinstance(v, int) and v > 0,
-            Keys.GENOME_LENGTH: lambda v: isinstance(v, int) and v > 0,
-            Keys.CODON_SIZE: lambda v: isinstance(v, int) and v > 0,
-            Keys.MAX_WRAPS: lambda v: isinstance(v, int) and v >= 0,
-            Keys.MAX_RECURSION_DEPTH: lambda v: isinstance(v, int) and v > 0,
-            Keys.MUTATION_PROBABILITY: lambda v: isinstance(v, float)
-            and 0.0 <= v <= 1.0,
-            Keys.CROSSOVER_PROBABILITY: lambda v: isinstance(v, float)
-            and 0.0 <= v <= 1.0,
-            Keys.ELITE_SIZE: lambda v: isinstance(v, int) and v >= 0,
+            Keys.POPULATION_SIZE: lambda v: _is_int(v, min_value=1),
+            Keys.GRAMMAR_FILE: _is_non_empty_string,
+            Keys.GENOME_LENGTH: lambda v: _is_int(v, min_value=1),
+            Keys.CODON_SIZE: lambda v: _is_int(v, min_value=1),
+            Keys.MAX_WRAPS: lambda v: _is_int(v, min_value=0),
+            Keys.MAX_RECURSION_DEPTH: lambda v: _is_int(v, min_value=1),
+            Keys.MAX_TREE_DEPTH: lambda v: _is_int(v, min_value=1),
+            Keys.INIT_MIN_DEPTH: lambda v: _is_int(v, min_value=1),
+            Keys.INIT_MAX_DEPTH: lambda v: _is_int(v, min_value=1),
+            Keys.PTC2_TARGET_SIZE: lambda v: _is_int(v, min_value=1),
+            Keys.INIT_TREE_MIN_SIZE: lambda v: _is_int(v, min_value=2),
+            Keys.INIT_TREE_MAX_SIZE: lambda v: _is_int(v, min_value=2),
+            Keys.DETERMINISTIC_RAMPED_PTC2: _is_bool,
+            Keys.INIT_TREE_STRICT_FULL: _is_bool,
+            Keys.MUTATION_MAX_DEPTH: lambda v: _is_int(v, min_value=1),
+            Keys.INIT_TYPE: lambda v: _is_one_of(v, _INIT_TYPES),
+            Keys.MUTATION_PROBABILITY: _is_probability,
+            Keys.CROSSOVER_PROBABILITY: _is_probability,
+            Keys.ELITE_SIZE: lambda v: _is_int(v, min_value=0),
+            Keys.TOURNAMENT_SIZE: lambda v: _is_int(v, min_value=1),
+        },
+        "parallel": {
+            Keys.PARALLEL_ENABLED: _is_bool,
+            Keys.EXECUTOR_TYPE: lambda v: _is_one_of(v, _EXECUTOR_TYPES),
+            Keys.MAX_WORKERS: lambda v: _is_int(v, min_value=1),
+            Keys.BATCH_SIZE: lambda v: _is_int(v, min_value=1),
         },
     }
 
@@ -476,8 +574,222 @@ def validate_parallel_config(config: dict[str, Any]) -> Tuple[list[str], list[st
               or non-standard configuration usage.
 
     """
-    # TODO implement validation to check if all parallel configs are provided
-    return ([], [])
+    issues: list[str] = []
+    warnings: list[str] = []
+
+    if not config:
+        return issues, warnings
+
+    enabled = config.get(Keys.PARALLEL_ENABLED, False)
+    if not isinstance(enabled, bool):
+        issues.append(
+            f"Invalid value for parallel.{Keys.PARALLEL_ENABLED}: {enabled!r}"
+        )
+        return issues, warnings
+
+    executor_type = config.get(Keys.EXECUTOR_TYPE, "process")
+    if not _is_one_of(executor_type, _EXECUTOR_TYPES):
+        issues.append(
+            f"Invalid value for parallel.{Keys.EXECUTOR_TYPE}: {executor_type!r}"
+        )
+
+    max_workers = config.get(Keys.MAX_WORKERS)
+    if max_workers is not None and not _is_int(max_workers, min_value=1):
+        issues.append(f"Invalid value for parallel.{Keys.MAX_WORKERS}: {max_workers!r}")
+
+    batch_size = config.get(Keys.BATCH_SIZE)
+    if batch_size is not None and not _is_int(batch_size, min_value=1):
+        issues.append(f"Invalid value for parallel.{Keys.BATCH_SIZE}: {batch_size!r}")
+
+    if enabled and max_workers is None:
+        warnings.append(
+            "parallel.max_workers is not set; FinchGE will use the backend default"
+        )
+    if enabled and batch_size is None:
+        warnings.append("parallel.batch_size is not set; FinchGE will use 10")
+
+    return issues, warnings
+
+
+def _section_is_mapping(
+    section: str,
+    config: FinchConfig,
+    issues: list[str],
+) -> bool:
+    value = config._data.get(section)
+    if isinstance(value, dict):
+        return True
+    issues.append(f"Section '{section}' must be a mapping")
+    return False
+
+
+def _missing_fields(section_data: dict[str, Any], required: set[str]) -> set[str]:
+    return required - set(section_data.keys())
+
+
+def _validate_known_fields(
+    section: str,
+    section_data: dict[str, Any],
+    warnings: list[str],
+) -> None:
+    known_fields = ConfigValidator.KNOWN_FIELDS.get(section)
+    if not known_fields:
+        return
+
+    unknown_fields = set(section_data.keys()) - known_fields
+    if unknown_fields:
+        warnings.append(
+            f"Section '{section}' contains unknown fields: "
+            f"{', '.join(sorted(unknown_fields))}"
+        )
+
+
+def _validate_field_values(
+    section: str,
+    section_data: dict[str, Any],
+    issues: list[str],
+) -> None:
+    validators = ConfigValidator.FIELD_VALIDATORS.get(section, {})
+    for field, value in section_data.items():
+        validator = validators.get(field)
+        if validator is None:
+            continue
+
+        try:
+            valid = validator(value)
+        except Exception as e:
+            issues.append(f"Validation error for {section}.{field}: {e}")
+            continue
+
+        if not valid:
+            issues.append(f"Invalid value for {section}.{field}: {value!r}")
+
+
+def _validate_initialiser_config(
+    ge: dict[str, Any],
+    issues: list[str],
+    warnings: list[str],
+) -> None:
+    init_type_value = ge.get(Keys.INIT_TYPE, "random_genome")
+    if not isinstance(init_type_value, str):
+        return
+
+    init_type = init_type_value.lower()
+    required_by_init = {
+        "random_genome": {Keys.GENOME_LENGTH, Keys.CODON_SIZE},
+        "rvd": {Keys.GENOME_LENGTH, Keys.CODON_SIZE, Keys.POPULATION_SIZE},
+        "full": {Keys.INIT_MIN_DEPTH, Keys.INIT_MAX_DEPTH},
+        "grow": {Keys.INIT_MIN_DEPTH, Keys.INIT_MAX_DEPTH},
+        "rhh": {Keys.INIT_MAX_DEPTH, Keys.POPULATION_SIZE},
+        "pi_grow": {Keys.INIT_MAX_DEPTH, Keys.POPULATION_SIZE},
+        "ptc2": {Keys.PTC2_TARGET_SIZE},
+        "ramped_ptc2": {
+            Keys.INIT_TREE_MIN_SIZE,
+            Keys.INIT_TREE_MAX_SIZE,
+            Keys.POPULATION_SIZE,
+        },
+    }
+
+    missing = _missing_fields(ge, required_by_init.get(init_type, set()))
+    if missing:
+        warnings.append(
+            f"ge.init_type '{init_type}' usually needs fields: "
+            f"{', '.join(sorted(missing))}. "
+            "This is valid only if they are supplied programmatically."
+        )
+
+    min_depth = ge.get(Keys.INIT_MIN_DEPTH)
+    max_depth = ge.get(Keys.INIT_MAX_DEPTH)
+    if (
+        isinstance(min_depth, int)
+        and isinstance(max_depth, int)
+        and min_depth > max_depth
+    ):
+        issues.append("ge.init_min_depth must be <= ge.init_max_depth")
+
+    min_size = ge.get(Keys.INIT_TREE_MIN_SIZE)
+    max_size = ge.get(Keys.INIT_TREE_MAX_SIZE)
+    if isinstance(min_size, int) and isinstance(max_size, int) and min_size > max_size:
+        issues.append("ge.init_tree_min_size must be <= ge.init_tree_max_size")
+
+    if init_type in {"full", "grow", "rhh", "pi_grow", "ptc2", "ramped_ptc2"}:
+        if Keys.MAX_TREE_DEPTH not in ge:
+            warnings.append(
+                "ge.max_tree_depth is not set for tree-based initialisation; "
+                "the engine may require it when it builds a TreeGenerator"
+            )
+
+    if Keys.GRAMMAR_FILE not in ge:
+        warnings.append(
+            "ge.grammar_file is not set; this is valid only when a Grammar object "
+            "is supplied directly to the engine or benchmark template"
+        )
+
+    runtime_fields = {
+        Keys.GENOME_LENGTH,
+        Keys.CODON_SIZE,
+        Keys.MAX_WRAPS,
+        Keys.MAX_RECURSION_DEPTH,
+    }
+    missing_runtime_fields = _missing_fields(ge, runtime_fields) - missing
+    if missing_runtime_fields:
+        warnings.append(
+            "Some mapping/genome fields are not set in ge: "
+            f"{', '.join(sorted(missing_runtime_fields))}. "
+            "This is valid only if the relevant components are configured "
+            "programmatically."
+        )
+
+
+def _validate_cross_field_config(
+    config: FinchConfig,
+    issues: list[str],
+    warnings: list[str],
+) -> None:
+    ge = config.ge if isinstance(config.ge, dict) else {}
+    experiment = config.experiment if isinstance(config.experiment, dict) else {}
+
+    pop_size = ge.get(Keys.POPULATION_SIZE)
+    elite_size = ge.get(Keys.ELITE_SIZE)
+    if (
+        isinstance(pop_size, int)
+        and not isinstance(pop_size, bool)
+        and isinstance(elite_size, int)
+        and not isinstance(elite_size, bool)
+        and elite_size >= pop_size
+    ):
+        issues.append(
+            f"ge.elite_size ({elite_size}) must be smaller than "
+            f"ge.population_size ({pop_size})"
+        )
+
+    tournament_size = ge.get(Keys.TOURNAMENT_SIZE)
+    if (
+        isinstance(pop_size, int)
+        and not isinstance(pop_size, bool)
+        and isinstance(tournament_size, int)
+        and not isinstance(tournament_size, bool)
+        and tournament_size > pop_size
+    ):
+        warnings.append(
+            f"ge.tournament_size ({tournament_size}) is larger than "
+            f"ge.population_size ({pop_size})"
+        )
+
+    genome_length = ge.get(Keys.GENOME_LENGTH)
+    if isinstance(genome_length, int) and not isinstance(genome_length, bool):
+        if genome_length < 2:
+            warnings.append(
+                "ge.genome_length is very small; this may prevent deep derivations"
+            )
+
+    cache_type = experiment.get(Keys.CACHE_TYPE)
+    cache_size = experiment.get(Keys.CACHE_SIZE)
+    if isinstance(cache_type, str) and cache_type.lower() == "none" and cache_size:
+        warnings.append("experiment.cache_size is ignored when cache_type is 'none'")
+
+    if ge:
+        _validate_initialiser_config(ge, issues, warnings)
 
 
 def validate_config(config: "FinchConfig") -> Tuple[list[str], list[str]]:
@@ -517,18 +829,18 @@ def validate_config(config: "FinchConfig") -> Tuple[list[str], list[str]]:
         None. All validation problems are returned as messages instead of raising
         exceptions, allowing the caller to decide how to handle them.
 
-    Example:
-        ```
-        >>> issues, warnings = validate_config(config)
-        >>> if issues:
-        ...     raise ConfigError("\\n".join(issues))
-        >>> for w in warnings:
-        ...     logger.warning(w)
-        ```
     """
 
     issues: list[str] = []
     warnings: list[str] = []
+
+    if not isinstance(config, FinchConfig):
+        return [
+            f"config must be a FinchConfig instance, got {type(config).__name__}"
+        ], []
+
+    if not isinstance(config._data, dict):
+        return ["Config data must be a mapping"], []
 
     config_sections = set(config._data.keys())
 
@@ -549,9 +861,14 @@ def validate_config(config: "FinchConfig") -> Tuple[list[str], list[str]]:
             f"Unknown / custom sections found: {', '.join(sorted(unknown_sections))}"
         )
 
+    valid_sections: set[str] = set()
+    for section in config_sections & known_sections:
+        if _section_is_mapping(section, config, issues):
+            valid_sections.add(section)
+
     # Required fields per section
     for section, required_fields in ConfigValidator.REQUIRED_FIELDS.items():
-        if section not in config_sections:
+        if section not in valid_sections:
             continue
 
         section_data = config.section(section)
@@ -562,44 +879,17 @@ def validate_config(config: "FinchConfig") -> Tuple[list[str], list[str]]:
                 f"{', '.join(sorted(missing_fields))}"
             )
 
-    # Field level validation
-    for section, validators in ConfigValidator.FIELD_VALIDATORS.items():
-        if section not in config_sections:
-            continue
-
+    for section in valid_sections:
         section_data = config.section(section)
-        for field, validator in validators.items():
-            if field in section_data:
-                try:
-                    if not validator(section_data[field]):
-                        issues.append(
-                            f"Invalid value for {section}.{field}: "
-                            f"{section_data[field]!r}"
-                        )
-                except Exception as e:
-                    issues.append(f"Validation error for {section}.{field}: {e}")
+        _validate_known_fields(section, section_data, warnings)
+        if section != "parallel":
+            _validate_field_values(section, section_data, issues)
 
-    # GE configs check cross-section compatibility
-    if "ge" in config_sections:
-        ge = config.section("ge")
+    if "parallel" in valid_sections:
+        parallel_issues, parallel_warnings = validate_parallel_config(config.parallel)
+        issues.extend(parallel_issues)
+        warnings.extend(parallel_warnings)
 
-        # Elite size must be < population size
-        pop_size = config.ge[Keys.POPULATION_SIZE]
-        elite_size = ge.get(Keys.ELITE_SIZE)
-        if (
-            isinstance(pop_size, int)
-            and isinstance(elite_size, int)
-            and elite_size >= pop_size
-        ):
-            issues.append(
-                f"ge.elite_size ({elite_size}) must be smaller than "
-                f"experiment.population_size ({pop_size})"
-            )
-
-        # genome_length must be sufficient for grammar recursion (soft warning)
-        if ge.get(Keys.GENOME_LENGTH, 0) < 2:
-            warnings.append(
-                "ge.genome_length is very small; this may prevent deep derivations"
-            )
+    _validate_cross_field_config(config, issues, warnings)
 
     return issues, warnings
