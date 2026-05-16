@@ -7,8 +7,7 @@
 [![Status](https://img.shields.io/badge/status-beta-orange)](https://github.com/finchGE/finchge)
 [![Tests](https://github.com/finchGE/finchge/actions/workflows/tests.yml/badge.svg)](https://github.com/finchGE/finchge/actions)
 
-
-FinchGE is a modern, modular, and user-friendly Python library for Grammatical Evolution (GE) - a powerful evolutionary algorithm that uses formal grammars to evolve programs, expressions, and solutions.
+FinchGE is a modern Python library for grammar-constrained evolutionary search, built around grammatical evolution, modular operators, reproducible experiments, and benchmark-driven research workflows.
 
 ## Features
 
@@ -21,11 +20,26 @@ FinchGE is a modern, modular, and user-friendly Python library for Grammatical E
 - Benchmark suite for regression, logic and control problems
 
 
-## Why finchGE
+## Who is FinchGE for?
+
+- Researchers experimenting with grammatical evolution and grammar-guided search.
+- Python users who want to evolve programs, expressions, rules, or structured solutions from BNF grammars.
+- Symbolic regression users who need grammar constraints or multi-objective search.
+- Students learning genotype-to-phenotype mapping, derivation trees, and evolutionary search.
+- Developers building custom evolutionary workflows with custom fitness, operators, or benchmarks.
 
 
-- Modular and extensible: Plug-and-play mutation,  election, fitness, and search strategies.
-- Designed for research and industry: Convenient and flexible API for quicker implementation.
+## Why FinchGE?
+
+FinchGE is designed around grammar-first evolutionary workflows:
+
+- BNF-style grammars define valid programs, expressions, rules, or policies.
+- Genotypes map to phenotypes through explicit GE mapping.
+- Derivation trees and mapping metadata can be inspected.
+- Operators, fitness functions, initializers, runners, and algorithms are modular.
+- Runs can be configured, logged, checkpointed, and reproduced.
+- Benchmark suites are included for symbolic regression, logic, and control problems.
+
 
 ## Installation
 
@@ -35,7 +49,6 @@ python -m pip install finchge
 
 # With optional dependencies
 python -m pip install finchge[pytorch]    # PyTorch support for using pytorch models (for HPO or NAS)
-python -m pip install finchge[all]        # All optional dependencies
 ```
 
 
@@ -77,15 +90,9 @@ at [finchge.readthedocs.io](https://finchge.readthedocs.io/), including [Getting
 
 
 
-## Development Status
-Note: This is version ```1.0.1-beta.12``` - a beta release. Expect breaking changes and bugs.
+## Status
 
-What to expect:
-
-- Bugs and unexpected behavior
-- Rapid API changes
-- Frequent updates
-- Limited test coverage (improving daily)
+FinchGE is currently beta software. The core library is usable for experiments, but APIs may still evolve as the project moves toward a stable release.
 
 ## Contributing
 
