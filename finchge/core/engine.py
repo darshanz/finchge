@@ -171,7 +171,7 @@ class GrammaticalEvolution(RandomStateMixin):
             # GeneticAlgorithm is used by default,
             # But it requires GE parameters to be stored in config.yaml
             if not self.config:
-                raise ValueError("Algorithim not specified.")
+                raise ValueError("Algorithm not specified.")
 
             self.logger.info(
                 "Default GeneticAlgorithm setup: Selection = TournamentSelection, "
