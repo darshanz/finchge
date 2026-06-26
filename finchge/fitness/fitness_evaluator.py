@@ -184,7 +184,7 @@ class FitnessEvaluator:
         phenotype_to_indices: dict[str, list[int]] = {}
         phenotypes: list[str] = []
         for i, ind in enumerate(population.individuals):
-            self.refesh_mapping(ind)
+            self.refresh_mapping(ind)
 
             # skip un mapped or invalids from evaluation
             if not ind.is_evaluable():
@@ -282,7 +282,7 @@ class FitnessEvaluator:
         Returns:
             list: A list of fitness scores corresponding to each fitness function.
         """
-        self.refesh_mapping(individual)
+        self.refresh_mapping(individual)
         if not individual.is_evaluable():
             return
 
@@ -347,7 +347,7 @@ class FitnessEvaluator:
         if self._parallel_backend is not None:
             await self._parallel_backend.shutdown()
 
-    def refesh_mapping(self, ind: "Individual") -> None:
+    def refresh_mapping(self, ind: "Individual") -> None:
         """
         Ensure that genotype, phenotype, and tree are consistent.
 
@@ -409,7 +409,7 @@ class FitnessEvaluator:
 
     def refresh_mapping_all(self, individuals: list[Individual]) -> None:
         for ind in individuals:
-            self.refesh_mapping(ind)
+            self.refresh_mapping(ind)
 
     def clear_cache(self) -> None:
         if self.cache_manager:
