@@ -80,7 +80,7 @@ class GERegressor(RandomStateMixin, BaseEstimator, RegressorMixin):  # type: ign
         else:
             self.config = FinchConfig.from_dict(config)
 
-        self.genoype_mapper = GenotypeMapper(
+        self.genotype_mapper = GenotypeMapper(
             grammar=self.grammar,
             max_wraps=self.config.ge[Keys.MAX_WRAPS],
             max_recursion_depth=self.config.ge[Keys.MAX_RECURSION_DEPTH],
@@ -109,7 +109,7 @@ class GERegressor(RandomStateMixin, BaseEstimator, RegressorMixin):  # type: ign
         fitness_evaluator = FitnessEvaluator(
             runner=sym_runner,
             fitness_functions=self.fitness_functions,
-            mapper=self.genoype_mapper,
+            mapper=self.genotype_mapper,
             parallel_config=self.config.parallel,
         )
         expt_logger = ExperimentLogger()
