@@ -1,6 +1,6 @@
 from typing import Optional
 
-from finchge.algorithm.base import BaseAlgorithm
+from finchge.algorithm.base import BaseAlgorithmMO
 from finchge.algorithm.utils import (
     calculate_crowding_distance,
     environmental_selection_nsga3,
@@ -18,7 +18,7 @@ from finchge.operators.base import (
 )
 
 
-class NSGA2(BaseAlgorithm):
+class NSGA2(BaseAlgorithmMO):
     def __init__(
         self,
         selection: GESelectionStrategy,
@@ -137,11 +137,6 @@ class NSGA2(BaseAlgorithm):
         )
         return fronts[0] if fronts else []
 
-    def get_best_individual(self, population: Population) -> Individual:
-        raise NotImplementedError(
-            "Best individual is not defined for multi-objective algorithms"
-        )
-
     def inject_operator_rng(self) -> None:
         operators = [
             self.selection,
@@ -158,7 +153,7 @@ class NSGA2(BaseAlgorithm):
                 op._np_rng = self._np_rng
 
 
-class NSGA3(BaseAlgorithm):
+class NSGA3(BaseAlgorithmMO):
     def __init__(
         self,
         selection: GESelectionStrategy,
@@ -266,11 +261,6 @@ class NSGA3(BaseAlgorithm):
 
     def sort_population(self, population: Population) -> None:
         pass  # Skipped in NSGA3
-
-    def get_best_individual(self, population: Population) -> Individual:
-        raise NotImplementedError(
-            "Best individual is not defined for multi-objective algorithms"
-        )
 
     def get_pareto_front(self, population: Population) -> list[Individual]:
         """

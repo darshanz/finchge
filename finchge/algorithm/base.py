@@ -19,13 +19,18 @@ class BaseAlgorithm(RandomStateMixin, ABC):
     def sort_population(self, population: Population) -> None:
         ...
 
-    @abstractmethod
     def get_best_individual(self, population: Population) -> Individual:
-        ...
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not support single-objective best individual."
+        )
 
-    @abstractmethod
     def get_pareto_front(self, population: Population) -> list[Individual]:
-        ...
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not support multi-objective Pareto front."
+        )
+
+    def inject_operator_rng(self) -> None:
+        pass
 
     @abstractmethod
     def evolve_one_generation(self, population: Population) -> Population:
@@ -78,3 +83,15 @@ class BaseAlgorithm(RandomStateMixin, ABC):
 
     def _get_selectable_individuals(self, population: Population) -> list[Individual]:
         return [ind for ind in population.individuals if self._is_selectable(ind)]
+
+
+class BaseAlgorithmMO(BaseAlgorithm):
+    """
+    Base class for multi-objective algorithms.
+    Enforces get_pareto_front. All multi-objective algorithms inherit BaseAlgorithmMO
+    and must implement get_pareto_front
+    """
+
+    @abstractmethod
+    def get_pareto_front(self, population: Population) -> list[Individual]:
+        ...

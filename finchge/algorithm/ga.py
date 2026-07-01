@@ -141,9 +141,6 @@ class GeneticAlgorithm(BaseAlgorithm):
             return max(valid_inds, key=lambda ind: ind.fitness[0])
         return min(valid_inds, key=lambda ind: ind.fitness[0])
 
-    def get_pareto_front(self, population: Population) -> list[Individual]:
-        raise NotImplementedError("Pareto front is not defined for single-objective GA")
-
     def sort_population(self, population: Population) -> None:
         """
         Sorts the population based on fitness values.
