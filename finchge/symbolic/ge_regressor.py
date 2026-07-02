@@ -129,6 +129,7 @@ class GERegressor(RandomStateMixin, BaseEstimator, RegressorMixin):  # type: ign
         self.selected_individual_ = ge_result.best_individual
 
         if self.selected_individual_ is not None:
+            self.best_phenotype_ = self.selected_individual_.phenotype
             phenotype = (
                 self.selected_individual_.phenotype
                 if self.selected_individual_.phenotype
