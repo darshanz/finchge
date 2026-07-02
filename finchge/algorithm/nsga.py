@@ -105,7 +105,6 @@ class NSGA2(BaseAlgorithmMO):
             population_size=len(population),
         )
 
-        self.fitness_evaluator.evaluate_population(new_population)
         self.sort_population(new_population)
         return new_population
 
