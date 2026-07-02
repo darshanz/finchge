@@ -111,14 +111,14 @@ class OnePointCrossover(GECrossoverStrategy):
 
         try:
             if self.mode == "variable":
-                pt_p_0 = self.rng.randint(1, max_p_0)
-                pt_p_1 = self.rng.randint(1, max_p_1)
+                pt_p_0 = self.rng.randint(0, max_p_0)
+                pt_p_1 = self.rng.randint(0, max_p_1)
 
                 genome_o1 = genome_p1[:pt_p_0] + genome_p2[pt_p_1:]
                 genome_o2 = genome_p2[:pt_p_1] + genome_p1[pt_p_0:]
 
             else:  # fixed
-                pt = self.rng.randint(1, min(max_p_0, max_p_1))
+                pt = self.rng.randint(0, min(max_p_0, max_p_1))
 
                 genome_o1 = genome_p1[:pt] + genome_p2[pt:]
                 genome_o2 = genome_p2[:pt] + genome_p1[pt:]
@@ -255,20 +255,25 @@ class TwoPointCrossover(GECrossoverStrategy):
 
         try:
             if self.mode == "fixed":
-                a = self.rng.randint(1, min(max_p_0, max_p_1))
-                b = self.rng.randint(1, min(max_p_0, max_p_1))
+                n = min(max_p_0, max_p_1)
+                a = self.rng.randint(0, n)
+                b = self.rng.randint(0, n)
+                while (
+                    a == b
+                ):  # make sure two points are different: just to ensure the crossover actually happens
+                    b = self.rng.randint(0, n)
                 pt_0, pt_1 = min(a, b), max(a, b)
 
                 genome_o1 = genome_p1[:pt_0] + genome_p2[pt_0:pt_1] + genome_p1[pt_1:]
                 genome_o2 = genome_p2[:pt_0] + genome_p1[pt_0:pt_1] + genome_p2[pt_1:]
 
             else:  # variable
-                a_0 = self.rng.randint(1, max_p_0)
-                b_0 = self.rng.randint(1, max_p_0)
+                a_0 = self.rng.randint(0, max_p_0)
+                b_0 = self.rng.randint(0, max_p_0)
                 pt_0, pt_1 = min(a_0, b_0), max(a_0, b_0)
 
-                a_1 = self.rng.randint(1, max_p_1)
-                b_1 = self.rng.randint(1, max_p_1)
+                a_1 = self.rng.randint(0, max_p_1)
+                b_1 = self.rng.randint(0, max_p_1)
                 pt_2, pt_3 = min(a_1, b_1), max(a_1, b_1)
 
                 genome_o1 = genome_p1[:pt_0] + genome_p2[pt_2:pt_3] + genome_p1[pt_1:]
