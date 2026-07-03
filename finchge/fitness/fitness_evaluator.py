@@ -393,7 +393,7 @@ class FitnessEvaluator:
 
             else:
                 ind.phenotype = TreeNode.from_string(ind.tree).to_phenotype()
-                ind.invalid = False  # trees are always valid
+                ind.invalid = False  # If the line above executes fine, no need to check tree for validity
 
         # whether there is tree or not we have to map it to phenotype
         if ind.genotype is not None:

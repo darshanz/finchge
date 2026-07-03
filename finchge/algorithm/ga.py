@@ -185,17 +185,11 @@ class GeneticAlgorithm(BaseAlgorithm):
                         f"but it was not present on the individual."
                     )
 
-    def inject_operator_rng(self) -> None:
-        operators = [
+    def _get_operators(self) -> list:
+        return [
             self.selection,
             self.crossover,
             self.mutation,
             self.replacement,
             self.fitness_evaluator,
         ]
-
-        for op in operators:
-            if hasattr(op, "_rng"):
-                op._rng = self._rng  # Share same RNG object
-            if hasattr(op, "_np_rng") and hasattr(self, "_np_rng"):
-                op._np_rng = self._np_rng

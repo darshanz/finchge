@@ -149,3 +149,18 @@ def test_deterministic_with_fixed_seed():
         )
 
     assert build().mutate(ind).genotype == build().mutate(ind).genotype
+
+
+def test_inject_rng_propagates_to_sub_strategies():
+    import random
+
+    flip = IntFlipMutation(mutation_probability=1.0, codon_size=255, random_state=1)
+    swap = SwapMutation(mutation_probability=0.5, random_state=2)
+    mutation = MultipleMutation(strategies=[flip, swap], random_state=42)
+
+    shared_rng = random.Random(99)
+    mutation.inject_rng(shared_rng)
+
+    assert mutation._rng is shared_rng
+    assert mutation.strategies[0]._rng is shared_rng
+    assert mutation.strategies[1]._rng is shared_rng

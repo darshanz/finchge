@@ -29,9 +29,6 @@ class BaseAlgorithm(RandomStateMixin, ABC):
             f"{self.__class__.__name__} does not support multi-objective Pareto front."
         )
 
-    def inject_operator_rng(self) -> None:
-        pass
-
     @abstractmethod
     def evolve_one_generation(self, population: Population) -> Population:
         ...
@@ -83,6 +80,22 @@ class BaseAlgorithm(RandomStateMixin, ABC):
 
     def _get_selectable_individuals(self, population: Population) -> list[Individual]:
         return [ind for ind in population.individuals if self._is_selectable(ind)]
+
+    def _get_operators(self) -> list:
+        return []
+
+    def inject_operator_rng(self) -> None:
+        np_rng = getattr(self, "_np_rng", None)
+        for op in self._get_operators():
+            if hasattr(
+                op, "inject_rng"
+            ):  # Multiple operator needs to inject rng to individual mutations
+                op.inject_rng(self._rng, np_rng)
+            else:
+                if hasattr(op, "_rng"):
+                    op._rng = self._rng
+                if np_rng is not None and hasattr(op, "_np_rng"):
+                    op._np_rng = np_rng
 
 
 class BaseAlgorithmMO(BaseAlgorithm):

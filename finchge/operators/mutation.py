@@ -538,6 +538,20 @@ class MultipleMutation(GEMutationStrategy):
             # Normalize probabilities
             self.probabilities = [p / total for p in probabilities]
 
+    def inject_rng(self, rng, np_rng=None) -> None:
+        """
+        Inject RNGs to individual mutations for deterministic runs
+        Args:
+            rng:
+            np_rng:
+
+        Returns:
+
+        """
+        super().inject_rng(rng, np_rng)
+        for strategy in self.strategies:
+            strategy.inject_rng(rng, np_rng)
+
     def mutate(self, individual: "Individual") -> "Individual":
         """Apply a randomly selected mutation strategy.
 
