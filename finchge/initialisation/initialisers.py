@@ -452,8 +452,8 @@ class RHHInitialiser(GETreeInitialiser):
         if min_ramp is None:
             raise RuntimeError("Grammar cannot compute a valid minimum ramp depth.")
 
-        # ramping starts from min_ramp + 1
-        depths = list(range(min_ramp + 1, self.init_max_depth + 1))
+        # ramping starts from min_ramp
+        depths = list(range(min_ramp, self.init_max_depth + 1))
         if not depths:
             raise RuntimeError(
                 f"No valid RHH ramp depths available. Computed min_ramp={min_ramp} and init_max_depth={self.init_max_depth}. "
@@ -648,7 +648,7 @@ class PIGrowInitialiser(GETreeInitialiser):
         if min_ramp is None:
             raise RuntimeError("Grammar cannot compute a valid minimum ramp depth.")
 
-        depths = list(range(min_ramp + 1, self.init_max_depth + 1))
+        depths = list(range(min_ramp, self.init_max_depth + 1))
         if not depths:
             raise RuntimeError("No valid PI-Grow ramp depths available.")
 
