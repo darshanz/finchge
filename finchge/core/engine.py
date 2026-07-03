@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import timeit
 import warnings
@@ -364,6 +365,9 @@ class GrammaticalEvolution(RandomStateMixin):
 
         stop = timeit.default_timer()
         self.logger.info(f"Total time taken: {stop - start :.4f} seconds")
+
+        # shut down all parallel resources
+        asyncio.run(self.fitness_evaluator.shutdown())
 
         return GEResult(
             best_individual=fittest_individual if not self.multi_obj else None,
