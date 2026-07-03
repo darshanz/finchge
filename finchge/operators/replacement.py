@@ -203,7 +203,8 @@ class RandomElitistReplacement(GEReplacementStrategy):
 
         # Validate single-objective fitness
         for ind in old_population:
-            if ind.fitness is None or len(ind.fitness) != 1:
+            # Check for multi-objective only if there is fitness (skip unevaluated or invalid ones)
+            if ind.fitness and len(ind.fitness) != 1:
                 raise ValueError(
                     "RandomReplacement requires single-objective fitness "
                     "(fitness must be a list of length 1)"
