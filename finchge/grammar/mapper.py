@@ -305,6 +305,7 @@ class GenotypeMapper(RandomStateMixin):
                 choice_index = self._find_production_index(rule.choices, rhs)
 
                 genome.append(
+                    # prepare the condons based on random integers withing codon size
                     self._pick_codon_for_choice(
                         choice_index,
                         len(rule.choices),
@@ -387,13 +388,12 @@ class GenotypeMapper(RandomStateMixin):
         if num_choices <= 1:
             return 0
 
-        codon = chosen_idx
-        while codon <= codon_size:
-            if codon % num_choices == chosen_idx:
-                return codon
-            codon += num_choices
-
-        return chosen_idx % (codon_size + 1)
+        max_k = (codon_size - chosen_idx) // num_choices
+        if max_k < 0:
+            raise ValueError("No valid codon.")
+        # isntead of always having smallest possible codons we can randomize
+        k = self.rng.randint(0, max_k)
+        return chosen_idx + k * num_choices
 
     def _pad_genome(
         self,
