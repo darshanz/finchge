@@ -97,7 +97,7 @@ class RandomStateMixin:
         # Reinitialize RNGs from the stored seed
         self._init_rngs()
 
-    def inject_rng(self, rng, np_rng=None) -> None:
+    def inject_rng(self, rng: Any, np_rng: RandomState | None = None) -> None:
         self._rng = rng
         if np_rng is not None and hasattr(self, "_np_rng"):
             self._np_rng = np_rng

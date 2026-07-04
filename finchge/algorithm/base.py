@@ -19,16 +19,6 @@ class BaseAlgorithm(RandomStateMixin, ABC):
     def sort_population(self, population: Population) -> None:
         ...
 
-    def get_best_individual(self, population: Population) -> Individual:
-        raise NotImplementedError(
-            f"{self.__class__.__name__} does not support single-objective best individual."
-        )
-
-    def get_pareto_front(self, population: Population) -> list[Individual]:
-        raise NotImplementedError(
-            f"{self.__class__.__name__} does not support multi-objective Pareto front."
-        )
-
     @abstractmethod
     def evolve_one_generation(self, population: Population) -> Population:
         ...
@@ -81,7 +71,7 @@ class BaseAlgorithm(RandomStateMixin, ABC):
     def _get_selectable_individuals(self, population: Population) -> list[Individual]:
         return [ind for ind in population.individuals if self._is_selectable(ind)]
 
-    def _get_operators(self) -> list:
+    def _get_operators(self) -> list[Any]:
         return []
 
     def inject_operator_rng(self) -> None:
@@ -96,6 +86,30 @@ class BaseAlgorithm(RandomStateMixin, ABC):
                     op._rng = self._rng
                 if np_rng is not None and hasattr(op, "_np_rng"):
                     op._np_rng = np_rng
+
+
+class BaseAlgorithmSO(BaseAlgorithm):
+    """Base class for single-objective algorithms.
+    Provides default sort_population and get_best_individual
+    using self.max_best, which subclasses must set in __init__."""
+
+    max_best: bool  # must be set by subclass
+
+    def sort_population(self, population: Population) -> None:
+        population.individuals.sort(
+            key=lambda ind: ind.sort_key(self.max_best),
+            reverse=self.max_best,
+        )
+
+    def get_best_individual(self, population: Population) -> Individual:
+        valid = [ind for ind in population.individuals if ind.has_usable_fitness()]
+        if not valid:
+            raise ValueError("No evaluated individuals in population.")
+        return (
+            max(valid, key=lambda ind: ind.fitness[0])
+            if self.max_best
+            else min(valid, key=lambda ind: ind.fitness[0])
+        )
 
 
 class BaseAlgorithmMO(BaseAlgorithm):

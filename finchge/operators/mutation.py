@@ -1,4 +1,6 @@
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
+
+from numpy.random import RandomState
 
 from finchge.core.individual import Individual
 from finchge.grammar.derivation_tree import TreeNode
@@ -538,7 +540,7 @@ class MultipleMutation(GEMutationStrategy):
             # Normalize probabilities
             self.probabilities = [p / total for p in probabilities]
 
-    def inject_rng(self, rng, np_rng=None) -> None:
+    def inject_rng(self, rng: Any, np_rng: RandomState | None = None) -> None:
         """
         Inject RNGs to individual mutations for deterministic runs
         Args:

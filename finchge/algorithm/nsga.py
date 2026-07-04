@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Optional
 
 from finchge.algorithm.base import BaseAlgorithmMO
 from finchge.algorithm.utils import (
@@ -136,7 +136,7 @@ class NSGA2(BaseAlgorithmMO):
         )
         return fronts[0] if fronts else []
 
-    def _get_operators(self) -> list:
+    def _get_operators(self) -> list[Any]:
         return [
             self.selection,
             self.crossover,
@@ -272,5 +272,5 @@ class NSGA3(BaseAlgorithmMO):
 
         return fronts[0] if fronts else []
 
-    def _get_operators(self) -> list:
+    def _get_operators(self) -> list[Any]:
         return [self.selection, self.crossover, self.mutation, self.fitness_evaluator]

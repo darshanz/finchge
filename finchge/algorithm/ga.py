@@ -1,7 +1,7 @@
 import warnings
-from typing import Optional
+from typing import Any, Optional
 
-from finchge.algorithm.base import BaseAlgorithm
+from finchge.algorithm.base import BaseAlgorithmSO
 from finchge.core.individual import Individual
 from finchge.core.population import Population
 from finchge.fitness.fitness_evaluator import FitnessEvaluator
@@ -13,7 +13,7 @@ from finchge.operators.base import (
 )
 
 
-class GeneticAlgorithm(BaseAlgorithm):
+class GeneticAlgorithm(BaseAlgorithmSO):
     """
     Genetic Algorithm
 
@@ -65,6 +65,15 @@ class GeneticAlgorithm(BaseAlgorithm):
                 "FitnessEvaluator is configured to compute case data, but the selected "
                 "selection strategy does not use it."
             )
+
+        # Get max_best flag
+        flags = fitness_evaluator.get_maximize_flags()
+        if len(flags) != 1:
+            raise ValueError(
+                "GeneticAlgorithm only supports single-objective optimization. "
+                f"Provided {len(flags)} fitness functions."
+            )
+        self.max_best = flags[0]
 
     def evolve_one_generation(self, population: Population) -> Population:
         """
@@ -127,45 +136,6 @@ class GeneticAlgorithm(BaseAlgorithm):
         self.sort_population(new_population)
         return new_population
 
-    def get_best_individual(self, population: Population) -> Individual:
-        fitness_functions = self.fitness_evaluator.get_fitness_functions()
-        if len(fitness_functions) != 1:
-            raise ValueError(
-                "GeneticAlgorithm only supports single-objective optimization. "
-                f"Provided {len(fitness_functions)} fitness functions."
-            )
-        # check valids only for best Invalids do not have fitness to compare they are not valuated
-        valid_inds = [ind for ind in population.individuals if ind.has_usable_fitness()]
-        if fitness_functions[0].maximize:
-            return max(valid_inds, key=lambda ind: ind.fitness[0])
-        return min(valid_inds, key=lambda ind: ind.fitness[0])
-
-    def sort_population(self, population: Population) -> None:
-        """
-        Sorts the population based on fitness values.
-        Supports the fitness_evaluator with single fitness function.
-
-        Args:
-            population (Population): The population to sort.
-        """
-        fitness_functions = self.fitness_evaluator.get_fitness_functions()
-        if not isinstance(fitness_functions, list):
-            fitness_functions = [fitness_functions]
-
-        if len(fitness_functions) != 1:
-            raise ValueError(
-                "GeneticAlgorithm only supports single-objective optimization. "
-                f"Provided {len(fitness_functions)} fitness functions."
-            )
-
-        fitness_fn = fitness_functions[0]
-        maximize = fitness_fn.maximize if hasattr(fitness_fn, "maximize") else False
-
-        population.individuals.sort(
-            key=lambda ind: ind.sort_key(maximize),
-            reverse=maximize,
-        )
-
     def _validate_selection_requirements(self, individuals: list[Individual]) -> None:
         if not getattr(self.selection, "requires_case_data", False):
             return
@@ -185,7 +155,7 @@ class GeneticAlgorithm(BaseAlgorithm):
                         f"but it was not present on the individual."
                     )
 
-    def _get_operators(self) -> list:
+    def _get_operators(self) -> list[Any]:
         return [
             self.selection,
             self.crossover,
