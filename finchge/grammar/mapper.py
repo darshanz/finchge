@@ -39,7 +39,7 @@ class GenotypeMapper(RandomStateMixin):
     Follows classic GE semantics:
         - Stack-based depth-first expansion
         - Modulo-based production selection
-        - Rightmost-first expansion (LIFO stack)
+        - Leftmost-first expansion (children pushed reversed onto a LIFO stack)
         - Codon wrapping with a configurable limit
         - Explicit recursion depth control
 
