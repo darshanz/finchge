@@ -18,7 +18,7 @@ def test_returns_correct_population_size():
     assert len(result) == 5
 
 
-def test_maximization_returns_highest_fitness_individuals():
+def test_maximization_elite_preserved_and_best_offspring_fill_rest():
     old = [make_individual(1.0), make_individual(2.0)]
     new = [make_individual(5.0), make_individual(3.0), make_individual(4.0)]
     r = GenerationalReplacement(max_best=True)
@@ -26,11 +26,13 @@ def test_maximization_returns_highest_fitness_individuals():
         old_population=old, new_population=new, elite_size=1, population_size=3
     )
     fitnesses = [ind.fitness[0] for ind in result]
-    assert sorted(fitnesses, reverse=True) == fitnesses
+    # elite (2.0) is preserved; remaining 2 slots go to best offspring (5.0, 4.0)
+    assert 2.0 in fitnesses
     assert 5.0 in fitnesses
+    assert 4.0 in fitnesses
 
 
-def test_minimization_returns_lowest_fitness_individuals():
+def test_minimization_elite_preserved_and_best_offspring_fill_rest():
     old = [make_individual(10.0), make_individual(20.0)]
     new = [make_individual(1.0), make_individual(3.0), make_individual(2.0)]
     r = GenerationalReplacement(max_best=False)
@@ -38,8 +40,10 @@ def test_minimization_returns_lowest_fitness_individuals():
         old_population=old, new_population=new, elite_size=1, population_size=3
     )
     fitnesses = [ind.fitness[0] for ind in result]
-    assert sorted(fitnesses) == fitnesses
+    # elite (10.0) is preserved; remaining 2 slots go to best offspring (1.0, 2.0)
+    assert 10.0 in fitnesses
     assert 1.0 in fitnesses
+    assert 2.0 in fitnesses
 
 
 def test_old_elite_survives_when_offspring_are_weaker():
@@ -56,9 +60,8 @@ def test_old_elite_survives_when_offspring_are_weaker():
     assert old_best in result
 
 
-def test_old_elite_can_be_displaced_by_superior_offspring():
-    # Soft elitism: old elite enters the combined pool and competes.
-    # If offspring are strictly better, the elite is displaced.
+def test_old_elite_always_preserved_even_when_offspring_are_better():
+    # Protected elitism: elite holds its slot regardless of offspring fitness.
     old_elite = make_individual(5.0)
     new = [make_individual(10.0), make_individual(8.0)]
     r = GenerationalReplacement(max_best=True)
@@ -68,9 +71,8 @@ def test_old_elite_can_be_displaced_by_superior_offspring():
         elite_size=1,
         population_size=2,
     )
-    # combined = [new_a(10), new_b(8), elite(5)]
-    # top 2 are the new individuals
-    assert old_elite not in result
+    # elite (5.0) is guaranteed; only 1 offspring slot remains → takes 10.0
+    assert old_elite in result
 
 
 def test_invalid_old_individuals_excluded_from_elite_pool():
