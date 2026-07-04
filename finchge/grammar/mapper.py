@@ -130,7 +130,7 @@ class GenotypeMapper(RandomStateMixin):
         standard Grammatical Evolution (GE) mapping. This implementation performs stack-based depth-first expansion
         using leftmost derivation semantics.
 
-        Follows leftmost derivation sematnics:
+        Follows leftmost derivation semantics:
             - Children are attached to the tree in left-to-right order
             - Children are pushed onto the stack in reverse order ensuring leftmost child expands first
 
@@ -141,7 +141,7 @@ class GenotypeMapper(RandomStateMixin):
         `max_wraps` times.
 
         Mapping is aborted and marked invalid if:
-            - wrapping limit is exceeded
+            - wrapping limit exceeds
             - recursion depth exceeds `max_recursion_depth`
             - the final tree contains unresolved non-terminals
 
