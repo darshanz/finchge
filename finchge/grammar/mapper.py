@@ -70,7 +70,7 @@ class GenotypeMapper(RandomStateMixin):
         grammar: Grammar,
         max_tree_depth: Optional[int] = None,
         max_recursion_depth: Optional[int] = None,
-        max_wraps: int = 0,
+        max_wraps: int = 6,
         repair_strategy: Optional[RepairStrategy] = None,
         random_state: Optional[int] = None,
     ) -> None:
