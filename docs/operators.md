@@ -9,7 +9,7 @@ FinchGE groups operators into four categories:
 | Selection | Choose parents or survivors from the current population. | `TournamentSelection`, `RouletteWheelSelection`, `RankSelection`, `TruncationSelection`, `LexicaseSelection` |
 | Crossover | Recombine two parent individuals to create offspring. | `OnePointCrossover`, `TwoPointCrossover`, `UniformCrossover`, `SubtreeCrossover` |
 | Mutation | Modify an individual to introduce new variation. | `IntFlipMutation`, `SwapMutation`, `GaussianMutation`, `InversionMutation`, `CyclicMutation`, `DuplicationMutation`, `SubtreeMutation` |
-| Replacement | Decide how offspring and existing individuals form the next generation. | `GenerationalReplacement`, `SteadyStateReplacement`, `RandomElitistReplacement`, `NSGA2ElitistReplacement` |
+| Replacement | Decide how offspring and existing individuals form the next generation. | `GenerationalReplacement`, `RandomElitistReplacement`, `NSGA2ElitistReplacement` |
 
 ## Selection Operators
 
@@ -113,11 +113,8 @@ Replacement operators decide which individuals survive into the next generation 
 
 ### GenerationalReplacement
 
-[`GenerationalReplacement`][finchge.operators.replacement.GenerationalReplacement] replaces the entire population each generation. The `elite_size` best individuals from the old population are preserved, merged with all new offspring, and the combined pool is sorted by fitness to select the final population. This is the standard generational model in the GA literature and gives offspring a fair chance to displace poor elites if the offspring are strong enough.
+[`GenerationalReplacement`][finchge.operators.replacement.GenerationalReplacement] replaces the entire population each generation using protected elitism. The `elite_size` best individuals from the old population are guaranteed slots in the next generation — they are never merged with or competed against offspring. The remaining `population_size - elite_size` slots are filled by the best-ranked offspring.
 
-### SteadyStateReplacement
-
-[`SteadyStateReplacement`][finchge.operators.replacement.SteadyStateReplacement] keeps the `elite_size` best of the old population and fills the remaining slots with the best-ranked offspring. Offspring compete only among themselves for non-elite positions; they do not compete against elites. The distinction from `GenerationalReplacement` matters when offspring quality is mixed: weaker offspring that would lose against elites in a combined sort still get placed here.
 
 ### RandomElitistReplacement
 
