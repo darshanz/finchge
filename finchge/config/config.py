@@ -60,6 +60,11 @@ class Keys:
     MAX_WORKERS = "max_workers"
     BATCH_SIZE = "batch_size"
 
+    # For Island GA
+    NUM_ISLANDS = "num_islands"
+    MIGRATION_INTERVAL = "migration_interval"
+    MIGRATION_SIZE = "migration_size"
+
 
 class FinchConfig:
     """
@@ -496,6 +501,9 @@ class ConfigValidator:
             Keys.CROSSOVER_PROBABILITY,
             Keys.ELITE_SIZE,
             Keys.TOURNAMENT_SIZE,
+            Keys.NUM_ISLANDS,
+            Keys.MIGRATION_INTERVAL,
+            Keys.MIGRATION_SIZE,
         },
         "parallel": {
             Keys.PARALLEL_ENABLED,
@@ -550,6 +558,9 @@ class ConfigValidator:
             Keys.CROSSOVER_PROBABILITY: _is_probability,
             Keys.ELITE_SIZE: lambda v: _is_int(v, min_value=0),
             Keys.TOURNAMENT_SIZE: lambda v: _is_int(v, min_value=1),
+            Keys.NUM_ISLANDS: lambda v: _is_int(v, min_value=2),
+            Keys.MIGRATION_INTERVAL: lambda v: _is_int(v, min_value=1),
+            Keys.MIGRATION_SIZE: lambda v: _is_int(v, min_value=1),
         },
         "parallel": {
             Keys.PARALLEL_ENABLED: _is_bool,
