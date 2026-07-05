@@ -1,4 +1,6 @@
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
+
+from numpy.random import RandomState
 
 from finchge.core.individual import Individual
 from finchge.grammar.derivation_tree import TreeNode
@@ -204,6 +206,7 @@ class GaussianMutation(GEMutationStrategy):
     def __init__(
         self,
         mutation_probability: float,
+        codon_size: int,
         std_dev: float = 1.0,
         random_state: Optional[int] = None,
     ) -> None:
@@ -213,6 +216,7 @@ class GaussianMutation(GEMutationStrategy):
         Args:
             mutation_probability: Probability in [0.0, 1.0] that a given
                 gene is mutated.
+            codon_size: codon size (needed to clamp between 0 and codon_size to avoid producing codons above codon_size)
             std_dev: Standard deviation of the Gaussian noise.
 
         Raises:
@@ -224,6 +228,7 @@ class GaussianMutation(GEMutationStrategy):
             raise ValueError("mutation_probability must be in [0, 1]")
 
         self.mutation_probability = mutation_probability
+        self.codon_size = codon_size
         self.std_dev = std_dev
 
     def mutate(self, individual: "Individual") -> "Individual":
@@ -233,7 +238,7 @@ class GaussianMutation(GEMutationStrategy):
         Each gene is independently selected with
         `mutation_probability`. Selected genes receive
         Gaussian noise, are rounded to integers, and
-        clamped to be non-negative.
+        clamped to be non-negative and within codon_size.
 
         Args:
             individual: Individual to mutate.
@@ -256,7 +261,7 @@ class GaussianMutation(GEMutationStrategy):
             if self.rng.random() < self.mutation_probability:
                 # Add Gaussian noise, round to nearest int, clamp to >= 0
                 noisy_value = int(round(value + self.rng.gauss(0.0, self.std_dev)))
-                mutated_genome[i] = max(0, noisy_value)
+                mutated_genome[i] = max(0, min(self.codon_size, noisy_value))
 
         return Individual.from_genotype(mutated_genome)
 
@@ -534,6 +539,20 @@ class MultipleMutation(GEMutationStrategy):
 
             # Normalize probabilities
             self.probabilities = [p / total for p in probabilities]
+
+    def inject_rng(self, rng: Any, np_rng: RandomState | None = None) -> None:
+        """
+        Inject RNGs to individual mutations for deterministic runs
+        Args:
+            rng:
+            np_rng:
+
+        Returns:
+
+        """
+        super().inject_rng(rng, np_rng)
+        for strategy in self.strategies:
+            strategy.inject_rng(rng, np_rng)
 
     def mutate(self, individual: "Individual") -> "Individual":
         """Apply a randomly selected mutation strategy.

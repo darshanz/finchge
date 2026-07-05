@@ -1,6 +1,6 @@
 import pytest
 
-from finchge.config.config import FinchConfig, Keys
+from finchge.config.config import FinchConfig, Keys, validate_config
 
 
 def test_geconfig_from_ini(tmp_path):
@@ -102,3 +102,73 @@ def test_from_file_multiple_configs(tmp_path):
 
     with pytest.raises(RuntimeError):
         FinchConfig.from_file()
+
+
+def _valid_ge_section(**overrides):
+    base = {
+        Keys.POPULATION_SIZE: 100,
+        Keys.INIT_TYPE: "random_genome",
+        Keys.MUTATION_PROBABILITY: 0.01,
+        Keys.CROSSOVER_PROBABILITY: 0.5,
+        Keys.ELITE_SIZE: 1,
+    }
+    base.update(overrides)
+    return base
+
+
+def test_valid_migration_fields_pass_validation():
+    cfg = FinchConfig.from_dict(
+        {
+            "experiment": {Keys.RANDOM_SEED: 1, Keys.NUM_GENERATIONS: 10},
+            "ge": _valid_ge_section(
+                **{
+                    Keys.NUM_ISLANDS: 4,
+                    Keys.MIGRATION_INTERVAL: 10,
+                    Keys.MIGRATION_SIZE: 2,
+                }
+            ),
+        }
+    )
+
+    issues, _ = validate_config(cfg)
+
+    assert issues == []
+
+
+def test_negative_migration_interval_is_rejected():
+    cfg = FinchConfig.from_dict(
+        {
+            "experiment": {Keys.RANDOM_SEED: 1, Keys.NUM_GENERATIONS: 10},
+            "ge": _valid_ge_section(**{Keys.MIGRATION_INTERVAL: -3}),
+        }
+    )
+
+    issues, _ = validate_config(cfg)
+
+    assert any(Keys.MIGRATION_INTERVAL in issue for issue in issues)
+
+
+def test_non_int_migration_size_is_rejected():
+    cfg = FinchConfig.from_dict(
+        {
+            "experiment": {Keys.RANDOM_SEED: 1, Keys.NUM_GENERATIONS: 10},
+            "ge": _valid_ge_section(**{Keys.MIGRATION_SIZE: "two"}),
+        }
+    )
+
+    issues, _ = validate_config(cfg)
+
+    assert any(Keys.MIGRATION_SIZE in issue for issue in issues)
+
+
+def test_migration_fields_are_optional():
+    cfg = FinchConfig.from_dict(
+        {
+            "experiment": {Keys.RANDOM_SEED: 1, Keys.NUM_GENERATIONS: 10},
+            "ge": _valid_ge_section(),
+        }
+    )
+
+    issues, _ = validate_config(cfg)
+
+    assert issues == []

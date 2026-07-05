@@ -10,7 +10,7 @@
 [![Tests](https://github.com/finchGE/finchge/actions/workflows/tests.yml/badge.svg)](https://github.com/finchGE/finchge/actions)
 
 
-FinchGE is a modern, modular, and user-friendly Python library for Grammatical Evolution (GE) - a powerful evolutionary algorithm that uses formal grammars to evolve programs, expressions, and solutions.
+FinchGE is a modern Python library for grammar-constrained evolutionary search, built around grammatical evolution, modular operators, reproducible experiments, and benchmark-driven research workflows.
 
 ## Features
 
@@ -23,10 +23,26 @@ FinchGE is a modern, modular, and user-friendly Python library for Grammatical E
 - Benchmark suite for regression, logic and control problems
 
 
-## Why finchGE
+## Who is FinchGE for?
 
-- Modular and extensible: Plug-and-play mutation,  selection, fitness, and search strategies.
-- Designed for research and industry: Convenient and flexible API for quicker implementation.
+- Researchers experimenting with grammatical evolution and grammar-guided search.
+- Python users who want to evolve programs, expressions, rules, or structured solutions from BNF grammars.
+- Symbolic regression users who need grammar constraints or multi-objective search.
+- Students learning genotype-to-phenotype mapping, derivation trees, and evolutionary search.
+- Developers building custom evolutionary workflows with custom fitness, operators, or benchmarks.
+
+
+## Why FinchGE?
+
+FinchGE is designed around grammar-first evolutionary workflows:
+
+- BNF-style grammars define valid programs, expressions, rules, or policies.
+- Genotypes map to phenotypes through explicit GE mapping.
+- Derivation trees and mapping metadata can be inspected.
+- Operators, fitness functions, initializers, runners, and algorithms are modular.
+- Runs can be configured, logged, checkpointed, and reproduced.
+- Benchmark suites are included for symbolic regression, logic, and control problems.
+
 
 ## Installation
 [![PyPI](https://img.shields.io/pypi/v/finchge?t=1234567890&color=blue)](https://pypi.org/project/finchge/)
@@ -70,13 +86,6 @@ ge.run()
 
 For further details and more advanced usage, please check. [Getting Started](getting_started.md), [API Reference](api.md) and [Examples](examples.md)
 
-!!! info "Development Status"
+## Status
 
-    Note: This is version ```1.0.1-beta.12``` - a beta release. Expect breaking changes and bugs.
-
-    What to expect:
-
-      - Bugs and unexpected behavior
-      - Rapid API changes
-      - Frequent updates
-      - Limited test coverage
+FinchGE is currently beta software. The core library is usable for experiments, but APIs may still evolve as the project moves toward a stable release.

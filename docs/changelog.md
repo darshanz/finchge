@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 For changelog we follow  [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format and for versioning use  [Semantic Versioning](https://semver.org/)
 
+## [1.0.1-beta.13](https://github.com/finchGE/finchge/releases/tag/v1.0.1-beta.13) - 2026-07-05
+
+### Added
+- Algorithm support for IslandGA and SteadyStateGA
+- Improved documentation coverage and unit tests
+
+### Changed
+- Refactored base Algorithm class to have different base classes for single and multi-objective algorithms
+- Removed SteadyStateReplacement, which is now an algorithm SteadyStateGA
+- Refactored algorithms to move RNG injection responsibility to base algorithms, writing custom algorithm is now easier
+- Improved parallel experiments, manually shutdown process pool executor to avoid accumulation of orphaned workers.
+
+### Fixed
+- Generational replacement corrected elite handling error
+- Mapper to avoid inconsistency with default params
+- RNG injection error in MultipleMutation, ensuring deterministic experiment with multiple mutation.
+- Gaussian mutation producing codons above codon_size
+- Crossover issue, first element not being swapped.
+- Removed redundant evaluation call in evolution loop
+
+
 ## [1.0.1-beta.12](https://github.com/finchGE/finchge/releases/tag/v1.0.1-beta.12) - 2026-05-03
 
 ### Added

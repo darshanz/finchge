@@ -39,7 +39,7 @@ class GenotypeMapper(RandomStateMixin):
     Follows classic GE semantics:
         - Stack-based depth-first expansion
         - Modulo-based production selection
-        - Rightmost-first expansion (LIFO stack)
+        - Leftmost-first expansion (children pushed reversed onto a LIFO stack)
         - Codon wrapping with a configurable limit
         - Explicit recursion depth control
 
@@ -70,7 +70,7 @@ class GenotypeMapper(RandomStateMixin):
         grammar: Grammar,
         max_tree_depth: Optional[int] = None,
         max_recursion_depth: Optional[int] = None,
-        max_wraps: int = 0,
+        max_wraps: int = 6,
         repair_strategy: Optional[RepairStrategy] = None,
         random_state: Optional[int] = None,
     ) -> None:
@@ -130,7 +130,7 @@ class GenotypeMapper(RandomStateMixin):
         standard Grammatical Evolution (GE) mapping. This implementation performs stack-based depth-first expansion
         using leftmost derivation semantics.
 
-        Follows leftmost derivation sematnics:
+        Follows leftmost derivation semantics:
             - Children are attached to the tree in left-to-right order
             - Children are pushed onto the stack in reverse order ensuring leftmost child expands first
 
@@ -141,7 +141,7 @@ class GenotypeMapper(RandomStateMixin):
         `max_wraps` times.
 
         Mapping is aborted and marked invalid if:
-            - wrapping limit is exceeded
+            - wrapping limit exceeds
             - recursion depth exceeds `max_recursion_depth`
             - the final tree contains unresolved non-terminals
 
@@ -305,6 +305,7 @@ class GenotypeMapper(RandomStateMixin):
                 choice_index = self._find_production_index(rule.choices, rhs)
 
                 genome.append(
+                    # prepare the condons based on random integers withing codon size
                     self._pick_codon_for_choice(
                         choice_index,
                         len(rule.choices),
@@ -387,13 +388,12 @@ class GenotypeMapper(RandomStateMixin):
         if num_choices <= 1:
             return 0
 
-        codon = chosen_idx
-        while codon <= codon_size:
-            if codon % num_choices == chosen_idx:
-                return codon
-            codon += num_choices
-
-        return chosen_idx % (codon_size + 1)
+        max_k = (codon_size - chosen_idx) // num_choices
+        if max_k < 0:
+            raise ValueError("No valid codon.")
+        # isntead of always having smallest possible codons we can randomize
+        k = self.rng.randint(0, max_k)
+        return chosen_idx + k * num_choices
 
     def _pad_genome(
         self,

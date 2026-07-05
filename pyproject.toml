@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "finchge"
-version = "1.0.1-beta.12"
+version = "1.0.1-beta.13"
 description = "FinchGE is a grammatical evolution library."
 authors = [
     {name = "Sudarshan Pant", email = "sudarshan.pant@gmail.com"},
@@ -23,6 +23,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]

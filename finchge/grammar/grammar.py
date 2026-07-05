@@ -213,7 +213,9 @@ class Grammar:
             depths = depths[: size // 2]
 
         if not depths:
-            self.min_ramp = min_depth
+            self.min_ramp = (
+                min_depth + 1
+            )  # +1: TreeNode.depth is 1-indexed, root starts at depth=1
             return self.min_ramp
 
         # Minimum number of distinct individuals we need per ramp level.
@@ -225,7 +227,7 @@ class Grammar:
                 ramp = depth
                 break
 
-        self.min_ramp = ramp
+        self.min_ramp = ramp + 1
         return self.min_ramp
 
     def compute_permutations_by_depth(self, max_depth: int) -> dict[int, int]:

@@ -7,37 +7,31 @@ from finchge.operators.base import GEReplacementStrategy
 
 class GenerationalReplacement(GEReplacementStrategy):
     """
-    Elitist generational replacement strategy for single-objective optimization.
+    Generational replacement with protected elitism for single-objective optimization.
 
-    This replacement strategy implements classic generational replacement used
-    in standard genetic algorithms. At each generation, the entire population
-    is replaced by newly generated offspring, while preserving a fixed number
-    of elite individuals from the previous population.
+    At each generation the entire offspring population replaces the old one, but a
+    fixed number of elite individuals from the previous generation are guaranteed
+    a slot in the next — they are never competed against offspring. This matches
+    the behaviour of PonyGE2's ``generational`` replacement (Whitley, 1989).
 
-    Individuals are ranked using a scalar fitness value, and elites are selected
-    based on either maximization or minimization of that fitness.
-
+    Elites are taken from the best ``elite_size`` individuals in the old population
+    and placed unconditionally into the result. The remaining ``population_size -
+    elite_size`` slots are filled by the best-ranked offspring.
 
     Args:
         max_best (bool):
-            If True, higher fitness values are considered better (maximization).
-            If False, lower fitness values are considered better (minimization).
-
-    Methods:
-        replace:
-            Replaces the old population with a new population while preserving
-            elite individuals from the previous generation.
+            If True, higher fitness is better (maximisation).
+            If False, lower fitness is better (minimisation).
 
     Notes:
-        - Assumes that each individual's ``fitness`` attribute is a scalar value.
         - Elites are selected exclusively from the old population.
-        - Fitness values must already be evaluated prior to replacement.
+        - An elite is never displaced by a better offspring (protected elitism).
+        - Fitness values must be evaluated before calling ``replace``.
+        - Individuals with unusable fitness are excluded from the elite pool.
 
     See Also:
-        - SteadyStateReplacement
         - RandomElitistReplacement
         - NSGA2ElitistReplacement
-
     """
 
     def __init__(self, max_best: bool, random_state: Optional[int] = None) -> None:
@@ -52,82 +46,19 @@ class GenerationalReplacement(GEReplacementStrategy):
         population_size: int,
     ) -> list[Individual]:
         """
-        Replaces old population with new population, preserving elite individuals.
+        Applies protected elitism: reserves the best ``elite_size`` individuals
+        from the old population unconditionally, then fills the remaining slots
+        with the best-ranked offspring.
 
         Args:
-            new_population (list[Individual]): List of new individuals
-            old_population (list[Individual]): List of current individuals
-            elite_size (int): Number of elite individuals to preserve
-            population_size (int): Target size of the population
+            new_population: Offspring generated this generation.
+            old_population: Previous generation population.
+            elite_size: Number of individuals from old_population to preserve.
+            population_size: Target size of the returned population.
 
         Returns:
-            list: New population with elites
-        """
-        valid_old = [ind for ind in old_population if ind.has_usable_fitness()]
-        valid_old.sort(key=lambda ind: ind.get_scalar_fitness(), reverse=self.max_best)
-
-        elites = valid_old[:elite_size]
-
-        combined_population = new_population + elites
-
-        combined_population.sort(
-            key=lambda ind: ind.sort_key(self.max_best),
-            reverse=self.max_best,
-        )
-
-        return combined_population[:population_size]
-
-
-class SteadyStateReplacement(GEReplacementStrategy):
-    """
-    Steady-state replacement strategy for single-objective optimization.
-
-    This replacement strategy implements a steady-state evolutionary model,
-    where only a subset of individuals is replaced at each generation rather
-    than replacing the entire population. A fixed number of elite individuals
-    from the current population are preserved, while the remaining slots are
-    filled with the best individuals from the newly generated population.
-
-    Selection is based on a scalar fitness value, using either maximization or
-    minimization as specified at construction time.
-
-    Args:
-        max_best (bool):
-            If True, higher fitness values are considered better (maximization).
-            If False, lower fitness values are considered better (minimization).
-
-    Methods:
-        replace:
-            Preserves elite individuals from the old population and replaces
-            the remaining individuals with the best-performing offspring.
-
-    Notes:
-        - Assumes that each individual's ``fitness`` attribute is a scalar value.
-        - Fitness values must be evaluated prior to replacement.
-        - Elites are selected exclusively from the old population.
-        - The number of preserved individuals is controlled by ``elite_size``.
-
-    See Also:
-        - GenerationalReplacement
-        - RandomElitistReplacement
-        - NSGA2ElitistReplacement
-
-    """
-
-    def __init__(self, max_best: bool, random_state: Optional[int] = None) -> None:
-        super().__init__(random_state=random_state)
-        self.max_best = max_best
-
-    def replace(
-        self,
-        new_population: list[Individual],
-        old_population: list[Individual],
-        elite_size: int,
-        population_size: int,
-    ) -> list[Individual]:
-        """
-        Replaces worst individuals in old population with new individuals.
-        Preserves elite_size best individuals.
+            List of ``population_size`` individuals: elites first, then
+            the best ``population_size - elite_size`` offspring.
         """
         valid_old = [ind for ind in old_population if ind.has_usable_fitness()]
         valid_old.sort(key=lambda ind: ind.get_scalar_fitness(), reverse=self.max_best)
@@ -183,7 +114,6 @@ class RandomElitistReplacement(GEReplacementStrategy):
 
     See Also:
         - GenerationalReplacement
-        - SteadyStateReplacement
         - NSGA2ElitistReplacement
     """
 
@@ -203,7 +133,8 @@ class RandomElitistReplacement(GEReplacementStrategy):
 
         # Validate single-objective fitness
         for ind in old_population:
-            if ind.fitness is None or len(ind.fitness) != 1:
+            # Check for multi-objective only if there is fitness (skip unevaluated or invalid ones)
+            if ind.fitness and len(ind.fitness) != 1:
                 raise ValueError(
                     "RandomReplacement requires single-objective fitness "
                     "(fitness must be a list of length 1)"
@@ -267,7 +198,6 @@ class NSGA2ElitistReplacement(GEReplacementStrategy):
     See Also:
         - fast_non_dominated_sort
         - calculate_crowding_distance
-        - NSGA3Replacement
     """
 
     def __init__(
@@ -284,7 +214,20 @@ class NSGA2ElitistReplacement(GEReplacementStrategy):
         population_size: int,
     ) -> list[Individual]:
         """
-        Replacement strategy that preserves elite solutions and maintains diversity.
+        Combines old and new populations, runs non-dominated sorting and
+        crowding-distance ranking, and selects ``population_size`` individuals
+        from successive Pareto fronts, with ``elite_size`` guaranteed elites
+        from the previous generation prepended.
+
+        Args:
+            new_population: Offspring generated this generation.
+            old_population: Previous generation population.
+            elite_size: Number of top-ranked old individuals guaranteed a slot.
+            population_size: Target size of the returned population.
+
+        Returns:
+            List of ``population_size`` individuals ranked by Pareto front
+            and crowding distance.
         """
 
         # Sort by rank, handle None values

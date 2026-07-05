@@ -70,9 +70,14 @@ The finchGE API consists of:
       show_source: false
       members:
         - BaseAlgorithm
+        - BaseAlgorithmSO
+        - BaseAlgorithmMO
         - GeneticAlgorithm
+        - SteadyStateGA
+        - IslandGA
         - NSGA2
         - NSGA3
+
 
 
 ::: finchge.initialisation

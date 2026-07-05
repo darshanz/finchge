@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import timeit
 import warnings
@@ -171,7 +172,7 @@ class GrammaticalEvolution(RandomStateMixin):
             # GeneticAlgorithm is used by default,
             # But it requires GE parameters to be stored in config.yaml
             if not self.config:
-                raise ValueError("Algorithim not specified.")
+                raise ValueError("Algorithm not specified.")
 
             self.logger.info(
                 "Default GeneticAlgorithm setup: Selection = TournamentSelection, "
@@ -364,6 +365,9 @@ class GrammaticalEvolution(RandomStateMixin):
 
         stop = timeit.default_timer()
         self.logger.info(f"Total time taken: {stop - start :.4f} seconds")
+
+        # shut down all parallel resources
+        asyncio.run(self.fitness_evaluator.shutdown())
 
         return GEResult(
             best_individual=fittest_individual if not self.multi_obj else None,

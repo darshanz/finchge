@@ -1,6 +1,6 @@
-from typing import Optional
+from typing import Any, Optional
 
-from finchge.algorithm.base import BaseAlgorithm
+from finchge.algorithm.base import BaseAlgorithmMO
 from finchge.algorithm.utils import (
     calculate_crowding_distance,
     environmental_selection_nsga3,
@@ -18,7 +18,7 @@ from finchge.operators.base import (
 )
 
 
-class NSGA2(BaseAlgorithm):
+class NSGA2(BaseAlgorithmMO):
     def __init__(
         self,
         selection: GESelectionStrategy,
@@ -105,7 +105,6 @@ class NSGA2(BaseAlgorithm):
             population_size=len(population),
         )
 
-        self.fitness_evaluator.evaluate_population(new_population)
         self.sort_population(new_population)
         return new_population
 
@@ -137,13 +136,8 @@ class NSGA2(BaseAlgorithm):
         )
         return fronts[0] if fronts else []
 
-    def get_best_individual(self, population: Population) -> Individual:
-        raise NotImplementedError(
-            "Best individual is not defined for multi-objective algorithms"
-        )
-
-    def inject_operator_rng(self) -> None:
-        operators = [
+    def _get_operators(self) -> list[Any]:
+        return [
             self.selection,
             self.crossover,
             self.mutation,
@@ -151,14 +145,8 @@ class NSGA2(BaseAlgorithm):
             self.fitness_evaluator,
         ]
 
-        for op in operators:
-            if hasattr(op, "_rng"):
-                op._rng = self._rng  # Share same RNG object
-            if hasattr(op, "_np_rng") and hasattr(self, "_np_rng"):
-                op._np_rng = self._np_rng
 
-
-class NSGA3(BaseAlgorithm):
+class NSGA3(BaseAlgorithmMO):
     def __init__(
         self,
         selection: GESelectionStrategy,
@@ -267,11 +255,6 @@ class NSGA3(BaseAlgorithm):
     def sort_population(self, population: Population) -> None:
         pass  # Skipped in NSGA3
 
-    def get_best_individual(self, population: Population) -> Individual:
-        raise NotImplementedError(
-            "Best individual is not defined for multi-objective algorithms"
-        )
-
     def get_pareto_front(self, population: Population) -> list[Individual]:
         """
         Return the Pareto front.
@@ -289,16 +272,5 @@ class NSGA3(BaseAlgorithm):
 
         return fronts[0] if fronts else []
 
-    def inject_operator_rng(self) -> None:
-        operators = [
-            self.selection,
-            self.crossover,
-            self.mutation,
-            self.fitness_evaluator,
-        ]
-
-        for op in operators:
-            if hasattr(op, "_rng"):
-                op._rng = self._rng  # Share same RNG object
-            if hasattr(op, "_np_rng") and hasattr(self, "_np_rng"):
-                op._np_rng = self._np_rng
+    def _get_operators(self) -> list[Any]:
+        return [self.selection, self.crossover, self.mutation, self.fitness_evaluator]
