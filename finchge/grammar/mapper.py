@@ -240,7 +240,7 @@ class GenotypeMapper(RandomStateMixin):
             return self._invalid_result(root, used_genome, used_codons_count)
 
         # Convert tree to phenotype
-        phenotype = self._tree_to_string(root).replace('""', '"')
+        phenotype = self._tree_to_string(root)
 
         # Apply optional repair strategy
         if self.repair_strategy is not None:
