@@ -11,6 +11,7 @@ In FinchGE, algorithms are lower-level evolutionary components. A full Grammatic
 | [`GeneticAlgorithm`][finchge.algorithm.GeneticAlgorithm] | Single-objective | Standard grammatical evolution with one scalar fitness objective. |
 | [`SteadyStateGA`][finchge.algorithm.SteadyStateGA] | Single-objective | Genitor-style steady-state replacement; offspring enter the population immediately. |
 | [`IslandGA`][finchge.algorithm.IslandGA] | Single-objective | Parallel sub-populations with periodic migration to preserve diversity. |
+| [`OnePlusOneES`][finchge.algorithm.OnePlusOneES] | Single-objective | Simplest evolution strategy: one parent produces one offspring; the better survives. |
 | [`NSGA2`][finchge.algorithm.NSGA2] | Multi-objective | Pareto-based optimization using non-dominated sorting and crowding distance. |
 | [`NSGA3`][finchge.algorithm.NSGA3] | Multi-objective | Many-objective optimization using reference points. |
 
@@ -68,6 +69,28 @@ must be smaller than the resulting island size.
 
 Use `IslandGA` when a single population tends to converge prematurely and
 you want to trade some convergence speed for sustained diversity.
+
+
+## OnePlusOneES
+
+[`OnePlusOneES`][finchge.algorithm.OnePlusOneES] is the simplest possible evolution
+strategy: a single parent produces a single offspring via mutation each generation.
+The better of the two survives (greedy acceptance). If the offspring is invalid or
+has no usable fitness, the parent is always retained.
+
+This is a special case of (µ+λ)-ES with µ=1 and λ=1. It requires
+`population_size: 1` in `ge_config.yaml`. Use it as a fast sanity check or
+baseline. It makes no assumptions about population structure and is trivial
+to analyse theoretically.
+
+```python
+from finchge.algorithm import OnePlusOneES
+
+algorithm = OnePlusOneES(
+    mutation=mutation,
+    fitness_evaluator=fitness_evaluator,
+)
+```
 
 
 ## NSGA-II
