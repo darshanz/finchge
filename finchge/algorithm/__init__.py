@@ -5,6 +5,7 @@ if TYPE_CHECKING:
     from .ga import GeneticAlgorithm
     from .island_ga import IslandGA
     from .nsga import NSGA2, NSGA3
+    from .one_plus_one import OnePlusOneES
     from .steady_state_ga import SteadyStateGA
 
 
@@ -29,6 +30,11 @@ def __getattr__(name: str) -> Any:
 
         return locals()[name]
 
+    if name in {"OnePlusOneES"}:
+        from .one_plus_one import OnePlusOneES
+
+        return locals()[name]
+
     if name in {"NSGA2", "NSGA3"}:
         from .nsga import NSGA2, NSGA3
 
@@ -44,6 +50,7 @@ __all__ = [
     "GeneticAlgorithm",
     "SteadyStateGA",
     "IslandGA",
+    "OnePlusOneES",
     "NSGA2",
     "NSGA3",
 ]
