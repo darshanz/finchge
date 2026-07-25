@@ -4,6 +4,7 @@ if TYPE_CHECKING:
     from .base import BaseAlgorithm, BaseAlgorithmMO, BaseAlgorithmSO
     from .ga import GeneticAlgorithm
     from .island_ga import IslandGA
+    from .mu_plus_lambda import MuPlusLambdaES
     from .nsga import NSGA2, NSGA3
     from .one_plus_one import OnePlusOneES
     from .steady_state_ga import SteadyStateGA
@@ -35,6 +36,11 @@ def __getattr__(name: str) -> Any:
 
         return locals()[name]
 
+    if name in {"MuPlusLambdaES"}:
+        from .mu_plus_lambda import MuPlusLambdaES
+
+        return locals()[name]
+
     if name in {"NSGA2", "NSGA3"}:
         from .nsga import NSGA2, NSGA3
 
@@ -51,6 +57,7 @@ __all__ = [
     "SteadyStateGA",
     "IslandGA",
     "OnePlusOneES",
+    "MuPlusLambdaES",
     "NSGA2",
     "NSGA3",
 ]
