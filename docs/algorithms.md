@@ -11,6 +11,7 @@ In FinchGE, algorithms are lower-level evolutionary components. A full Grammatic
 | [`GeneticAlgorithm`][finchge.algorithm.GeneticAlgorithm] | Single-objective | Standard grammatical evolution with one scalar fitness objective. |
 | [`SteadyStateGA`][finchge.algorithm.SteadyStateGA] | Single-objective | Genitor-style steady-state replacement; offspring enter the population immediately. |
 | [`IslandGA`][finchge.algorithm.IslandGA] | Single-objective | Parallel sub-populations with periodic migration to preserve diversity. |
+| [`MuPlusLambdaES`][finchge.algorithm.MuPlusLambdaES] | Single-objective | (µ+λ)-ES: best µ from µ parents + λ offspring survive each generation. |
 | [`OnePlusOneES`][finchge.algorithm.OnePlusOneES] | Single-objective | Simplest evolution strategy: one parent produces one offspring; the better survives. |
 | [`NSGA2`][finchge.algorithm.NSGA2] | Multi-objective | Pareto-based optimization using non-dominated sorting and crowding distance. |
 | [`NSGA3`][finchge.algorithm.NSGA3] | Multi-objective | Many-objective optimization using reference points. |
@@ -69,6 +70,33 @@ must be smaller than the resulting island size.
 
 Use `IslandGA` when a single population tends to converge prematurely and
 you want to trade some convergence speed for sustained diversity.
+
+
+## MuPlusLambdaES
+
+[`MuPlusLambdaES`][finchge.algorithm.MuPlusLambdaES] implements the (µ+λ) evolution
+strategy. Each generation, λ offspring are produced from the current µ parents by
+mutation only (no crossover). The next generation is the best µ individuals from
+the combined µ+λ pool. Parents can survive alongside their offspring.
+
+This is elitist, ie, the best individual seen so far can never be lost. It is well
+suited to GE because invalid individuals (those that produce no phenotype) are
+naturally excluded. Only evaluated individuals with usable fitness compete.
+
+A common starting point is λ = µ (equal parents and offspring). Increasing λ
+relative to µ produces more offspring per generation and increases exploration.
+
+```python
+from finchge.algorithm import MuPlusLambdaES
+
+algorithm = MuPlusLambdaES(
+    lambda_=100,          # offspring per generation
+    mutation=mutation,
+    fitness_evaluator=fitness_evaluator,
+)
+```
+
+
 
 
 ## OnePlusOneES
