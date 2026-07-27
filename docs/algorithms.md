@@ -13,6 +13,7 @@ In FinchGE, algorithms are lower-level evolutionary components. A full Grammatic
 | [`IslandGA`][finchge.algorithm.IslandGA] | Single-objective | Parallel sub-populations with periodic migration to preserve diversity. |
 | [`MuPlusLambdaES`][finchge.algorithm.MuPlusLambdaES] | Single-objective | (µ+λ)-ES: best µ from µ parents + λ offspring survive each generation. |
 | [`OnePlusOneES`][finchge.algorithm.OnePlusOneES] | Single-objective | Simplest evolution strategy: one parent produces one offspring; the better survives. |
+| [`MemeticGA`][finchge.algorithm.MemeticGA] | Single-objective | GA augmented with local search: each offspring is hill-climbed before replacement. |
 | [`NSGA2`][finchge.algorithm.NSGA2] | Multi-objective | Pareto-based optimization using non-dominated sorting and crowding distance. |
 | [`NSGA3`][finchge.algorithm.NSGA3] | Multi-objective | Many-objective optimization using reference points. |
 
@@ -117,6 +118,37 @@ from finchge.algorithm import OnePlusOneES
 algorithm = OnePlusOneES(
     mutation=mutation,
     fitness_evaluator=fitness_evaluator,
+)
+```
+
+
+## MemeticGA
+
+[`MemeticGA`][finchge.algorithm.MemeticGA] combines a standard genetic algorithm
+with a local search phase applied to each offspring after mutation. The GA loop
+handles global exploration; local search handles exploitation by iteratively
+applying the mutation operator and keeping improvements.
+
+The `local_search_probability` parameter controls what fraction of offspring
+undergo local search each generation, letting you trade compute budget against
+solution quality. Setting it to `1.0` applies local search to every offspring;
+`0.0` degrades to a standard GA.
+
+The same mutation operator is used for both the GA mutation step and the local
+search step. Any `GEMutationStrategy` works.
+
+```python
+from finchge.algorithm import MemeticGA
+
+algorithm = MemeticGA(
+    selection=selection,
+    crossover=crossover,
+    mutation=mutation,
+    replacement=replacement,
+    elite_size=1,
+    fitness_evaluator=fitness_evaluator,
+    local_search_steps=5,
+    local_search_probability=0.5,
 )
 ```
 
