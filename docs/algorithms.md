@@ -12,6 +12,7 @@ In FinchGE, algorithms are lower-level evolutionary components. A full Grammatic
 | [`SteadyStateGA`][finchge.algorithm.SteadyStateGA] | Single-objective | Genitor-style steady-state replacement; offspring enter the population immediately. |
 | [`IslandGA`][finchge.algorithm.IslandGA] | Single-objective | Parallel sub-populations with periodic migration to preserve diversity. |
 | [`MuPlusLambdaES`][finchge.algorithm.MuPlusLambdaES] | Single-objective | (µ+λ)-ES: best µ from µ parents + λ offspring survive each generation. |
+| [`MuCommaLambdaES`][finchge.algorithm.MuCommaLambdaES] | Single-objective | (µ,λ)-ES: best µ from λ offspring only; parents are always discarded. |
 | [`OnePlusOneES`][finchge.algorithm.OnePlusOneES] | Single-objective | Simplest evolution strategy: one parent produces one offspring; the better survives. |
 | [`MemeticGA`][finchge.algorithm.MemeticGA] | Single-objective | GA augmented with local search: each offspring is hill-climbed before replacement. |
 | [`CLONALG`][finchge.algorithm.CLONALG] | Single-objective | Clonal selection: top individuals are cloned and hypermutated; best clones survive. |
@@ -98,7 +99,29 @@ algorithm = MuPlusLambdaES(
 )
 ```
 
+## MuCommaLambdaES
 
+[`MuCommaLambdaES`][finchge.algorithm.MuCommaLambdaES] implements the (µ,λ)
+evolution strategy. Each generation, λ offspring are produced by mutation. Only
+the best µ of these λ offspring form the next generation — parents are always
+discarded, regardless of their fitness.
+
+Requires λ ≥ µ so the next generation can always be filled from offspring alone.
+A common choice is λ = 2µ to 7µ.
+
+Unlike (µ+λ)-ES, this strategy is **non-elitist**: a good solution can be lost
+if none of its offspring are competitive. This makes the algorithm more explorative
+and better at escaping local optima, at the cost of convergence stability.
+
+```python
+from finchge.algorithm import MuCommaLambdaES
+
+algorithm = MuCommaLambdaES(
+    lambda_=200,          # must be >= population_size
+    mutation=mutation,
+    fitness_evaluator=fitness_evaluator,
+)
+```
 
 
 ## OnePlusOneES
