@@ -65,6 +65,18 @@ class Keys:
     MIGRATION_INTERVAL = "migration_interval"
     MIGRATION_SIZE = "migration_size"
 
+    # For (mu+lambda) and (mu,comma,lambda) ES
+    LAMBDA_SIZE = "lambda_size"
+
+    # For MemeticGA
+    LOCAL_SEARCH_STEPS = "local_search_steps"
+    LOCAL_SEARCH_PROBABILITY = "local_search_probability"
+
+    # For CLONALG
+    NUM_SELECT = "num_select"
+    NUM_CLONES = "num_clones"
+    HYPER_FACTOR = "hyper_factor"
+
 
 class FinchConfig:
     """
@@ -501,9 +513,15 @@ class ConfigValidator:
             Keys.CROSSOVER_PROBABILITY,
             Keys.ELITE_SIZE,
             Keys.TOURNAMENT_SIZE,
-            Keys.NUM_ISLANDS,
+            Keys.NUM_ISLANDS,  # for island ga
             Keys.MIGRATION_INTERVAL,
             Keys.MIGRATION_SIZE,
+            Keys.LAMBDA_SIZE,  # for mu-lambda evolution strategy
+            Keys.LOCAL_SEARCH_STEPS,
+            Keys.LOCAL_SEARCH_PROBABILITY,
+            Keys.NUM_SELECT,
+            Keys.NUM_CLONES,
+            Keys.HYPER_FACTOR,
         },
         "parallel": {
             Keys.PARALLEL_ENABLED,
@@ -561,6 +579,13 @@ class ConfigValidator:
             Keys.NUM_ISLANDS: lambda v: _is_int(v, min_value=2),
             Keys.MIGRATION_INTERVAL: lambda v: _is_int(v, min_value=1),
             Keys.MIGRATION_SIZE: lambda v: _is_int(v, min_value=1),
+            Keys.LAMBDA_SIZE: lambda v: _is_int(v, min_value=1),
+            Keys.LOCAL_SEARCH_STEPS: lambda v: _is_int(v, min_value=1),
+            Keys.LOCAL_SEARCH_PROBABILITY: lambda v: isinstance(v, (int, float))
+            and 0.0 <= v <= 1.0,
+            Keys.NUM_SELECT: lambda v: _is_int(v, min_value=1),
+            Keys.NUM_CLONES: lambda v: _is_int(v, min_value=1),
+            Keys.HYPER_FACTOR: lambda v: isinstance(v, (int, float)) and v > 0,
         },
         "parallel": {
             Keys.PARALLEL_ENABLED: _is_bool,
