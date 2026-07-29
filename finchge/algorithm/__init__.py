@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .base import BaseAlgorithm, BaseAlgorithmMO, BaseAlgorithmSO
+    from .clonalg import CLONALG
     from .ga import GeneticAlgorithm
     from .island_ga import IslandGA
     from .memetic import MemeticGA
@@ -47,6 +48,11 @@ def __getattr__(name: str) -> Any:
 
         return locals()[name]
 
+    if name in {"CLONALG"}:
+        from .clonalg import CLONALG
+
+        return locals()[name]
+
     if name in {"NSGA2", "NSGA3"}:
         from .nsga import NSGA2, NSGA3
 
@@ -65,6 +71,7 @@ __all__ = [
     "OnePlusOneES",
     "MuPlusLambdaES",
     "MemeticGA",
+    "CLONALG",
     "NSGA2",
     "NSGA3",
 ]
