@@ -14,6 +14,7 @@ In FinchGE, algorithms are lower-level evolutionary components. A full Grammatic
 | [`MuPlusLambdaES`][finchge.algorithm.MuPlusLambdaES] | Single-objective | (µ+λ)-ES: best µ from µ parents + λ offspring survive each generation. |
 | [`OnePlusOneES`][finchge.algorithm.OnePlusOneES] | Single-objective | Simplest evolution strategy: one parent produces one offspring; the better survives. |
 | [`MemeticGA`][finchge.algorithm.MemeticGA] | Single-objective | GA augmented with local search: each offspring is hill-climbed before replacement. |
+| [`CLONALG`][finchge.algorithm.CLONALG] | Single-objective | Clonal selection: top individuals are cloned and hypermutated; best clones survive. |
 | [`NSGA2`][finchge.algorithm.NSGA2] | Multi-objective | Pareto-based optimization using non-dominated sorting and crowding distance. |
 | [`NSGA3`][finchge.algorithm.NSGA3] | Multi-objective | Many-objective optimization using reference points. |
 
@@ -151,6 +152,35 @@ algorithm = MemeticGA(
     local_search_probability=0.5,
 )
 ```
+
+
+## CLONALG
+
+[`CLONALG`][finchge.algorithm.CLONALG] implements a clonal selection algorithm
+inspired by the biological immune system (de Castro & Von Zuben, 2002).
+
+Each generation, the top `num_select` individuals are selected by fitness rank.
+Each is cloned `num_clones` times and subjected to hypermutation, where the
+mutation intensity is proportional to fitness rank: the best individual's clones
+mutate least (to preserve good solutions) and the worst selected individual's
+clones mutate most (to explore). The `hyper_factor` parameter controls the
+steepness of this gradient.
+
+After evaluation, the best clone from each group replaces the original individual
+if it is an improvement. The rest of the population is carried forward unchanged.
+
+```python
+from finchge.algorithm import CLONALG
+
+algorithm = CLONALG(
+    num_select=10,        # top individuals to clone each generation
+    num_clones=5,         # clones per selected individual
+    hyper_factor=0.5,     # hypermutation intensity gradient
+    mutation=mutation,
+    fitness_evaluator=fitness_evaluator,
+)
+```
+
 
 
 ## NSGA-II
