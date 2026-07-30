@@ -182,8 +182,12 @@ class SwapMutation(GEMutationStrategy):
         # Randomize pairing order
         self.rng.shuffle(swap_positions)
 
+        # Trim to even length so every selected position is either paired or not selected
+        if len(swap_positions) % 2 == 1:
+            swap_positions.pop()
+
         # Swap values in pairs
-        for i in range(0, len(swap_positions) - 1, 2):
+        for i in range(0, len(swap_positions), 2):
             p1 = swap_positions[i]
             p2 = swap_positions[i + 1]
 
