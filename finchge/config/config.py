@@ -812,6 +812,38 @@ def _validate_cross_field_config(
             f"ge.population_size ({pop_size})"
         )
 
+    # IslandGA: population_size must be divisible by num_islands;
+    # migration_size must be < island_size
+    num_islands = ge.get(Keys.NUM_ISLANDS)
+    migration_size = ge.get(Keys.MIGRATION_SIZE)
+    if (
+        isinstance(pop_size, int)
+        and not isinstance(pop_size, bool)
+        and isinstance(num_islands, int)
+        and not isinstance(num_islands, bool)
+        and num_islands >= 2
+        and pop_size % num_islands != 0
+    ):
+        issues.append(
+            f"ge.population_size ({pop_size}) must be divisible by "
+            f"ge.num_islands ({num_islands}) for IslandGA"
+        )
+    if (
+        isinstance(pop_size, int)
+        and not isinstance(pop_size, bool)
+        and isinstance(num_islands, int)
+        and not isinstance(num_islands, bool)
+        and num_islands >= 2
+        and isinstance(migration_size, int)
+        and not isinstance(migration_size, bool)
+    ):
+        island_size = pop_size // num_islands
+        if migration_size >= island_size:
+            issues.append(
+                f"ge.migration_size ({migration_size}) must be < island size "
+                f"({island_size} = population_size // num_islands) for IslandGA"
+            )
+
     genome_length = ge.get(Keys.GENOME_LENGTH)
     if isinstance(genome_length, int) and not isinstance(genome_length, bool):
         if genome_length < 2:

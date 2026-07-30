@@ -172,3 +172,40 @@ def test_migration_fields_are_optional():
     issues, _ = validate_config(cfg)
 
     assert issues == []
+
+
+def test_population_not_divisible_by_num_islands_fails():
+    config = FinchConfig.from_dict(
+        {
+            "experiment": {"random_seed": 42, "num_generations": 10},
+            "ge": {
+                "population_size": 10,
+                "num_islands": 3,
+                "init_type": "random_genome",
+                "mutation_probability": 0.01,
+                "crossover_probability": 0.5,
+                "elite_size": 1,
+            },
+        }
+    )
+    issues, _ = validate_config(config)
+    assert any("divisible" in msg for msg in issues)
+
+
+def test_migration_size_too_large_fails():
+    config = FinchConfig.from_dict(
+        {
+            "experiment": {"random_seed": 42, "num_generations": 10},
+            "ge": {
+                "population_size": 8,
+                "num_islands": 2,
+                "migration_size": 5,  # island_size = 4, 5 >= 4
+                "init_type": "random_genome",
+                "mutation_probability": 0.01,
+                "crossover_probability": 0.5,
+                "elite_size": 1,
+            },
+        }
+    )
+    issues, _ = validate_config(config)
+    assert any("migration_size" in msg for msg in issues)
