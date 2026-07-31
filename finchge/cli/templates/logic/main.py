@@ -49,4 +49,4 @@ if __name__ == "__main__":
 
     result = ge_.run()
 
-    print(f"Best accuracy: {result.best_individual.fitness[0] * 100:.1f}%")
+    print(f"Best accuracy: {result.all_time_best.fitness[0] * 100:.1f}%")

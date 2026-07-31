@@ -30,7 +30,7 @@ def main() -> None:
     ge = GrammaticalEvolution(grammar=grammar, fitness_evaluator=fitness_evaluator)
     result = ge.run()
 
-    print("Best Solution:", result.best_individual.phenotype)
+    print("Best Solution:", result.all_time_best.phenotype)
 
 
 if __name__ == "__main__":

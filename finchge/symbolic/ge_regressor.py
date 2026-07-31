@@ -125,8 +125,8 @@ class GERegressor(RandomStateMixin, BaseEstimator, RegressorMixin):  # type: ign
 
         self.ge_result_ = ge_result
 
-        # there will be best individual if it is single objective
-        self.selected_individual_ = ge_result.best_individual
+        # there will be best individual (all_time_best) if it is single objective
+        self.selected_individual_ = ge_result.all_time_best
 
         if self.selected_individual_ is not None:
             self.best_phenotype_ = self.selected_individual_.phenotype

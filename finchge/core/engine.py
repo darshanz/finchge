@@ -405,10 +405,11 @@ class GrammaticalEvolution(RandomStateMixin):
             fittest = self.algorithm.get_best_individual(population)
 
             # Track all-time best independently, survives even with elite_size = 0
+            max_best = self.fitness_evaluator.get_maximize_flags()[0]
             if fittest.has_usable_fitness():
                 if not all_time_best.has_usable_fitness() or fittest.sort_key(
-                    self.algorithm.max_best
-                ) > all_time_best.sort_key(self.algorithm.max_best):
+                    max_best
+                ) > all_time_best.sort_key(max_best):
                     all_time_best = fittest
 
             # Log experiment
