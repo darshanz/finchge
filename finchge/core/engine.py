@@ -330,7 +330,7 @@ class GrammaticalEvolution(RandomStateMixin):
         # handle single-objective and multi-objective
         if not self.multi_obj:
             # Run evolution
-            fittest_individual, population = self.__find_best_individual(
+            fittest_individual, all_time_best, population = self.__find_best_individual(
                 start_generation, population
             )
             # Round fitness to 4 decimal values
@@ -342,7 +342,8 @@ class GrammaticalEvolution(RandomStateMixin):
             if self.expt_logger:
                 self.expt_logger.on_run_end(
                     GEResult(
-                        best_individual=fittest_individual,
+                        best_in_generation=fittest_individual,
+                        all_time_best=all_time_best,
                         population=population,
                         pareto_front=None,  # NA: for MO only
                     )
@@ -357,7 +358,8 @@ class GrammaticalEvolution(RandomStateMixin):
                     GEResult(
                         pareto_front=pareto_front,
                         population=population,
-                        best_individual=None,  # NA: for single objective only
+                        best_in_generation=None,  # NA: for single objective only
+                        all_time_best=None,  # NA: for single objective only
                     )
                 )
         # Save Summary and plots
@@ -370,15 +372,17 @@ class GrammaticalEvolution(RandomStateMixin):
         asyncio.run(self.fitness_evaluator.shutdown())
 
         return GEResult(
-            best_individual=fittest_individual if not self.multi_obj else None,
+            best_in_generation=fittest_individual if not self.multi_obj else None,
+            all_time_best=all_time_best if not self.multi_obj else None,
             pareto_front=pareto_front if self.multi_obj else None,
             population=population,
         )
 
     def __find_best_individual(
         self, start_generation: int, population: Population
-    ) -> tuple[Individual, Population]:
+    ) -> tuple[Individual, Individual, Population]:
         fittest: Individual = self.algorithm.get_best_individual(population)
+        all_time_best: Individual = fittest
 
         generation_progress = tqdm(
             range(
@@ -400,6 +404,13 @@ class GrammaticalEvolution(RandomStateMixin):
             )
             fittest = self.algorithm.get_best_individual(population)
 
+            # Track all-time best independently, survives even with elite_size = 0
+            if fittest.has_usable_fitness():
+                if not all_time_best.has_usable_fitness() or fittest.sort_key(
+                    self.algorithm.max_best
+                ) > all_time_best.sort_key(self.algorithm.max_best):
+                    all_time_best = fittest
+
             # Log experiment
             if self.expt_logger:
                 self.expt_logger.on_generation_end(
@@ -414,7 +425,7 @@ class GrammaticalEvolution(RandomStateMixin):
 
         # Clear cache
         self.cache_manager.clear()
-        return fittest, population
+        return fittest, all_time_best, population
 
     def __find_best_front(
         self, start_generation: int, population: Population
