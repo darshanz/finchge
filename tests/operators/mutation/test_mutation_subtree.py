@@ -39,7 +39,6 @@ def test_mutate_raises_error_if_tree_missing(tree_generator):
         mutation_probability=1.0,
         non_terminals=["<expr>", "<op>", "<var>", "<const>"],
         tree_generator=tree_generator,
-        mutation_max_depth=3,
         random_state=42,
     )
     with pytest.raises(ValueError):
@@ -54,7 +53,6 @@ def test_mutate_returns_new_individual(tree_generator):
         mutation_probability=1.0,
         non_terminals=["<expr>", "<op>", "<var>", "<const>"],
         tree_generator=tree_generator,
-        mutation_max_depth=3,
         random_state=42,
     )
 
@@ -72,7 +70,6 @@ def test_no_mutation_when_probability_zero(tree_generator):
         mutation_probability=0.0,
         non_terminals=["<expr>", "<op>", "<var>", "<const>"],
         tree_generator=tree_generator,
-        mutation_max_depth=3,
         random_state=42,
     )
 
@@ -90,7 +87,6 @@ def test_mutation_respects_mutation_events_count(tree_generator):
         mutation_probability=1.0,
         non_terminals=["<expr>", "<op>", "<var>", "<const>"],
         tree_generator=tree_generator,
-        mutation_max_depth=3,
         mutation_events=2,
         random_state=42,
     )
@@ -107,7 +103,6 @@ def test_mutation_handles_no_valid_symbols_gracefully(tree_generator):
         mutation_probability=1.0,
         non_terminals=["<unknown>"],  # does not exist in tree
         tree_generator=tree_generator,
-        mutation_max_depth=3,
         random_state=42,
     )
     child = mutation.mutate(ind)
@@ -125,7 +120,6 @@ def test_mutation_does_not_modify_parent_tree(tree_generator):
         mutation_probability=1.0,
         non_terminals=["<expr>", "<op>", "<var>", "<const>"],
         tree_generator=tree_generator,
-        mutation_max_depth=3,
         random_state=42,
     )
     mutation.mutate(ind)
@@ -141,7 +135,6 @@ def test_mutation_is_deterministic_with_fixed_random_state(tree_generator):
         mutation_probability=1.0,
         non_terminals=["<expr>", "<op>", "<var>", "<const>"],
         tree_generator=tree_generator,
-        mutation_max_depth=3,
         random_state=123,
     )
 
@@ -149,9 +142,33 @@ def test_mutation_is_deterministic_with_fixed_random_state(tree_generator):
         mutation_probability=1.0,
         non_terminals=["<expr>", "<op>", "<var>", "<const>"],
         tree_generator=tree_generator,
-        mutation_max_depth=3,
         random_state=123,
     )
     child1 = mutation1.mutate(ind)
     child2 = mutation2.mutate(ind)
     assert child1.tree == child2.tree
+
+
+def test_mutation_never_exceeds_global_max_tree_depth(grammar):
+    # A mutation point deep enough that a large replacement subtree would
+    # exceed max_tree_depth must still respect the global cap.
+    tree_generator = TreeGenerator(grammar=grammar, max_tree_depth=8)
+    deep_tree = tree_generator._generate_depthfirst_tree(
+        start_symbol="<expr>",
+        max_depth=8,
+        method="grow",
+        rng=__import__("random").Random(0),
+    )
+
+    mutation = SubtreeMutation(
+        mutation_probability=1.0,
+        non_terminals=["<expr>", "<op>", "<var>", "<const>"],
+        tree_generator=tree_generator,
+        mutation_events=5,
+        random_state=42,
+    )
+
+    ind = Individual.from_tree(tree=deep_tree)
+    for _ in range(20):  # repeat to exercise different random mutation points
+        ind = mutation.mutate(ind)
+        assert TreeNode.from_string(ind.tree).max_depth <= 8

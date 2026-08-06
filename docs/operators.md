@@ -105,8 +105,7 @@ Most useful in late-stage search or seeded populations where structural variatio
 
 ### SubtreeMutation
 
-[`SubtreeMutation`][finchge.operators.mutation.SubtreeMutation] operates on derivation trees rather than integer genomes. With probability `mutation_probability`, one or more non-terminal nodes are selected and their subtrees replaced with freshly generated ones up to `mutation_max_depth` levels deep. Candidate nodes are restricted to non-terminals specified at construction, so syntactic validity is maintained throughout. This is the tree analogue of GP subtree mutation, adapted for BNF-guided derivation. Because it operates on the tree representation, it is only applicable when individuals carry derivation trees and is not compatible with genotype-only individuals.
-
+ [`SubtreeMutation`][finchge.operators.mutation.SubtreeMutation] operates on derivation trees rather than integer genomes. With probability `mutation_probability`, one or more non-terminal nodes are selected and their subtrees replaced with freshly generated ones, bounded by the tree's remaining depth budget relative to `max_tree_depth` so mutation can never push an individual past the configured global depth cap. Candidate nodes are restricted to non-terminals specified at construction, so syntactic validity is maintained throughout. Because it operates on the tree representation, it is only applicable when individuals carry derivation trees and is not compatible with genotype-only individuals.
 ## Replacement Operators
 
 Replacement operators decide which individuals survive into the next generation after offspring have been produced and evaluated. All single-objective strategies accept an `elite_size` argument; elites are always drawn from the old population before any offspring are considered.

@@ -88,7 +88,6 @@ def create_deterministic_components(ge_config, grammar_bnf, seed=42):
         mutation_probability=ge_config.ge[Keys.MUTATION_PROBABILITY],
         tree_generator=tree_generator,
         non_terminals=grammar_bnf.non_terminals,
-        mutation_max_depth=50,
     )
 
     algorithm = GeneticAlgorithm(

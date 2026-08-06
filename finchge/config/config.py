@@ -38,10 +38,6 @@ class Keys:
         "deterministic_ramped_ptc2"  # Is determnistic flag for ramped ptc2
     )
     INIT_TREE_STRICT_FULL = "init_tree_strict_full"  # no fallback if grammar does not support full expansion
-
-    MUTATION_MAX_DEPTH = (
-        "mutation_max_depth"  # Maximum depth of newly generated subtrees
-    )
     INIT_TYPE = "init_type"  # random_genome | rvd | pi_grow
 
     # operators
@@ -507,7 +503,6 @@ class ConfigValidator:
             Keys.INIT_TREE_MAX_SIZE,
             Keys.DETERMINISTIC_RAMPED_PTC2,
             Keys.INIT_TREE_STRICT_FULL,
-            Keys.MUTATION_MAX_DEPTH,
             Keys.INIT_TYPE,
             Keys.MUTATION_PROBABILITY,
             Keys.CROSSOVER_PROBABILITY,
@@ -570,7 +565,6 @@ class ConfigValidator:
             Keys.INIT_TREE_MAX_SIZE: lambda v: _is_int(v, min_value=2),
             Keys.DETERMINISTIC_RAMPED_PTC2: _is_bool,
             Keys.INIT_TREE_STRICT_FULL: _is_bool,
-            Keys.MUTATION_MAX_DEPTH: lambda v: _is_int(v, min_value=1),
             Keys.INIT_TYPE: lambda v: _is_one_of(v, _INIT_TYPES),
             Keys.MUTATION_PROBABILITY: _is_probability,
             Keys.CROSSOVER_PROBABILITY: _is_probability,

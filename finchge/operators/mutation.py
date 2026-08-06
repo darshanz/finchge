@@ -601,7 +601,6 @@ class SubtreeMutation(GEMutationStrategy):
         mutation_probability: float,
         non_terminals: list[str],
         tree_generator: TreeGenerator,
-        mutation_max_depth: int,
         mutation_events: int = 1,
         random_state: Optional[int] = None,
     ) -> None:
@@ -610,7 +609,6 @@ class SubtreeMutation(GEMutationStrategy):
         self.non_terminals = non_terminals
         self.tree_generator = tree_generator
         self.mutation_events = mutation_events
-        self.mutation_max_depth = mutation_max_depth
 
     def mutate(self, individual: "Individual") -> "Individual":
         """
@@ -638,9 +636,15 @@ class SubtreeMutation(GEMutationStrategy):
             symbol = self.rng.choice(symbols)
             target: TreeNode = self.rng.choice(tree.find_by_symbol(symbol))
 
+            # individual's absolute depth past max_tree_depth.
+            remaining_depth = self.tree_generator.max_tree_depth - target.depth
+            if remaining_depth < 1:
+                # No budget left at this mutation point
+                continue
+
             # Generate a fresh subtree rooted at the same symbol
             new_subtree = self.tree_generator.generate_subtree(
-                symbol=symbol, max_depth=self.mutation_max_depth, rng=self.rng
+                symbol=symbol, max_depth=remaining_depth, rng=self.rng
             )
 
             # Replace target subtree
