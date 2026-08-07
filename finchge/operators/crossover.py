@@ -3,6 +3,7 @@ from typing import List, Literal, Optional, Tuple
 
 from finchge.core.individual import Individual
 from finchge.grammar.derivation_tree import TreeNode
+from finchge.grammar.tree_generator import TreeGenerator
 from finchge.operators.base import GECrossoverStrategy
 
 
@@ -415,6 +416,8 @@ class SubtreeCrossover(GECrossoverStrategy):
         self,
         crossover_proba: float,
         non_terminals: list[str],
+        tree_generator: TreeGenerator,
+        max_tries: int = 20,
         random_state: Optional[int] = None,
     ) -> None:
         """
@@ -427,6 +430,8 @@ class SubtreeCrossover(GECrossoverStrategy):
         """
         super().__init__(crossover_proba=crossover_proba, random_state=random_state)
         self.non_terminals: list[str] = non_terminals
+        self.tree_generator = tree_generator
+        self.max_tries = max_tries
 
     def cross(
         self, p_0: "Individual", p_1: "Individual"
@@ -447,24 +452,22 @@ class SubtreeCrossover(GECrossoverStrategy):
         if p_0.tree is None or p_1.tree is None:
             raise ValueError("The tree must exist.")
 
-        # Clone trees to ensure parents remain untouched
-        t0: TreeNode = TreeNode.from_string(p_0.tree)
-        t1: TreeNode = TreeNode.from_string(p_1.tree)
-
         # Decide whether crossover occurs
         if self.rng.random() > self.crossover_proba:
             # No crossover: return fresh individuals built from cloned trees
             return (
-                Individual.from_tree(t0),
-                Individual.from_tree(t1),
+                Individual.from_tree(TreeNode.from_string(p_0.tree)),
+                Individual.from_tree(TreeNode.from_string(p_1.tree)),
             )
 
         # Identify shared non-terminal symbols as valid crossover points
-        symbols1_set = set(t1.collect_symbols(self.non_terminals))
+        scan_t0: TreeNode = TreeNode.from_string(p_0.tree)
+        scan_t1: TreeNode = TreeNode.from_string(p_1.tree)
+        symbols1_set = set(scan_t1.collect_symbols(self.non_terminals))
         shared_symbols = sorted(
             [
                 symbol
-                for symbol in t0.collect_symbols(self.non_terminals)
+                for symbol in scan_t0.collect_symbols(self.non_terminals)
                 if symbol in symbols1_set
             ]
         )
@@ -473,21 +476,40 @@ class SubtreeCrossover(GECrossoverStrategy):
         # Basically returning same parents
         if not shared_symbols:
             return (
-                Individual.from_tree(t1),
-                Individual.from_tree(t0),
+                Individual.from_tree(scan_t1),
+                Individual.from_tree(scan_t0),
             )
 
-        # Select crossover point
-        symbol: str = self.rng.choice(shared_symbols)
+        max_tree_depth = self.tree_generator.max_tree_depth
 
-        # Select concrete nodes with the chosen non-terminal symbol
-        n0: TreeNode = self.rng.choice(t0.find_by_symbol(symbol))
-        n1: TreeNode = self.rng.choice(t1.find_by_symbol(symbol))
+        for _ in range(self.max_tries):
+            # Clone trees fresh each attempt
+            # swap_subtree_with mutates in place,
+            # and a rejected attempt must not carry over into the next one.
+            t0: TreeNode = TreeNode.from_string(p_0.tree)
+            t1: TreeNode = TreeNode.from_string(p_1.tree)
 
-        # Perform subtree swap
-        new_t0, new_t1 = n0.swap_subtree_with(n1)
+            # Select crossover point
+            symbol: str = self.rng.choice(shared_symbols)
 
+            # Select concrete nodes with the chosen non-terminal symbol
+            n0: TreeNode = self.rng.choice(t0.find_by_symbol(symbol))
+            n1: TreeNode = self.rng.choice(t1.find_by_symbol(symbol))
+
+            # Perform subtree swap
+            new_t0, new_t1 = n0.swap_subtree_with(n1)
+            if (
+                new_t0.max_depth <= max_tree_depth
+                and new_t1.max_depth <= max_tree_depth
+            ):
+                return (
+                    Individual.from_tree(new_t0),
+                    Individual.from_tree(new_t1),
+                )
+
+        # No depth-respecting swap found after max_tries attempts; return
+        # unmodified clones rather than violating max_tree_depth.
         return (
-            Individual.from_tree(new_t0),
-            Individual.from_tree(new_t1),
+            Individual.from_tree(TreeNode.from_string(p_0.tree)),
+            Individual.from_tree(TreeNode.from_string(p_1.tree)),
         )

@@ -83,6 +83,7 @@ def create_deterministic_components(ge_config, grammar_bnf, seed=42):
     subtree_crossover_ = SubtreeCrossover(
         crossover_proba=ge_config.ge[Keys.CROSSOVER_PROBABILITY],
         non_terminals=grammar_bnf.non_terminals,
+        tree_generator=tree_generator,
     )
     subtree_mutation_ = SubtreeMutation(
         mutation_probability=ge_config.ge[Keys.MUTATION_PROBABILITY],

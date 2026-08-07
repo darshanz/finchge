@@ -623,7 +623,8 @@ class SubtreeMutation(GEMutationStrategy):
         if not individual.tree:
             raise ValueError("The tree must exist.")
         tree: TreeNode = TreeNode.from_string(individual.tree)
-        # Decide whether mutation happens at all
+
+        # Decide whether mutation happens
         if self.rng.random() > self.mutation_probability:
             return Individual.from_tree(tree)
 
@@ -637,8 +638,9 @@ class SubtreeMutation(GEMutationStrategy):
             target: TreeNode = self.rng.choice(tree.find_by_symbol(symbol))
 
             # individual's absolute depth past max_tree_depth.
-            remaining_depth = self.tree_generator.max_tree_depth - target.depth
-            if remaining_depth < 1:
+            remaining_depth = self.tree_generator.max_tree_depth - target.depth + 1
+            min_path = self.tree_generator.grammar.rules[symbol].min_path
+            if min_path is None or remaining_depth < min_path:
                 # No budget left at this mutation point
                 continue
 
