@@ -243,8 +243,7 @@ class NSGA2ElitistReplacement(GEReplacementStrategy):
         )
 
         for front in fronts:
-            if any(ind.get_meta("crowding_distance", float) is None for ind in front):
-                calculate_crowding_distance(front)
+            calculate_crowding_distance(front)
 
         selected = []
         selected.extend(elite_individuals)

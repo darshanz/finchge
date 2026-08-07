@@ -41,4 +41,4 @@ if __name__ == "__main__":
     ge_ = GrammaticalEvolution(grammar=grammar, fitness_evaluator=fitness_evaluator)
     result = ge_.run()
 
-    print(f"Best fitness: {result.best_individual.fitness[0]}/89 food eaten")
+    print(f"Best fitness: {result.all_time_best.fitness[0]}/89 food eaten")

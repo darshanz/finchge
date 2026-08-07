@@ -1,6 +1,25 @@
 # Changelog
 
 
+## [1.0.1-beta.14] - 2026-08-08
+
+### Added
+- Evolution strategies: OnePlusOneES, MuPlusLambdaES, MuCommaLambdaES
+- MemeticGA algorithm
+- CLONALG (clonal selection) algorithm
+- Top-level package imports `from finchge import GrammaticalEvolution, FitnessEvaluator, Grammar, GenotypeMapper, FinchConfig, Keys`
+- Test coverage for the new algorithms, NSGA2 utilities, Individual class, and fitness functions
+
+### Changed
+- `GEResult.best_individual` replaced with `best_in_generation` and `all_time_best`, tracked separately across the whole run instead of only the final generation (fixes #17)
+- NSGA-II now pushes individuals to the end of the ranking instead of raising an error
+- Removed unnecessary quote-stripping in the mapper, remained from initial versions of the parser.
+
+### Fixed
+- SwapMutation no longer silently skips the last position when an odd count is selected
+- NSGA-II crowding distance now recalculated for all individuals; removed an incorrect `if None` condition that skipped some
+- SubtreeMutation and SubtreeCrossover now respect `max_tree_depth`. previously mutation had separate depth constraint
+- GenotypeMapper (genome-based initializers) non-terminals at the depth cap are now rejected before expansion instead of one step late, which caused tree size larger than `max_tree_depth`
 
 
 

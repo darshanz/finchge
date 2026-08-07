@@ -66,8 +66,13 @@ def dominates(ind1: Individual, ind2: Individual, maximize_flags: list[bool]) ->
     f1 = ind1.fitness if isinstance(ind1.fitness, list) else [ind1.fitness]
     f2 = ind2.fitness if isinstance(ind2.fitness, list) else [ind2.fitness]
 
-    if len(f1) != len(maximize_flags) or len(f2) != len(maximize_flags):
-        raise ValueError("Length of fitness values and maximize_flags must match.")
+    # Send invalids to the last pareto front instead of crashing the sort.
+    ind1_usable = len(f1) == len(maximize_flags)
+    ind2_usable = len(f2) == len(maximize_flags)
+    if not ind1_usable:
+        return False
+    if not ind2_usable:
+        return True
 
     for i, (val1, val2) in enumerate(zip(f1, f2)):
         # Compare based on optimization direction
@@ -141,8 +146,17 @@ def calculate_crowding_distance(
     if not front:
         return
 
-    if len(front) <= 2:
-        for ind in front:
+    # individuals without usable fitness get zero distance and are excluded from geometry calculation
+    usable = [ind for ind in front if ind.has_usable_fitness()]
+    for ind in front:
+        if ind not in usable:
+            ind.meta["crowding_distance"] = 0.0
+
+    if not usable:
+        return
+
+    if len(usable) <= 2:
+        for ind in usable:
             ind.meta["crowding_distance"] = float("inf")
         return
 

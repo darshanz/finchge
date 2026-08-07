@@ -159,9 +159,9 @@ class ExperimentLogger(BaseLogger):
         self.compress_genotypes: bool = compress_genotypes
         self.log_population_samples: bool = log_population_samples
         self.sample_size: int = sample_size
-        self.custom_log_hook: Optional[Callable[[dict[str, Any]], None]] = (
-            custom_log_hook
-        )
+        self.custom_log_hook: Optional[
+            Callable[[dict[str, Any]], None]
+        ] = custom_log_hook
 
         self.log_dir: Optional[Path] = None
         self.csv_path: Optional[Path] = None
@@ -643,14 +643,14 @@ class ExperimentLogger(BaseLogger):
             "n_objectives": len(self.objective_names) if self.objective_names else 0,
         }
 
-        if result.best_individual is not None:
-            ind = result.best_individual
+        if result.all_time_best is not None:
+            ind = result.all_time_best
             ind_summary = IndividualLogHelper.build_summary(ind)
             fitness = ind_summary["fitness"]
 
             summary["type"] = "single_objective"
             summary["best_fitness"] = fitness[0] if fitness else None
-            summary["best_individual"] = ind_summary
+            summary["all_time_best"] = ind_summary
 
             payload = {
                 "type": "single_objective",
@@ -662,7 +662,7 @@ class ExperimentLogger(BaseLogger):
                 "phenotype_length": ind_summary["phenotype_length"],
                 "genotype_length": ind_summary["genotype_length"],
             }
-            LogIOHelper.write_json(self.log_dir / "best_individual.json", payload)
+            LogIOHelper.write_json(self.log_dir / "all_time_best.json", payload)
 
         elif result.pareto_front is not None:
             front = result.pareto_front

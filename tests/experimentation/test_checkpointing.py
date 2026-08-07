@@ -146,10 +146,13 @@ def test_checkpoint_resume_equivalence(
     result_resumed = ge_resume.run()
 
     #  then check
-    assert result_full.best_individual.fitness == result_resumed.best_individual.fitness
     assert (
-        result_full.best_individual.phenotype
-        == result_resumed.best_individual.phenotype
+        result_full.best_in_generation.fitness
+        == result_resumed.best_in_generation.fitness
+    )
+    assert (
+        result_full.best_in_generation.phenotype
+        == result_resumed.best_in_generation.phenotype
     )
 
 

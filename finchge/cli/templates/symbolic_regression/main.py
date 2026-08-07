@@ -64,8 +64,8 @@ def main() -> None:
 
     result = ge.run()
 
-    print("Best Solution:", result.best_individual.phenotype)
-    print(f"Fitness: {result.best_individual.fitness[0]:.4f}")
+    print("Best Solution:", result.all_time_best.phenotype)
+    print(f"Fitness: {result.all_time_best.fitness[0]:.4f}")
 
 
 if __name__ == "__main__":

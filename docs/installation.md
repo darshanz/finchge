@@ -53,7 +53,7 @@ print(f"finchGE {finchge.__version__} installed successfully")
 python -m pip install finchge
 
 # Specific version (e.g., beta release)
-python -m pip install finchge==1.0.1-beta.13
+python -m pip install finchge==1.0.1-beta.14
 ```
 
 ### With Optional Dependencies
@@ -153,7 +153,7 @@ If you encounter issues during installation:
 <p>For hassle-free use and reproducibility, pin your working dependencies in a <code>requirements.txt</code> file:</p>
 
 ```txt
-finchge==1.0.1-beta.13
+finchge==1.0.1-beta.14
 numpy==1.24.0
 scikit-learn==1.3.0
 pandas==2.0.0

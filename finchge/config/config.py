@@ -38,10 +38,6 @@ class Keys:
         "deterministic_ramped_ptc2"  # Is determnistic flag for ramped ptc2
     )
     INIT_TREE_STRICT_FULL = "init_tree_strict_full"  # no fallback if grammar does not support full expansion
-
-    MUTATION_MAX_DEPTH = (
-        "mutation_max_depth"  # Maximum depth of newly generated subtrees
-    )
     INIT_TYPE = "init_type"  # random_genome | rvd | pi_grow
 
     # operators
@@ -64,6 +60,18 @@ class Keys:
     NUM_ISLANDS = "num_islands"
     MIGRATION_INTERVAL = "migration_interval"
     MIGRATION_SIZE = "migration_size"
+
+    # For (mu+lambda) and (mu,comma,lambda) ES
+    LAMBDA_SIZE = "lambda_size"
+
+    # For MemeticGA
+    LOCAL_SEARCH_STEPS = "local_search_steps"
+    LOCAL_SEARCH_PROBABILITY = "local_search_probability"
+
+    # For CLONALG
+    NUM_SELECT = "num_select"
+    NUM_CLONES = "num_clones"
+    HYPER_FACTOR = "hyper_factor"
 
 
 class FinchConfig:
@@ -495,15 +503,20 @@ class ConfigValidator:
             Keys.INIT_TREE_MAX_SIZE,
             Keys.DETERMINISTIC_RAMPED_PTC2,
             Keys.INIT_TREE_STRICT_FULL,
-            Keys.MUTATION_MAX_DEPTH,
             Keys.INIT_TYPE,
             Keys.MUTATION_PROBABILITY,
             Keys.CROSSOVER_PROBABILITY,
             Keys.ELITE_SIZE,
             Keys.TOURNAMENT_SIZE,
-            Keys.NUM_ISLANDS,
+            Keys.NUM_ISLANDS,  # for island ga
             Keys.MIGRATION_INTERVAL,
             Keys.MIGRATION_SIZE,
+            Keys.LAMBDA_SIZE,  # for mu-lambda evolution strategy
+            Keys.LOCAL_SEARCH_STEPS,
+            Keys.LOCAL_SEARCH_PROBABILITY,
+            Keys.NUM_SELECT,
+            Keys.NUM_CLONES,
+            Keys.HYPER_FACTOR,
         },
         "parallel": {
             Keys.PARALLEL_ENABLED,
@@ -552,7 +565,6 @@ class ConfigValidator:
             Keys.INIT_TREE_MAX_SIZE: lambda v: _is_int(v, min_value=2),
             Keys.DETERMINISTIC_RAMPED_PTC2: _is_bool,
             Keys.INIT_TREE_STRICT_FULL: _is_bool,
-            Keys.MUTATION_MAX_DEPTH: lambda v: _is_int(v, min_value=1),
             Keys.INIT_TYPE: lambda v: _is_one_of(v, _INIT_TYPES),
             Keys.MUTATION_PROBABILITY: _is_probability,
             Keys.CROSSOVER_PROBABILITY: _is_probability,
@@ -561,6 +573,13 @@ class ConfigValidator:
             Keys.NUM_ISLANDS: lambda v: _is_int(v, min_value=2),
             Keys.MIGRATION_INTERVAL: lambda v: _is_int(v, min_value=1),
             Keys.MIGRATION_SIZE: lambda v: _is_int(v, min_value=1),
+            Keys.LAMBDA_SIZE: lambda v: _is_int(v, min_value=1),
+            Keys.LOCAL_SEARCH_STEPS: lambda v: _is_int(v, min_value=1),
+            Keys.LOCAL_SEARCH_PROBABILITY: lambda v: isinstance(v, (int, float))
+            and 0.0 <= v <= 1.0,
+            Keys.NUM_SELECT: lambda v: _is_int(v, min_value=1),
+            Keys.NUM_CLONES: lambda v: _is_int(v, min_value=1),
+            Keys.HYPER_FACTOR: lambda v: isinstance(v, (int, float)) and v > 0,
         },
         "parallel": {
             Keys.PARALLEL_ENABLED: _is_bool,
@@ -786,6 +805,38 @@ def _validate_cross_field_config(
             f"ge.tournament_size ({tournament_size}) is larger than "
             f"ge.population_size ({pop_size})"
         )
+
+    # IslandGA: population_size must be divisible by num_islands;
+    # migration_size must be < island_size
+    num_islands = ge.get(Keys.NUM_ISLANDS)
+    migration_size = ge.get(Keys.MIGRATION_SIZE)
+    if (
+        isinstance(pop_size, int)
+        and not isinstance(pop_size, bool)
+        and isinstance(num_islands, int)
+        and not isinstance(num_islands, bool)
+        and num_islands >= 2
+        and pop_size % num_islands != 0
+    ):
+        issues.append(
+            f"ge.population_size ({pop_size}) must be divisible by "
+            f"ge.num_islands ({num_islands}) for IslandGA"
+        )
+    if (
+        isinstance(pop_size, int)
+        and not isinstance(pop_size, bool)
+        and isinstance(num_islands, int)
+        and not isinstance(num_islands, bool)
+        and num_islands >= 2
+        and isinstance(migration_size, int)
+        and not isinstance(migration_size, bool)
+    ):
+        island_size = pop_size // num_islands
+        if migration_size >= island_size:
+            issues.append(
+                f"ge.migration_size ({migration_size}) must be < island size "
+                f"({island_size} = population_size // num_islands) for IslandGA"
+            )
 
     genome_length = ge.get(Keys.GENOME_LENGTH)
     if isinstance(genome_length, int) and not isinstance(genome_length, bool):

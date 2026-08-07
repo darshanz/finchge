@@ -120,7 +120,7 @@ def test_single_objective_result_contains_final_population(engine_config, tiny_g
 
     result = ge.run()
 
-    assert result.best_individual.phenotype == "final"
+    assert result.best_in_generation.phenotype == "final"
     assert result.population.individuals[0].phenotype == "final"
 
 
@@ -145,6 +145,6 @@ def test_multi_objective_result_contains_final_pareto_front(
 
     result = ge.run()
 
-    assert result.best_individual is None
+    assert result.best_in_generation is None
     assert result.pareto_front[0].phenotype == "final"
     assert result.population.individuals[0].phenotype == "final"
