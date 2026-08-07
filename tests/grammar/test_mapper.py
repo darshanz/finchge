@@ -139,3 +139,19 @@ def test_genotype_mapper_round_trip_consistency_various_lengths(
         f"Original tree:\n{result_1.tree.to_string()}\n"
         f"Round-trip tree:\n{result_2.tree.to_string()}"
     )
+
+
+def test_map_never_exceeds_max_tree_depth_even_when_invalid():
+    grammar = Grammar(
+        grammar_str="""<expr> ::= <expr> <op> <expr> | <var> | <const>
+    <op> ::= + | -
+    <var> ::= x_0 | x_1
+    <const> ::= 1.0 | 2.0 | 3.0
+    """
+    )
+    mapper = GenotypeMapper(grammar=grammar, max_wraps=0, max_tree_depth=30)
+    genome = [0] * 2000  # always picks choice index 0 -> the recursive production
+
+    result = mapper.map(genome)
+    assert result.invalid is True
+    assert result.tree.max_depth <= 30

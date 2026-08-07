@@ -200,6 +200,11 @@ class GenotypeMapper(RandomStateMixin):
             if current_symbol not in self.rules:
                 continue
 
+            # A non-terminal exactly at the max tree depth would lead to tree with depth higher than the max_tree_depth
+            # So, just discard such trees, so that max_tree_depth cap is respected.
+            if self.max_tree_depth is not None and depth >= self.max_tree_depth:
+                return self._invalid_result(root, used_genome, used_codons_count)
+
             # if we have exhausted the genome and still need to expand a non-terminal,
             # wrap back to the start and count a wrap.
             if current_codon_index > 0 and current_codon_index % genotype_len == 0:
