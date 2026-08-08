@@ -75,6 +75,11 @@ The finchGE API consists of:
         - GeneticAlgorithm
         - SteadyStateGA
         - IslandGA
+        - MuPlusLambdaES
+        - MuCommaLambdaES
+        - OnePlusOneES
+        - MemeticGA
+        - CLONALG
         - NSGA2
         - NSGA3
 
