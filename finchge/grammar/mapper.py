@@ -413,7 +413,7 @@ class GenotypeMapper(RandomStateMixin):
         cur_len = len(genome)
 
         if cur_len >= target_len:
-            return genome[:target_len]
+            return genome
 
         pad_len = target_len - cur_len
 
