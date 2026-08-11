@@ -36,7 +36,6 @@ def test_mutate_raises_error_if_tree_missing(tree_generator):
     # if the parent individual does not contain a tree.
     individual = Individual(tree=None)
     mutation = SubtreeMutation(
-        mutation_probability=1.0,
         non_terminals=["<expr>", "<op>", "<var>", "<const>"],
         tree_generator=tree_generator,
         random_state=42,
@@ -50,7 +49,6 @@ def test_mutate_returns_new_individual(tree_generator):
     ind = make_individual(tree_=tree_str)
 
     mutation = SubtreeMutation(
-        mutation_probability=1.0,
         non_terminals=["<expr>", "<op>", "<var>", "<const>"],
         tree_generator=tree_generator,
         random_state=42,
@@ -61,21 +59,20 @@ def test_mutate_returns_new_individual(tree_generator):
     assert mutated is not ind
 
 
-def test_no_mutation_when_probability_zero(tree_generator):
-    # when mutation probability is zero,
-    # the resulting individual is a clone of the parent tree.
+def test_mutation_always_applies(tree_generator):
+    """Regression test: SubtreeMutation no longer gates mutation behind a
+    per-individual probability; every call must attempt mutation_events
+    mutation events unconditionally."""
     ind = make_individual(tree_=tree_str)
 
     mutation = SubtreeMutation(
-        mutation_probability=0.0,
         non_terminals=["<expr>", "<op>", "<var>", "<const>"],
         tree_generator=tree_generator,
         random_state=42,
     )
 
     child = mutation.mutate(ind)
-    assert child.tree == ind.tree
-    assert child.tree is not ind.tree
+    assert child.tree != ind.tree
 
 
 def test_mutation_respects_mutation_events_count(tree_generator):
@@ -84,7 +81,6 @@ def test_mutation_respects_mutation_events_count(tree_generator):
     ind = make_individual(tree_=tree_str)
 
     mutation = SubtreeMutation(
-        mutation_probability=1.0,
         non_terminals=["<expr>", "<op>", "<var>", "<const>"],
         tree_generator=tree_generator,
         mutation_events=2,
@@ -100,7 +96,6 @@ def test_mutation_handles_no_valid_symbols_gracefully(tree_generator):
     ind = make_individual(tree_=tree_str)
 
     mutation = SubtreeMutation(
-        mutation_probability=1.0,
         non_terminals=["<unknown>"],  # does not exist in tree
         tree_generator=tree_generator,
         random_state=42,
@@ -117,7 +112,6 @@ def test_mutation_does_not_modify_parent_tree(tree_generator):
     original_tree = ind.tree
 
     mutation = SubtreeMutation(
-        mutation_probability=1.0,
         non_terminals=["<expr>", "<op>", "<var>", "<const>"],
         tree_generator=tree_generator,
         random_state=42,
@@ -132,14 +126,12 @@ def test_mutation_is_deterministic_with_fixed_random_state(tree_generator):
     ind = make_individual(tree_=tree_str)
 
     mutation1 = SubtreeMutation(
-        mutation_probability=1.0,
         non_terminals=["<expr>", "<op>", "<var>", "<const>"],
         tree_generator=tree_generator,
         random_state=123,
     )
 
     mutation2 = SubtreeMutation(
-        mutation_probability=1.0,
         non_terminals=["<expr>", "<op>", "<var>", "<const>"],
         tree_generator=tree_generator,
         random_state=123,
@@ -161,7 +153,6 @@ def test_mutation_never_exceeds_global_max_tree_depth(grammar):
     )
 
     mutation = SubtreeMutation(
-        mutation_probability=1.0,
         non_terminals=["<expr>", "<op>", "<var>", "<const>"],
         tree_generator=tree_generator,
         mutation_events=5,

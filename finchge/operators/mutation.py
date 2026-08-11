@@ -598,14 +598,12 @@ class SubtreeMutation(GEMutationStrategy):
 
     def __init__(
         self,
-        mutation_probability: float,
         non_terminals: list[str],
         tree_generator: TreeGenerator,
         mutation_events: int = 1,
         random_state: Optional[int] = None,
     ) -> None:
         super().__init__(random_state=random_state)
-        self.mutation_probability = mutation_probability
         self.non_terminals = non_terminals
         self.tree_generator = tree_generator
         self.mutation_events = mutation_events
@@ -623,10 +621,6 @@ class SubtreeMutation(GEMutationStrategy):
         if not individual.tree:
             raise ValueError("The tree must exist.")
         tree: TreeNode = TreeNode.from_string(individual.tree)
-
-        # Decide whether mutation happens
-        if self.rng.random() > self.mutation_probability:
-            return Individual.from_tree(tree)
 
         for _ in range(self.mutation_events):
             # Collect grammar-valid mutation points
