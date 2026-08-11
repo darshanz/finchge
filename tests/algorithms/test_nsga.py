@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 from finchge.algorithm.nsga import NSGA2, NSGA3
 from finchge.core.individual import Individual
 from finchge.core.population import Population
-from finchge.operators.replacement import NSGA2ElitistReplacement
+from finchge.operators.replacement import NSGA2Replacement
 
 
 class _FakeEvaluatorMO:
@@ -42,7 +42,7 @@ def _make_nsga2(n_objectives: int = 2, elite_size: int = 0) -> NSGA2:
     selection = MagicMock()
     selection.requires_case_data = False
     selection.select.side_effect = lambda population_size, individuals: individuals
-    replacement = NSGA2ElitistReplacement(maximize_flags=[True, True])
+    replacement = NSGA2Replacement(maximize_flags=[True, True])
 
     return NSGA2(
         selection=selection,
