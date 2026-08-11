@@ -268,6 +268,7 @@ class GenotypeMapper(RandomStateMixin):
         codon_size: int = 127,
         pad_to_length: Optional[int] = None,
         pad_mode: str = "random",
+        min_tail_ratio: float = 0.0,
     ) -> list[int]:
         """
         Encode a derivation tree into a genotype that reproduces the same tree.
@@ -287,6 +288,8 @@ class GenotypeMapper(RandomStateMixin):
 
             pad_mode:
                 "zeros" or "random".
+            min_tail_ratio:
+                Optional minimum spare-codon ratio relative to used_codons (e.g. 0.5 = at least 50% more than the tree needed). Combines with pad_to_length as a floor, whichever target is larger wins.
 
         Returns:
             list[int]: Genotype reproducing this tree.
@@ -322,11 +325,16 @@ class GenotypeMapper(RandomStateMixin):
             for child in reversed(node.children):
                 stack.append(child)
 
-        # genome padding
-        if pad_to_length is not None:
+        # pad_to_length is an absolute floor,
+        # min_tail_ratio is a floor relative to what this tree actually used.
+        if pad_to_length is not None or min_tail_ratio > 0:
+            target_len = max(
+                pad_to_length or 0,
+                len(genome) + int(len(genome) * min_tail_ratio),
+            )
             genome = self._pad_genome(
                 genome=genome,
-                target_len=pad_to_length,
+                target_len=target_len,
                 codon_size=codon_size,
                 pad_mode=pad_mode,
             )
