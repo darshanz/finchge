@@ -240,7 +240,8 @@ allowing flexible population initialisation tailored to experimental requirement
 ??? "References"
 
       - Ryan, C., Collins, J.J. and Neill, M.O., 1998, April. Grammatical evolution: Evolving programs for an arbitrary language. In European conference on genetic programming (pp. 83-96). Berlin, Heidelberg: Springer Berlin Heidelberg.
-      - O’Neil, M. and Ryan, C., 2003. Grammatical evolution. In Grammatical Evolution: Evolutionary Automatic Programming in an Arbitrary Language (pp. 33-47). Boston, MA: Springer US.      - Koza, J. R. (1992). *Genetic Programming: On the Programming of Computers by Means of Natural Selection.* MIT Press.
+      - O’Neil, M. and Ryan, C., 2003. Grammatical evolution. In Grammatical Evolution: Evolutionary Automatic Programming in an Arbitrary Language (pp. 33-47). Boston, MA: Springer US.
+      - Koza, J. R. (1992). *Genetic Programming: On the Programming of Computers by Means of Natural Selection.* MIT Press.
       - Ryan, C. and Azad, R.M.A., 2003, July. Sensible initialisation in grammatical evolution. In GECCO (pp. 142-145). Menlo Park: AAAI.
       - Fenton, M., McDermott, J., Fagan, D., Forstenlechner, S., Hemberg, E. and O'Neill, M., 2017, July. Ponyge2: Grammatical evolution in python. In Proceedings of the genetic and evolutionary computation conference companion (pp. 1194-1201).
       - Nicolau, M., 2017. Understanding grammatical evolution: initialisation. Genetic Programming and Evolvable Machines, 18(4), pp.467-507.

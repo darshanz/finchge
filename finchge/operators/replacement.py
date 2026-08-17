@@ -31,7 +31,7 @@ class GenerationalReplacement(GEReplacementStrategy):
 
     See Also:
         - RandomElitistReplacement
-        - NSGA2ElitistReplacement
+        - NSGA2Replacement
     """
 
     def __init__(self, max_best: bool, random_state: Optional[int] = None) -> None:
@@ -114,7 +114,7 @@ class RandomElitistReplacement(GEReplacementStrategy):
 
     See Also:
         - GenerationalReplacement
-        - NSGA2ElitistReplacement
+        - NSGA2Replacement
     """
 
     def __init__(self, max_best: bool, random_state: Optional[int] = None) -> None:
@@ -168,18 +168,15 @@ REPLACEMENT STRATEGY FOR MULTI-OBJECTIVE OPTIMIZATION
 """
 
 
-class NSGA2ElitistReplacement(GEReplacementStrategy):
-    """NSGA-II elitist replacement strategy using Pareto rank and crowding distance.
+class NSGA2Replacement(GEReplacementStrategy):
+    """NSGA-II environmental selection using Pareto rank and crowding distance.
 
-    This replacement strategy implements the environmental selection step of
-    NSGA-II. It preserves elite individuals from the previous population and
-    fills the remaining population by selecting individuals from successive
-    Pareto fronts, prioritizing diversity via crowding distance.
-
-    The strategy assumes that:
-    - Non-dominated sorting has already been performed.
-    - Each individual has a valid Pareto rank stored in ``meta["rank"]``.
-    - Crowding distance is computed per front using NSGA-II rules.
+    Implements the environmental selection step of NSGA-II (Deb et al., 2002).
+    The old and new populations are combined into one pool, non-dominated
+    sorting assigns Pareto ranks, and the next generation is filled front by
+    front; when a front only partially fits the remaining slots, crowding
+    distance breaks ties in favour of individuals in less-crowded regions of
+    objective space.
 
     This class is **not compatible with NSGA-III**, as it relies on crowding
     distance for diversity preservation. For NSGA-III, reference-point-based
@@ -193,7 +190,7 @@ class NSGA2ElitistReplacement(GEReplacementStrategy):
 
     Methods:
         replace:
-            Performs elitist environmental selection according to NSGA-II.
+            Performs NSGA-II environmental selection on the combined population.
 
     See Also:
         - fast_non_dominated_sort
@@ -216,26 +213,21 @@ class NSGA2ElitistReplacement(GEReplacementStrategy):
         """
         Combines old and new populations, runs non-dominated sorting and
         crowding-distance ranking, and selects ``population_size`` individuals
-        from successive Pareto fronts, with ``elite_size`` guaranteed elites
-        from the previous generation prepended.
+        from successive Pareto fronts.
 
         Args:
             new_population: Offspring generated this generation.
             old_population: Previous generation population.
-            elite_size: Number of top-ranked old individuals guaranteed a slot.
+            elite_size: Unused. Accepted only for interface consistency with
+                other ``GEReplacementStrategy`` implementations -- NSGA-II's
+                combined-population truncation is already elitist; see the
+                class docstring.
             population_size: Target size of the returned population.
 
         Returns:
             List of ``population_size`` individuals ranked by Pareto front
             and crowding distance.
         """
-
-        # Sort by rank, handle None values
-        valid_old = [ind for ind in old_population if ind.has_meta("rank")]
-
-        valid_old.sort(key=lambda x: x.get_meta("rank", int))
-        elite_individuals = valid_old[:elite_size]
-        elite_set = set(elite_individuals)
 
         combined = old_population + new_population
         fronts = fast_non_dominated_sort(
@@ -246,9 +238,7 @@ class NSGA2ElitistReplacement(GEReplacementStrategy):
             calculate_crowding_distance(front)
 
         selected = []
-        selected.extend(elite_individuals)
 
-        # Then fill from fronts (excluding elites that were already added)
         for front in fronts:
             # Sort front by crowding distance
             front.sort(
@@ -258,10 +248,7 @@ class NSGA2ElitistReplacement(GEReplacementStrategy):
             for ind in front:
                 if len(selected) >= population_size:
                     break
-
-                # Add if not already in elites
-                if ind not in elite_set:
-                    selected.append(ind)
+                selected.append(ind)
 
         # fill with remaining , (not sure if needed. Should not happen though... Handle later..)
         if len(selected) < population_size:

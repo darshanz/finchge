@@ -41,7 +41,7 @@ Typical operator choices include:
 
 ## SteadyStateGA
 
-[`SteadyStateGA`][finchge.algorithm.SteadyStateGA] implements the Genitor model
+[`SteadyStateGA`][finchge.algorithm.SteadyStateGA] (Syswerda, G., 1991) implements the Genitor model
 (Whitley, 1989). Instead of building an entire new generation at once, it
 selects two parents, produces two offspring, evaluates them, and immediately
 replaces the two worst individuals in the live population. This repeats until
@@ -58,7 +58,7 @@ where all offspring must wait for the whole population to be rebuilt.
 
 ## IslandGA
 
-[`IslandGA`][finchge.algorithm.IslandGA] partitions the population into
+[`IslandGA`][finchge.algorithm.IslandGA] (Tanese, R., 1989) partitions the population into
 `num_islands` independent sub-populations that evolve in isolation using
 standard GA operators. Every `migration_interval` generations, the best
 `migration_size` individuals from each island migrate to the next island in
@@ -148,7 +148,7 @@ algorithm = OnePlusOneES(
 
 ## MemeticGA
 
-[`MemeticGA`][finchge.algorithm.MemeticGA] combines a standard genetic algorithm
+[`MemeticGA`][finchge.algorithm.MemeticGA] (Moscato, P., 1989) combines a standard genetic algorithm
 with a local search phase applied to each offspring after mutation. The GA loop
 handles global exploration; local search handles exploitation by iteratively
 applying the mutation operator and keeping improvements.
@@ -179,8 +179,8 @@ algorithm = MemeticGA(
 
 ## CLONALG
 
-[`CLONALG`][finchge.algorithm.CLONALG] implements a clonal selection algorithm
-inspired by the biological immune system (de Castro & Von Zuben, 2002).
+[`CLONALG`][finchge.algorithm.CLONALG] (de Castro, L.N. and Von Zuben, F.J., 2002) implements a clonal selection algorithm
+inspired by the biological immune system.
 
 Each generation, the top `num_select` individuals are selected by fitness rank.
 Each is cloned `num_clones` times and subjected to hypermutation, where the
@@ -208,7 +208,7 @@ algorithm = CLONALG(
 
 ## NSGA-II
 
-[`NSGA2`][finchge.algorithm.NSGA2] is used for multi-objective optimization. Instead of returning a single best individual, it organizes the population into Pareto fronts using non-dominated sorting and uses crowding distance to preserve diversity within each front.
+[`NSGA2`][finchge.algorithm.NSGA2] (Deb, K. et al., 2002) is used for multi-objective optimization. Instead of returning a single best individual, it organizes the population into Pareto fronts using non-dominated sorting and uses crowding distance to preserve diversity within each front.
 
 NSGA-II is useful when objectives conflict, for example:
 
@@ -220,7 +220,7 @@ Use NSGA-II with multi-objective fitness functions and NSGA-aware selection or r
 
 ## NSGA-III
 
-[`NSGA3`][finchge.algorithm.NSGA3] is designed for many-objective optimization. It uses reference points to help maintain diversity across the objective space when crowding distance alone becomes less effective.
+[`NSGA3`][finchge.algorithm.NSGA3] (Deb, K. and Jain, H., 2013) is designed for many-objective optimization. It uses reference points to help maintain diversity across the objective space when crowding distance alone becomes less effective.
 
 NSGA-III is most useful when experiments have more than two objectives or when the search needs stronger coverage across a many-objective Pareto front.
 
@@ -244,3 +244,16 @@ This split keeps algorithms reusable. The same algorithm can be used in differen
 Use [`GeneticAlgorithm`][finchge.algorithm.GeneticAlgorithm] when there is one clear optimization target. Use [`SteadyStateGA`][finchge.algorithm.SteadyStateGA] when you want continuous, fine-grained replacement instead of discrete generations. Use [`IslandGA`][finchge.algorithm.IslandGA] when premature convergence is a concern and you want isolated sub-populations with periodic migration. Use [`NSGA2`][finchge.algorithm.NSGA2] when there are two or more objectives and a Pareto front is desired. Use [`NSGA3`][finchge.algorithm.NSGA3] when the experiment has many objectives and reference-point diversity is important.
 
 For multi-objective algorithms, the result should be interpreted as a Pareto set rather than a single best solution. Selecting one final individual from that set is a modeling decision and should be documented as part of the experiment.
+
+
+??? "References"
+
+    - Syswerda, G., 1991. A study of reproduction in generational and steady-state genetic algorithms. In Foundations of genetic algorithms (Vol. 1, pp. 94-101). Elsevier.
+    - Beyer, H.G. and Schwefel, H.P., 2002. Evolution strategies-a comprehensive introduction. Natural computing, 1(1), pp.3-52.
+    - Moscato, P., 1989. On evolution, search, optimization, genetic algorithms and martial arts: Towards memetic algorithms. Caltech concurrent computation program, C3P Report, 826(1989), p.37.
+    - Tanese, R., 1989. Distributed genetic algorithms for function optimization. University of Michigan.
+    - De Castro, L.N. and Von Zuben, F.J., 2002. Learning and optimization using the clonal selection principle. IEEE transactions on evolutionary computation, 6(3), pp.239-251.
+    - Deb, K., Pratap, A., Agarwal, S. and Meyarivan, T.A.M.T., 2002. A fast and elitist multiobjective genetic algorithm: NSGA-II. IEEE transactions on evolutionary computation, 6(2), pp.182-197.
+    - Deb, K. and Jain, H., 2013. An evolutionary many-objective optimization algorithm using reference-point-based nondominated sorting approach, part I: solving problems with box constraints. IEEE transactions on evolutionary computation, 18(4), pp.577-601.
+
+---

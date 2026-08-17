@@ -155,3 +155,36 @@ def test_map_never_exceeds_max_tree_depth_even_when_invalid():
     result = mapper.map(genome)
     assert result.invalid is True
     assert result.tree.max_depth <= 30
+
+
+def test_reverse_map_does_not_truncate_when_tree_needs_more_codons_than_pad_length():
+    grammar_str = """
+    <string> ::= <letter> | <letter> <string>
+    <letter> ::= _ | [a-z]
+    """
+    grammar = Grammar(grammar_str)
+    mapper = GenotypeMapper(grammar=grammar, max_recursion_depth=40, max_wraps=5)
+
+    genome = ([3, 0] * 9) + [2, 0]
+    result = mapper.map(genome)
+    assert not result.invalid
+
+    # Deliberately smaller than the 20 codons this tree actually needs.
+    small_pad = 5
+    genome2 = mapper.reverse_map(
+        result.tree, codon_size=127, pad_to_length=small_pad, pad_mode="zeros"
+    )
+
+    assert len(genome2) >= 20, (
+        "reverse_map truncated the genome below what the tree needs -- "
+        f"got length {len(genome2)}, tree needs at least 20 codons"
+    )
+
+    result2 = mapper.map(genome2)
+    assert not result2.invalid
+    assert result2.phenotype == result.phenotype, (
+        "Round-trip produced a different phenotype after padding to a length "
+        "shorter than the tree needs.\n"
+        f"Original:   {result.phenotype!r}\n"
+        f"Round-trip: {result2.phenotype!r}"
+    )

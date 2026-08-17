@@ -384,6 +384,7 @@ class FitnessEvaluator:
                         codon_size=codon_size,
                         pad_to_length=genome_length,
                         pad_mode="random",
+                        min_tail_ratio=0.5,
                     )
                 except ValueError:
                     ind.genotype = None

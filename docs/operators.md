@@ -9,7 +9,7 @@ FinchGE groups operators into four categories:
 | Selection | Choose parents or survivors from the current population. | `TournamentSelection`, `RouletteWheelSelection`, `RankSelection`, `TruncationSelection`, `LexicaseSelection` |
 | Crossover | Recombine two parent individuals to create offspring. | `OnePointCrossover`, `TwoPointCrossover`, `UniformCrossover`, `SubtreeCrossover` |
 | Mutation | Modify an individual to introduce new variation. | `IntFlipMutation`, `SwapMutation`, `GaussianMutation`, `InversionMutation`, `CyclicMutation`, `DuplicationMutation`, `SubtreeMutation` |
-| Replacement | Decide how offspring and existing individuals form the next generation. | `GenerationalReplacement`, `RandomElitistReplacement`, `NSGA2ElitistReplacement` |
+| Replacement | Decide how offspring and existing individuals form the next generation. | `GenerationalReplacement`, `RandomElitistReplacement`, `NSGA2Replacement` |
 
 ## Selection Operators
 
@@ -33,7 +33,7 @@ Selection operators decide which individuals are used as parents. Most strategie
 
 ### NSGA2TournamentSelection
 
-[`NSGA2TournamentSelection`][finchge.operators.selection.NSGA2TournamentSelection] implements the crowded comparison operator from NSGA-II. In each tournament a candidate with a lower Pareto rank beats one with a higher rank; ties are broken by crowding distance, favouring individuals in less densely populated regions of objective space. An `exploration_prob` parameter (default 0.1) introduces occasional random winners to prevent the population from clustering too aggressively. This selector requires `rank` and `crowding_distance` metadata on individuals, which `NSGA2ElitistReplacement` populates.
+[`NSGA2TournamentSelection`][finchge.operators.selection.NSGA2TournamentSelection] implements the crowded comparison operator from NSGA-II. In each tournament a candidate with a lower Pareto rank beats one with a higher rank; ties are broken by crowding distance, favouring individuals in less densely populated regions of objective space. An `exploration_prob` parameter (default 0.1) introduces occasional random winners to prevent the population from clustering too aggressively. This selector requires `rank` and `crowding_distance` metadata on individuals, which `NSGA2Replacement` populates.
 
 ### NSGA3TournamentSelection
 
@@ -105,7 +105,8 @@ Most useful in late-stage search or seeded populations where structural variatio
 
 ### SubtreeMutation
 
- [`SubtreeMutation`][finchge.operators.mutation.SubtreeMutation] operates on derivation trees rather than integer genomes. With probability `mutation_probability`, one or more non-terminal nodes are selected and their subtrees replaced with freshly generated ones, bounded by the tree's remaining depth budget relative to `max_tree_depth` so mutation can never push an individual past the configured global depth cap. Candidate nodes are restricted to non-terminals specified at construction, so syntactic validity is maintained throughout. Because it operates on the tree representation, it is only applicable when individuals carry derivation trees and is not compatible with genotype-only individuals.
+[`SubtreeMutation`][finchge.operators.mutation.SubtreeMutation] operates on derivation trees rather than integer genomes. Every individual is mutated: one or more non-terminal nodes are selected and their subtrees replaced with freshly generated ones, bounded by the tree's remaining depth budget relative to `max_tree_depth` so mutation can never push an individual past the configured global depth cap. Candidate nodes are restricted to non-terminals specified at construction, so syntactic validity is maintained throughout. Because it operates on the tree representation, it is only applicable when individuals carry derivation trees and is not compatible with genotype-only individuals.
+
 ## Replacement Operators
 
 Replacement operators decide which individuals survive into the next generation after offspring have been produced and evaluated. All single-objective strategies accept an `elite_size` argument; elites are always drawn from the old population before any offspring are considered.
@@ -119,9 +120,9 @@ Replacement operators decide which individuals survive into the next generation 
 
 [`RandomElitistReplacement`][finchge.operators.replacement.RandomElitistReplacement] preserves elites by fitness and fills the remaining positions by random sampling without replacement from the pool of non-elite old individuals and new offspring. The randomness introduces diversity without any fitness ranking for non-elite slots. Only compatible with single-objective fitness; passing multi-objective fitness lists raises an error.
 
-### NSGA2ElitistReplacement
+### NSGA2Replacement
 
-[`NSGA2ElitistReplacement`][finchge.operators.replacement.NSGA2ElitistReplacement] implements the environmental selection step of NSGA-II. The old and new populations are combined and subjected to fast non-dominated sorting to assign Pareto ranks. The next generation is filled front by front; when a front only partially fits the remaining slots, individuals within it are ranked by crowding distance and those in less crowded objective-space regions are preferred. This balances convergence toward the Pareto front with spatial diversity. The `maximize_flags` list specifies the optimisation direction per objective, supporting mixed maximisation and minimisation problems. Use alongside `NSGA2TournamentSelection`.
+[`NSGA2Replacement`][finchge.operators.replacement.NSGA2Replacement] implements the environmental selection step of NSGA-II. The old and new populations are combined and subjected to fast non-dominated sorting to assign Pareto ranks. The next generation is filled front by front; when a front only partially fits the remaining slots, individuals within it are ranked by crowding distance and those in less crowded objective-space regions are preferred. This balances convergence toward the Pareto front with spatial diversity. The `maximize_flags` list specifies the optimisation direction per objective, supporting mixed maximisation and minimisation problems. Use alongside `NSGA2TournamentSelection`.
 
 ## Usage
 
@@ -148,18 +149,18 @@ ga = GeneticAlgorithm(
 
 **Multi-objective run with NSGA-II**
 
-`NSGA2TournamentSelection` and `NSGA2ElitistReplacement` must be used together. The replacement step computes Pareto ranks and crowding distances that the selection step reads.
+`NSGA2TournamentSelection` and `NSGA2Replacement` must be used together. The replacement step computes Pareto ranks and crowding distances that the selection step reads.
 
 ```python
 from finchge.algorithm import NSGA2
 from finchge.operators.selection import NSGA2TournamentSelection
-from finchge.operators.replacement import NSGA2ElitistReplacement
+from finchge.operators.replacement import NSGA2Replacement
 
 mo_algorithm = NSGA2(
     selection=NSGA2TournamentSelection(tournament_size=2),
     crossover=OnePointCrossover(codon_size=255, crossover_proba=0.8),
     mutation=IntFlipMutation(mutation_probability=None, codon_size=255),
-    replacement=NSGA2ElitistReplacement(maximize_flags=[False, True]),
+    replacement=NSGA2Replacement(maximize_flags=[False, True]),
     elite_size=2,
     fitness_evaluator=fitness_evaluator,
 )
