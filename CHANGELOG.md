@@ -1,6 +1,24 @@
 # Changelog
 
 
+## [1.0.1-beta.15] - 2026-08-17
+
+### Added
+- Added `min_tail_ratio` parameter on `GenotypeMapper.reverse_map`, for genome tail configuration
+- Documentation updated adding citations for the Evolution Strategies, Memetic GA, Island GA, and CLONALG algorithms.
+- Test coverage for the GA algorithm, NSGA-II/NSGA-III utilities, cache manager, tree derivation, protected math, and experiment logger
+
+### Changed
+- `SubtreeMutation` no longer accepts a `mutation_probability` parameter.
+- `NSGA2Replacement` (renamed from `NSGA2ElitistReplacement`) no longer applies an
+  explicit elite-preservation step as NSGA-II's own non-dominated sorting and crowding
+  distance already guarantee elitist behavior.
+
+### Fixed
+- `GenotypeMapper`'s genome padding no longer truncates genomes that need padding.
+
+
+
 ## [1.0.1-beta.14] - 2026-08-08
 
 ### Added
