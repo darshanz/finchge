@@ -13,9 +13,9 @@ from finchge.fitness.fitness_evaluator import FitnessEvaluator
 from finchge.operators.base import (
     GECrossoverStrategy,
     GEMutationStrategy,
-    GEReplacementStrategy,
     GESelectionStrategy,
 )
+from finchge.operators.replacement import NSGA2Replacement
 
 
 class NSGA2(BaseAlgorithmMO):
@@ -24,7 +24,7 @@ class NSGA2(BaseAlgorithmMO):
         selection: GESelectionStrategy,
         crossover: GECrossoverStrategy,
         mutation: GEMutationStrategy,
-        replacement: GEReplacementStrategy,
+        replacement: NSGA2Replacement,
         elite_size: int,
         fitness_evaluator: FitnessEvaluator,
         random_state: Optional[int] = None,
@@ -36,11 +36,18 @@ class NSGA2(BaseAlgorithmMO):
             selection: Selection strategy.
             crossover: Crossover strategy.
             mutation: Mutation strategy.
-            replacement: Replacement strategy.
+            replacement: Must be NSGA2Replacement. Other replacement strategies
+                compare individuals by a single scalar fitness value and would
+                silently ignore every objective but the first.
             elite_size: Number of elite individuals to carry over.
             fitness_evaluator: Evaluator used to score individuals.
             random_state: Seed for reproducible randomness.
         """
+        if not isinstance(replacement, NSGA2Replacement):
+            raise TypeError(
+                f"NSGA2 requires an NSGA2Replacement, got {type(replacement).__name__}"
+            )
+
         super().__init__(random_state=random_state)
         self.selection = selection
         self.crossover = crossover
