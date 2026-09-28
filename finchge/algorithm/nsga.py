@@ -97,7 +97,7 @@ class NSGA2(BaseAlgorithmMO):
         )
 
         self.fitness_evaluator.evaluate_population(offspring_population)
-        self.sort_population(offspring_population)
+        # sorting not required again, replacement recomputes rank/crowding on the combined pool
 
         # Replacement
         new_individuals = self.replacement.replace(
