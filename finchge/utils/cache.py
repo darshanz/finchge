@@ -14,13 +14,16 @@ V = TypeVar("V")
 
 class CacheInterface(ABC, Generic[K, V]):
     @abstractmethod
-    def get(self, key: K) -> Optional[V]: ...
+    def get(self, key: K) -> Optional[V]:
+        ...
 
     @abstractmethod
-    def set(self, key: K, value: V) -> None: ...
+    def set(self, key: K, value: V) -> None:
+        ...
 
     @abstractmethod
-    def clear(self) -> None: ...
+    def clear(self) -> None:
+        ...
 
 
 class LRUCache(CacheInterface[K, V]):
@@ -37,7 +40,8 @@ class LRUCache(CacheInterface[K, V]):
     def set(self, key: K, value: V) -> None:
         self.cache[key] = value
         self.cache.move_to_end(key)
-        if len(self.cache) > self.cache_size:
+        # cache_size == 0 means unlimited
+        if self.cache_size and len(self.cache) > self.cache_size:
             self.cache.popitem(last=False)
 
     def clear(self) -> None:
@@ -46,6 +50,9 @@ class LRUCache(CacheInterface[K, V]):
 
 class DiskCache(CacheInterface[K, V]):
     def __init__(self, cache_dir: str = "cache", size_limit: int = 2**30) -> None:
+        # size_limit == 0 means unlimited; diskcache has no native unlimited option
+        if size_limit == 0:
+            size_limit = 2**40
         self.cache: Any = dc.Cache(cache_dir, size_limit=size_limit)
 
     def get(self, key: K) -> Optional[V]:
