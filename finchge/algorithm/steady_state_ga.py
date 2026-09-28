@@ -1,6 +1,7 @@
 from typing import Any, Optional
 
 from finchge.algorithm.base import BaseAlgorithmSO
+from finchge.core.individual import Individual
 from finchge.core.population import Population
 from finchge.fitness.fitness_evaluator import FitnessEvaluator
 from finchge.operators.base import (
@@ -83,9 +84,7 @@ class SteadyStateGA(BaseAlgorithmSO):
             self.fitness_evaluator.evaluate_population(pair_pop)
 
             # Replace the two worst in the current live population
-            individuals.sort(
-                key=lambda ind: ind.sort_key(self.max_best), reverse=self.max_best
-            )
+            individuals = Individual.rank(individuals, self.max_best)
             individuals = individuals[: pop_size - len(new_pair)] + new_pair
 
             ind_counter += len(new_pair)

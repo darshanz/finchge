@@ -65,10 +65,7 @@ class GenerationalReplacement(GEReplacementStrategy):
 
         preserved = valid_old[:elite_size]
 
-        new_population.sort(
-            key=lambda ind: ind.sort_key(self.max_best),
-            reverse=self.max_best,
-        )
+        new_population = Individual.rank(new_population, self.max_best)
 
         replacements = new_population[: population_size - elite_size]
         return preserved + replacements

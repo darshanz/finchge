@@ -257,13 +257,18 @@ class Individual:
 
     def sort_key(self, maximize: bool) -> float:
         """
-        Return a scalar key suitable for sorting individuals by fitness.
-        Invalid or unevaluable individuals are always pushed to the end
-        for minimization use +inf and for maximization: use -inf
+        Return a scalar key suitable for sorting individuals by fitness,
+        where larger is always better regardless of direction. Invalid or
+        unevaluable individuals always get -inf, the worst possible key.
         """
         if not self.has_usable_fitness():
-            return float("-inf") if maximize else float("inf")
-        return self.get_scalar_fitness()
+            return float("-inf")
+        value = self.get_scalar_fitness()
+        return value if maximize else -value
+
+    @staticmethod
+    def rank(individuals: "list[Individual]", maximize: bool) -> "list[Individual]":
+        return sorted(individuals, key=lambda ind: ind.sort_key(maximize), reverse=True)
 
     def mark_invalid(self) -> None:
         self.invalid = True

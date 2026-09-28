@@ -1,6 +1,7 @@
 from typing import Optional
 
 from finchge.algorithm.base import BaseAlgorithmSO
+from finchge.core.individual import Individual
 from finchge.core.population import Population
 from finchge.fitness.fitness_evaluator import FitnessEvaluator
 from finchge.operators.base import GEMutationStrategy
@@ -70,9 +71,7 @@ class MuCommaLambdaES(BaseAlgorithmSO):
         self.fitness_evaluator.evaluate_population(offspring_pop)
 
         # (mu,lambda) survivor selection: best mu from offspring ONLY — parents discarded
-        offspring.sort(
-            key=lambda ind: ind.sort_key(self.max_best), reverse=self.max_best
-        )
+        offspring = Individual.rank(offspring, self.max_best)
 
         next_pop = Population.from_individuals(offspring[:mu], population_size=mu)
         self.sort_population(next_pop)

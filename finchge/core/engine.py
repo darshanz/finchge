@@ -2,6 +2,7 @@ import asyncio
 import logging
 import timeit
 import warnings
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Optional
 
 import numpy as np
@@ -369,7 +370,13 @@ class GrammaticalEvolution(RandomStateMixin):
         self.logger.info(f"Total time taken: {stop - start :.4f} seconds")
 
         # shut down all parallel resources
-        asyncio.run(self.fitness_evaluator.shutdown())
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            asyncio.run(self.fitness_evaluator.shutdown())
+        else:
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                pool.submit(asyncio.run, self.fitness_evaluator.shutdown()).result()
 
         return GEResult(
             best_in_generation=fittest_individual if not self.multi_obj else None,
@@ -404,13 +411,12 @@ class GrammaticalEvolution(RandomStateMixin):
             )
             fittest = self.algorithm.get_best_individual(population)
 
-            # Track all-time best independently, survives even with elite_size = 0
             max_best = self.fitness_evaluator.get_maximize_flags()[0]
-            if fittest.has_usable_fitness():
-                if not all_time_best.has_usable_fitness() or fittest.sort_key(
-                    max_best
-                ) > all_time_best.sort_key(max_best):
-                    all_time_best = fittest
+            if fittest.has_usable_fitness() and (
+                not all_time_best.has_usable_fitness()
+                or fittest.sort_key(max_best) > all_time_best.sort_key(max_best)
+            ):
+                all_time_best = fittest
 
             # Log experiment
             if self.expt_logger:

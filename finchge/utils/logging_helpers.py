@@ -34,17 +34,8 @@ class PopulationMetricsHelper:
 
     @staticmethod
     def _tree_nodes(tree: Optional[str]) -> int:
-        if not tree:
-            return 0
-        try:
-            node = TreeNode.from_string(tree)
-            if hasattr(node, "node_count"):
-                return int(node.node_count)
-            if hasattr(node, "get_node_count"):
-                return int(node.get_node_count())
-            return 0
-        except Exception:
-            return 0
+        # TreeNode doesn't track node count, so this was always 0 anyway
+        return 0
 
     @staticmethod
     def compute(population: Population) -> dict[str, Any]:

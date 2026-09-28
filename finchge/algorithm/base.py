@@ -50,7 +50,23 @@ class BaseAlgorithm(RandomStateMixin, ABC):
     def apply_mutation(
         self, mutation_strategy: GEMutationStrategy, individuals: list[Individual]
     ) -> Population:
-        mutated_offsprings = [mutation_strategy.mutate(ind) for ind in individuals]
+        max_genome_length = getattr(
+            self.fitness_evaluator, "_configured_genome_length", None
+        )
+        mutated_offsprings: list[Individual] = []
+        for ind in individuals:
+            mutant = mutation_strategy.mutate(ind)
+            if max_genome_length:
+                # reject and retry gate limiting by genome length to avoid bloat
+                for _ in range(50):
+                    self.fitness_evaluator.refresh_mapping_all([mutant])
+                    if (
+                        mutant.genotype is not None
+                        and len(mutant.genotype) <= max_genome_length
+                    ):
+                        break
+                    mutant = mutation_strategy.mutate(ind)
+            mutated_offsprings.append(mutant)
 
         # Create new population from offspring
         offspring_population = Population.from_individuals(
@@ -96,9 +112,8 @@ class BaseAlgorithmSO(BaseAlgorithm):
     max_best: bool  # must be set by subclass
 
     def sort_population(self, population: Population) -> None:
-        population.individuals.sort(
-            key=lambda ind: ind.sort_key(self.max_best),
-            reverse=self.max_best,
+        population.individuals[:] = Individual.rank(
+            population.individuals, self.max_best
         )
 
     def get_best_individual(self, population: Population) -> Individual:

@@ -156,19 +156,11 @@ class IslandGA(BaseAlgorithmSO):
         assert self._islands is not None
         emigrants: list[list[Individual]] = []
         for island in self._islands:
-            ranked = sorted(
-                island.individuals,
-                key=lambda ind: ind.sort_key(self.max_best),
-                reverse=self.max_best,
-            )
+            ranked = Individual.rank(island.individuals, self.max_best)
             emigrants.append(ranked[: self.migration_size])
 
         for i, island in enumerate(self._islands):
-            ranked = sorted(
-                island.individuals,
-                key=lambda ind: ind.sort_key(self.max_best),
-                reverse=self.max_best,
-            )
+            ranked = Individual.rank(island.individuals, self.max_best)
             survivors = ranked[: island.population_size - self.migration_size]
             arrivals = emigrants[(i - 1) % self.num_islands]
             self._islands[i] = Population.from_individuals(
