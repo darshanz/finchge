@@ -96,9 +96,8 @@ class BaseAlgorithmSO(BaseAlgorithm):
     max_best: bool  # must be set by subclass
 
     def sort_population(self, population: Population) -> None:
-        population.individuals.sort(
-            key=lambda ind: ind.sort_key(self.max_best),
-            reverse=self.max_best,
+        population.individuals[:] = Individual.rank(
+            population.individuals, self.max_best
         )
 
     def get_best_individual(self, population: Population) -> Individual:

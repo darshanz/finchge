@@ -54,7 +54,7 @@ def test_sort_key_minimize_valid_returns_fitness():
     ind = Individual.from_genotype([1])
     ind.phenotype = "x"
     ind.fitness = [3.0]
-    assert ind.sort_key(maximize=False) == 3.0
+    assert ind.sort_key(maximize=False) == -3.0
 
 
 def test_sort_key_maximize_invalid_returns_neg_inf():
@@ -62,9 +62,9 @@ def test_sort_key_maximize_invalid_returns_neg_inf():
     assert ind.sort_key(maximize=True) == float("-inf")
 
 
-def test_sort_key_minimize_invalid_returns_pos_inf():
+def test_sort_key_minimize_invalid_returns_neg_inf():
     ind = Individual.from_genotype([1])
-    assert ind.sort_key(maximize=False) == float("inf")
+    assert ind.sort_key(maximize=False) == float("-inf")
 
 
 def test_sort_key_orders_maximize_correctly():
@@ -96,9 +96,69 @@ def test_sort_key_orders_minimize_correctly():
 
     unevaluated = Individual.from_genotype([3])
 
-    ranked = sorted([bad, unevaluated, good], key=lambda i: i.sort_key(False))
+    ranked = sorted(
+        [bad, unevaluated, good], key=lambda i: i.sort_key(False), reverse=True
+    )
     assert ranked[0] is good
     assert ranked[-1] is unevaluated
+
+
+def test_sort_key_minimization_prefers_lower_fitness():
+    better = Individual.from_genotype([1])
+    better.phenotype = "x"
+    better.fitness = [0.1]
+
+    worse = Individual.from_genotype([2])
+    worse.phenotype = "y"
+    worse.fitness = [0.9]
+
+    assert better.sort_key(maximize=False) > worse.sort_key(maximize=False)
+
+
+def test_sort_key_maximization_prefers_higher_fitness():
+    better = Individual.from_genotype([1])
+    better.phenotype = "x"
+    better.fitness = [0.9]
+
+    worse = Individual.from_genotype([2])
+    worse.phenotype = "y"
+    worse.fitness = [0.1]
+
+    assert better.sort_key(maximize=True) > worse.sort_key(maximize=True)
+
+
+def test_rank_orders_best_first_for_minimization():
+    best = Individual.from_genotype([1])
+    best.phenotype = "a"
+    best.fitness = [0.1]
+
+    mid = Individual.from_genotype([2])
+    mid.phenotype = "b"
+    mid.fitness = [0.5]
+
+    worst = Individual.from_genotype([3])
+    worst.phenotype = "c"
+    worst.fitness = [0.9]
+
+    ranked = Individual.rank([worst, best, mid], maximize=False)
+    assert [ind.fitness[0] for ind in ranked] == [0.1, 0.5, 0.9]
+
+
+def test_rank_orders_best_first_for_maximization():
+    best = Individual.from_genotype([1])
+    best.phenotype = "a"
+    best.fitness = [0.9]
+
+    mid = Individual.from_genotype([2])
+    mid.phenotype = "b"
+    mid.fitness = [0.5]
+
+    worst = Individual.from_genotype([3])
+    worst.phenotype = "c"
+    worst.fitness = [0.1]
+
+    ranked = Individual.rank([worst, best, mid], maximize=True)
+    assert [ind.fitness[0] for ind in ranked] == [0.9, 0.5, 0.1]
 
 
 def test_is_valid_after_phenotype_set():
