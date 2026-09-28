@@ -232,15 +232,13 @@ class NSGA3(BaseAlgorithmMO):
         maximize_flags = self.fitness_evaluator.get_maximize_flags()
 
         # reference points exist
-        num_objectives = len(combined[0].fitness)  # assumes list[float]
+        num_objectives = len(maximize_flags)
         reference_points = generate_reference_points(num_objectives, self.num_divisions)
 
         for ind in combined:
             ind.meta.clear()
 
-        # just for calculating crowding distance once.
-        fast_non_dominated_sort(combined, maximize_flags)
-
+        # non-dominated sorting happens inside environmental_selection_nsga3, no need to do it twice
         next_inds = environmental_selection_nsga3(
             combined,
             population_size=population.population_size,
