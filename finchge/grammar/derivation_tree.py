@@ -49,7 +49,13 @@ class TreeNode:
 
     @property
     def max_depth(self) -> int:
-        return max(n.depth for n in self.root.iter_nodes())
+        # bottom-up height instead of walking to root from every node, same result but O(n)
+        def height(n: "TreeNode") -> int:
+            if not n.children:
+                return 1
+            return 1 + max(height(c) for c in n.children)
+
+        return height(self.root)
 
     # Internal helpers
 
