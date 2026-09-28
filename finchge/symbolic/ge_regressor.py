@@ -43,6 +43,7 @@ class GERegressor(RandomStateMixin, BaseEstimator, RegressorMixin):  # type: ign
         generations: int = 100,
         population_size: int = 100,
         random_state: Optional[int] = None,
+        algorithm: Optional[Any] = None,
     ):
         """
         Initialize the symbolic regression estimator.
@@ -60,12 +61,17 @@ class GERegressor(RandomStateMixin, BaseEstimator, RegressorMixin):  # type: ign
             population_size (int, optional): Number of individuals per
                 generation. Defaults to 100.
             random_state (int | None, optional): Random seed for reproducibility.
+            algorithm (optional): Algorithm instance to use (e.g. a
+                GeneticAlgorithm with SubtreeCrossover/SubtreeMutation for
+                tree-based GE). Defaults to None, which leaves
+                GrammaticalEvolution to build its own genome-based default.
         """
 
         super().__init__(random_state=random_state)
         self.grammar = grammar
         self.generations = generations
         self.population_size = population_size
+        self.algorithm = algorithm
 
         # learned attributes
         self.best_individual_: Optional[Individual] = None
@@ -83,7 +89,8 @@ class GERegressor(RandomStateMixin, BaseEstimator, RegressorMixin):  # type: ign
         self.genotype_mapper = GenotypeMapper(
             grammar=self.grammar,
             max_wraps=self.config.ge[Keys.MAX_WRAPS],
-            max_recursion_depth=self.config.ge[Keys.MAX_RECURSION_DEPTH],
+            max_tree_depth=self.config.ge.get(Keys.MAX_TREE_DEPTH),
+            max_recursion_depth=self.config.ge.get(Keys.MAX_RECURSION_DEPTH),
             random_state=self.random_state,
         )
 
@@ -112,9 +119,13 @@ class GERegressor(RandomStateMixin, BaseEstimator, RegressorMixin):  # type: ign
             mapper=self.genotype_mapper,
             parallel_config=self.config.parallel,
         )
+        if self.algorithm is not None:
+            # the algorithm was built before X/y were known, point it at the real evaluator
+            self.algorithm.fitness_evaluator = fitness_evaluator
         expt_logger = ExperimentLogger()
         ge = GrammaticalEvolution(
             grammar=self.grammar,
+            algorithm=self.algorithm,
             fitness_evaluator=fitness_evaluator,
             config=self.config,
             expt_logger=expt_logger,
