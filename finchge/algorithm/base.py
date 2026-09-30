@@ -5,8 +5,14 @@ import numpy as np
 
 from finchge.core.individual import Individual
 from finchge.core.population import Population
+from finchge.grammar.derivation_tree import TreeNode
 from finchge.operators.base import GECrossoverStrategy, GEMutationStrategy
 from finchge.utils.random_mixin import RandomStateMixin
+
+# nodes-per-genome-codon ratio for these grammars, measured empirically, used
+# to size the tree-based bloat gate off the existing genome_length config
+# value without needing a genome/genotype at all
+NODES_PER_CODON = 2.4
 
 
 class BaseAlgorithm(RandomStateMixin, ABC):
@@ -53,17 +59,19 @@ class BaseAlgorithm(RandomStateMixin, ABC):
         max_genome_length = getattr(
             self.fitness_evaluator, "_configured_genome_length", None
         )
+        max_tree_nodes = (
+            max_genome_length * NODES_PER_CODON if max_genome_length else None
+        )
         mutated_offsprings: list[Individual] = []
         for ind in individuals:
             mutant = mutation_strategy.mutate(ind)
-            if max_genome_length:
-                # reject and retry gate limiting by genome length to avoid bloat
+            if max_tree_nodes and mutant.tree is not None:
+                # reject and retry gate limiting by tree node count to avoid bloat
                 for _ in range(50):
-                    self.fitness_evaluator.refresh_mapping_all([mutant])
-                    if (
-                        mutant.genotype is not None
-                        and len(mutant.genotype) <= max_genome_length
-                    ):
+                    node_count = sum(
+                        1 for _ in TreeNode.from_string(mutant.tree).iter_nodes()
+                    )
+                    if node_count <= max_tree_nodes:
                         break
                     mutant = mutation_strategy.mutate(ind)
             mutated_offsprings.append(mutant)
