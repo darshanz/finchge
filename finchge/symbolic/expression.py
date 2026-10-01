@@ -117,6 +117,51 @@ class SymbolicExpression:
         "pow": pmath.pow,
     }
 
+    # Plain-NumPy counterparts used when unprotected=True. No clipping,
+    # epsilon-shifting, or NaN/Inf substitution: evaluates the formula exactly
+    # as written, for trusted ground-truth expressions rather than
+    # evolved (possibly invalid) ones.
+    _UNPROTECTED_BINARY_OPS: Final[
+        dict[type[ast.operator], Callable[[Any, Any], Any]]
+    ] = {
+        ast.Add: lambda a, b: a + b,
+        ast.Sub: lambda a, b: a - b,
+        ast.Mult: lambda a, b: a * b,
+        ast.Div: lambda a, b: a / b,
+        ast.Pow: lambda a, b: np.power(a, b),
+    }
+
+    _UNPROTECTED_FUNCTIONS: Final[dict[str, Callable[..., Any]]] = {
+        "sin": np.sin,
+        "cos": np.cos,
+        "tan": np.tan,
+        "asin": np.arcsin,
+        "acos": np.arccos,
+        "atan": np.arctan,
+        "sinh": np.sinh,
+        "cosh": np.cosh,
+        "tanh": np.tanh,
+        "asinh": np.arcsinh,
+        "acosh": np.arccosh,
+        "atanh": np.arctanh,
+        "exp": np.exp,
+        "log": np.log,
+        "plog": np.log,
+        "ln": np.log,
+        "log1p_abs": lambda x: np.log1p(np.abs(x)),
+        "sqrt": np.sqrt,
+        "psqrt": np.sqrt,
+        "abs": np.abs,
+        "sign": np.sign,
+        "aq": lambda a, b: a / np.sqrt(1.0 + b * b),
+        "add": lambda a, b: a + b,
+        "sub": lambda a, b: a - b,
+        "mul": lambda a, b: a * b,
+        "div": lambda a, b: a / b,
+        "pdiv": lambda a, b: a / b,
+        "pow": lambda a, b: np.power(a, b),
+    }
+
     _ALLOWED_AST_NODES: Final[tuple[type[ast.AST], ...]] = (
         ast.Expression,
         ast.BinOp,
@@ -134,13 +179,20 @@ class SymbolicExpression:
         ast.USub,
     )
 
-    def __init__(self, expression: str) -> None:
+    def __init__(self, expression: str, unprotected: bool = False) -> None:
         if not isinstance(expression, str) or not expression.strip():
             raise ValueError("expression must be a non-empty string")
 
         self.original_expression = expression
         self.expression = self._normalize_expression(expression)
         self.variables = self._extract_variables(self.expression)
+        self.unprotected = unprotected
+        self._binary_ops = (
+            self._UNPROTECTED_BINARY_OPS if unprotected else self._BINARY_OPS
+        )
+        self._functions = (
+            self._UNPROTECTED_FUNCTIONS if unprotected else self._FUNCTIONS
+        )
 
         try:
             parsed = ast.parse(self.expression, mode="eval")
@@ -218,20 +270,20 @@ class SymbolicExpression:
 
         if isinstance(node, ast.BinOp):
             binary_op_type = type(node.op)
-            if binary_op_type not in self._BINARY_OPS:
+            if binary_op_type not in self._binary_ops:
                 raise ExpressionSyntaxError(
                     f"unsupported binary operator: {binary_op_type.__name__}"
                 )
             left = self._eval_node(node.left, env)
             right = self._eval_node(node.right, env)
-            return self._BINARY_OPS[binary_op_type](left, right)
+            return self._binary_ops[binary_op_type](left, right)
 
         if isinstance(node, ast.Call):
             if not isinstance(node.func, ast.Name):
                 raise ExpressionSyntaxError("only direct function calls are allowed")
 
             func_name = node.func.id
-            func = self._FUNCTIONS[func_name]
+            func = self._functions[func_name]
             args = [self._eval_node(arg, env) for arg in node.args]
             return func(*args)
 
@@ -289,7 +341,7 @@ class SymbolicExpression:
         X_arr = self._coerce_input(X)
         n_samples, n_features = X_arr.shape
 
-        env: dict[str, Any] = dict(self._FUNCTIONS)
+        env: dict[str, Any] = dict(self._functions)
         env.update(self._CONSTANTS)
 
         for var in self.variables:

@@ -56,7 +56,7 @@ class KeijzerBenchmark(Benchmark):
 
     @property
     def func(self) -> Callable[[FloatArray], FloatArray]:
-        return SymbolicExpression(self.expression_str).eval
+        return SymbolicExpression(self.expression_str, unprotected=True).eval
 
     def grammar(self) -> Grammar:
         return Grammar(get_keijzer_grammar(self.dim))

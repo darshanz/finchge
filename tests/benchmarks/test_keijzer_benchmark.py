@@ -72,9 +72,11 @@ class TestKeijzerFunctionDefinitions:
         expected = k5_manual(X.flatten())
         actual = KeijzerBenchmark(5).func(X)
 
-        # At x=2, function is undefined but protected evaluation would return 1
+        # At x=2, the function has a true singularity; ground truth is now
+        # evaluated unprotected, so it matches the exact (infinite) value
+        # instead of a protected-math placeholder.
         assert np.isinf(expected[3])
-        assert actual[3] == 1  # protected
+        assert np.isinf(actual[3])
         # Other values should match
         assert_array_almost_equal(
             actual[[0, 1, 2, 4]].flatten(), expected[[0, 1, 2, 4]], decimal=10
