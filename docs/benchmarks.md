@@ -183,8 +183,8 @@ print(f"Test samples: {len(X_test)}")  # 1000 points
     | `Keijzer-2` | $0.3x \sin(2\pi x)$ | $x \in [-2, 2]$ | 41 / 401 |
     | `Keijzer-3` | $0.3x \sin(2\pi x)$ | $x \in [-3, 3]$ | 61 / 601 |
     | `Keijzer-4` | $x^3 e^{-x} \cos(x) \sin(x) (\sin^2(x) \cos(x) - 1)$ | $x \in [0, 10]$ | 201 / 201 |
-    | `Keijzer-5` | $30 \frac{(x-1)(x-3)}{(x-2)^2}$ | $x \in [0.05, 2]$ | 40 / 40 |
-    | `Keijzer-6` | $x + \sin(x)$ | $x \in [-1, 1]$ | 21 / 201 |
+    | `Keijzer-5` | $30 \frac{xz}{(x-10)y^2}$ | $x, z \in [-1, 1]$, $y \in [1, 2]$ | 1000 / 10000 |
+    | `Keijzer-6` | $\sum_{i=1}^{x} \frac{1}{i}$ | $x \in [1, 50]$ (integer) | 50 / 120 |
     | `Keijzer-7` | $\log(x)$ | $x \in [1, 100]$ | 100 / 991 |
     | `Keijzer-8` | $\sqrt{x}$ | $x \in [0, 100]$ | 101 / 1001 |
     | `Keijzer-9` | $\text{asinh}(x)$ | $x \in [0, 100]$ | 101 / 1001 |
@@ -196,7 +196,8 @@ print(f"Test samples: {len(X_test)}")  # 1000 points
     | `Keijzer-15`| $x^3/5 + y^3/2 - y - x$ | $x, y \in [-3, 3]$ | 100 / 1000 |
 
 
-    * **Keijzer 1-9:** Use a fixed **step-based** sampling for training and a finer step for testing.
+    * **Keijzer 1-4, 6-9:** Use a fixed **step-based** sampling for training and a finer step for testing.
+    * **Keijzer 5:** Uses **uniform random** sampling (1000 train / 10000 test pts) over its three independent input ranges.
     * **Keijzer 10-15:** Use **uniform random** sampling (100 pts) for training and a **regular grid** (1000 pts) for testing.
 
 

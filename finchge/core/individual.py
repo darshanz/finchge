@@ -93,19 +93,16 @@ class Individual:
                 Optional serialized derivation tree (e.g., JSON) associated with
                 this individual.
         """
-        # genotype should be of type list of integers : if present
-        if genotype is not None:
-            if not isinstance(genotype, list):
-                raise TypeError("genotype must be a list[int] or None")
-            if not all(isinstance(g, int) for g in genotype):
-                raise TypeError("genotype must contain only integers")
+        # genotype should be of type list of integers : if present. Construction
+        # is on the hot path (called for every individual every generation), so
+        # only the cheap container-type check runs here; element types are
+        # guaranteed by finchge's own internal callers (initialisers, crossover,
+        # mutation), not by external/untrusted input.
+        if genotype is not None and not isinstance(genotype, list):
+            raise TypeError("genotype must be a list[int] or None")
 
-        # Similarly used genotype is also of list of integers : if present (exist only after mapping)
-        if used_genome is not None:
-            if not isinstance(used_genome, list):
-                raise TypeError("used_genotype must be a list[int] or None")
-            if not all(isinstance(g, int) for g in used_genome):
-                raise TypeError("used_genotype must contain only integers")
+        if used_genome is not None and not isinstance(used_genome, list):
+            raise TypeError("used_genotype must be a list[int] or None")
 
         self.genotype: Optional[list[int]] = genotype
         self.phenotype: str | None = phenotype

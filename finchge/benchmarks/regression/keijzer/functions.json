@@ -37,21 +37,23 @@
   },
   "5": {
     "name": "Keijzer-5",
-    "expr": "30.0 * (x0 - 1.0) * (x0 - 3.0) / (x0 - 2.0)**2",
-    "dim": 1,
-    "train_range": [0.05, 2.0],
-    "test_range": [0.05, 2.0],
-    "train_step": 0.05,
-    "test_step": 0.05
+    "expr": "30.0 * x0 * x2 / ((x0 - 10.0) * x1**2)",
+    "dim": 3,
+    "train_range": [[-1.0, 1.0], [1.0, 2.0], [-1.0, 1.0]],
+    "test_range": [[-1.0, 1.0], [1.0, 2.0], [-1.0, 1.0]],
+    "train_step": null,
+    "test_step": null,
+    "train_samples": 1000,
+    "test_samples": 10000
   },
   "6": {
     "name": "Keijzer-6",
-    "expr": "x0 + sin(x0)",
+    "expr": "sum(1/i for i in 1..x0)",
     "dim": 1,
-    "train_range": [-1.0, 1.0],
-    "test_range": [-1.0, 1.0],
-    "train_step": 0.1,
-    "test_step": 0.01
+    "train_range": [1.0, 50.0],
+    "test_range": [1.0, 120.0],
+    "train_step": 1.0,
+    "test_step": 1.0
   },
   "7": {
     "name": "Keijzer-7",
