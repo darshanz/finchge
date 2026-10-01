@@ -68,9 +68,7 @@ class BaseAlgorithm(RandomStateMixin, ABC):
             if max_tree_nodes and mutant.tree is not None:
                 # reject and retry gate limiting by tree node count to avoid bloat
                 for _ in range(50):
-                    node_count = sum(
-                        1 for _ in TreeNode.from_string(mutant.tree).iter_nodes()
-                    )
+                    node_count = TreeNode.count_nodes_in_string(mutant.tree)
                     if node_count <= max_tree_nodes:
                         break
                     mutant = mutation_strategy.mutate(ind)
