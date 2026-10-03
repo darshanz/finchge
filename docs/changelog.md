@@ -4,8 +4,25 @@ All notable changes to this project will be documented in this file.
 
 For changelog we follow  [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format and for versioning use  [Semantic Versioning](https://semver.org/)
 
-## [1.0.1-beta.15](https://github.com/finchGE/finchge/releases/tag/v1.0.1-beta.15) - 2026-08-17
+## [1.0.1-beta.16](https://github.com/finchGE/finchge/releases/tag/v1.0.1-beta.16) - 2026-10-04
 
+### Added
+- `GERegressor` now supports a tree-based flow in addition to the genome-based one.
+- `cache_size: 0` now means an unlimited cache.
+
+### Changed
+- Benchmark ground truth is now evaluated through an unprotected numeric path.
+- Keijzer-5 and Keijzer-6 benchmark definitions corrected to match Keijzer (2003) paper.
+- Mutation bloat control now gates on tree node count derived from genome length.
+- Wall clock run time improvement by improving computation of `TreeNode.max_depth` and removed unnecessary per-element genotype validation in `Individual.__init__` and redundant tree re-parsing in the mutation bloat gate, and redundant grammar-production classification in `TreeGenerator`.
+- NSGA-II now validates that `NSGA2Replacement` is used and no longer performs a redundant sort; NSGA-III also improved by removing unnecessary sorting.
+
+### Fixed
+- `Individual.sort_key()` now correctly accounts for maximize/minimize direction (fixes #17).
+- Individuals whose evaluation saturates protected math's output clamp are now correctly marked invalid.
+
+
+## [1.0.1-beta.15](https://github.com/finchGE/finchge/releases/tag/v1.0.1-beta.15) - 2026-08-17
 ### Added
 - Added `min_tail_ratio` parameter on `GenotypeMapper.reverse_map`, for genome tail configuration
 - Documentation updated adding citations for the Evolution Strategies, Memetic GA, Island GA, and CLONALG algorithms.

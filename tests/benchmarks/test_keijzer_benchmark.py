@@ -62,29 +62,32 @@ class TestKeijzerFunctionDefinitions:
         assert_array_almost_equal(actual.flatten(), expected, decimal=10)
 
     def test_k5_function(self):
-        X = np.array([[1.0], [1.5], [1.8], [2.0], [2.2]])
-
-        def k5_manual(x):
-            # Avoid division by zero at x=2
-            with np.errstate(divide="ignore", invalid="ignore"):
-                return 30 * (x - 1) * (x - 3) / ((x - 2) ** 2)
-
-        expected = k5_manual(X.flatten())
-        actual = KeijzerBenchmark(5).func(X)
-
-        # At x=2, function is undefined but protected evaluation would return 1
-        assert np.isinf(expected[3])
-        assert actual[3] == 1  # protected
-        # Other values should match
-        assert_array_almost_equal(
-            actual[[0, 1, 2, 4]].flatten(), expected[[0, 1, 2, 4]], decimal=10
+        # Keijzer-5 (Keijzer, 2003): f(x, y, z) = 30xz / ((x - 10)y^2)
+        X = np.array(
+            [
+                [0.0, 1.0, 0.0],
+                [0.5, 1.5, -0.5],
+                [-0.3, 2.0, 0.8],
+                [-1.0, 1.0, 1.0],
+            ]
         )
 
+        def k5_manual(x):
+            return 30.0 * x[:, 0] * x[:, 2] / ((x[:, 0] - 10.0) * x[:, 1] ** 2)
+
+        expected = k5_manual(X)
+        actual = KeijzerBenchmark(5).func(X)
+        assert_array_almost_equal(actual.flatten(), expected, decimal=10)
+
     def test_k6_function(self):
-        X = np.array([[-1.0], [-0.5], [0.0], [0.5], [1.0]])
-        expected = X.flatten() + np.sin(X.flatten())
+        # Keijzer-6 (Keijzer, 2003): f(x) = sum_{i=1}^{x} 1/i, a discrete
+        # harmonic sum, only defined for the benchmark's integer domain.
+        X = np.array([[1.0], [2.0], [3.0], [10.0], [50.0]])
+        expected = np.array(
+            [sum(1.0 / i for i in range(1, int(x) + 1)) for x in X.flatten()]
+        )
         actual = KeijzerBenchmark(6).func(X)
-        assert_array_almost_equal(actual.flatten(), expected)
+        assert_array_almost_equal(actual.flatten(), expected, decimal=10)
 
     def test_k7_function(self):
         X = np.array([[1.0], [2.0], [3.0], [4.0], [5.0]])
@@ -144,14 +147,21 @@ class TestKeijzerFunctionDefinitions:
 class TestKeijzerDataGeneration:
     @pytest.mark.parametrize("version", range(1, 16))
     def test_keijzer_sample_sizes(self, version):
+        with open(SPEC_PATH) as f:
+            spec = json.load(f)[str(version)]
+
         def calc_keijzer_size(r, step, default):
             if step is not None:
                 return int(round((r[1] - r[0]) / step)) + 1
             return default
 
         bench = KeijzerBenchmark(version=version)
-        expected_train = calc_keijzer_size(bench.train_range, bench.train_step, 100)
-        expected_test = calc_keijzer_size(bench.test_range, bench.test_step, 1000)
+        expected_train = spec.get("train_samples") or calc_keijzer_size(
+            bench.train_range, bench.train_step, 100
+        )
+        expected_test = spec.get("test_samples") or calc_keijzer_size(
+            bench.test_range, bench.test_step, 1000
+        )
         assert bench.train_size == expected_train
         assert bench.test_size == expected_test
 
@@ -184,7 +194,7 @@ class TestKeijzerDataGeneration:
                     np.abs(diffs - expected_step) < 1e-10
                 ), f"Steps not uniform: {diffs[:5]}"
 
-    @pytest.mark.parametrize("version", [a for a in range(1, 10)])  # K1-K9
+    @pytest.mark.parametrize("version", [a for a in range(1, 10) if a != 5])
     def test_step_sampling_1d(self, version):
         bench = KeijzerBenchmark(version=version, random_state=42)
         X_train, _, _, _ = bench._generate_data()
@@ -199,6 +209,20 @@ class TestKeijzerDataGeneration:
         expected_points = np.arange(low, high + step / 2, step)
         assert len(X_train) == len(expected_points)
         assert_array_almost_equal(np.sort(X_train.flatten()), expected_points)
+
+    def test_random_sampling_3d_keijzer5(self):
+        # Keijzer-5 is 3D with heterogeneous per-dimension ranges and is
+        # random-sampled (not a grid) for both train and test.
+        bench = KeijzerBenchmark(version=5, random_state=42)
+        X_train, _, X_test, _ = bench._generate_data()
+
+        for X in (X_train, X_test):
+            assert X.shape[1] == 3
+            assert np.all((X[:, 0] >= -1.0) & (X[:, 0] <= 1.0))
+            assert np.all((X[:, 1] >= 1.0) & (X[:, 1] <= 2.0))
+            assert np.all((X[:, 2] >= -1.0) & (X[:, 2] <= 1.0))
+            # Random sampling: points should not be evenly spaced/gridded.
+            assert len(np.unique(X, axis=0)) > 0.9 * len(X)
 
     @pytest.mark.parametrize("version", [a for a in range(10, 16)])  # K10-K15
     def test_random_sampling_2d(self, version):
@@ -359,26 +383,15 @@ class TestKeijzerScientificValidity:
         actual = bench.func(test_points)
         np.testing.assert_allclose(actual, expected_values, rtol=1e-5, atol=1e-5)
 
-    def test_k5_asymptotic_behavior(self):
+    def test_k5_singularity_outside_domain(self):
+        # Keijzer-5's true singularity is at x = 10, deliberately outside
+        # its domain (x in [-1, 1]), unlike the previous 1-variable
+        # substitute whose pole (x = 2) sat inside its own sampled range.
         bench = KeijzerBenchmark(version=5, random_state=42)
-        test_points = [1.99, 1.999, 2.001, 2.01]
-        for x in test_points:
-            X = np.array([[x]])
-            y = bench.func(X).flatten()[0]
-            assert y < 0, f"At x={x}, expected negative, got {y}"
+        X_train, y_train, X_test, y_test = bench._generate_data()
+        assert np.all(np.isfinite(y_train))
+        assert np.all(np.isfinite(y_test))
 
-            # Should be large in magnitude
-            magnitude = abs(y)
-            expected_magnitude = 30 * abs((x - 1) * (x - 3)) / ((x - 2) ** 2)
-            assert (
-                abs(magnitude - expected_magnitude) < 1
-            ), f"At x={x}, expected magnitude ~{expected_magnitude:.0f}, got {magnitude:.0f}"
-
-        # Test symmetry
-        y_left = bench.func(np.array([[1.99]])).flatten()[0]
-        y_right = bench.func(np.array([[2.01]])).flatten()[0]
-
-        # Values should be approximately equal (both negative)
-        assert (
-            abs(y_left - y_right) < abs(y_left) * 0.01
-        ), f"Left and right values should be similar: {y_left} vs {y_right}"
+        # Confirm the formula genuinely does have a pole at x = 10.
+        y_pole = bench.func(np.array([[10.0, 1.5, 0.3]])).flatten()[0]
+        assert np.isinf(y_pole)

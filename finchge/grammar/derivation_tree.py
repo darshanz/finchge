@@ -243,6 +243,35 @@ class TreeNode:
         return node
 
     @staticmethod
+    def count_nodes_in_string(s: str) -> int:
+        # Counts nodes directly from the serialized form, for callers that
+        # only need a size check and would otherwise pay for building (and
+        # immediately discarding) the full tree just to call iter_nodes().
+        _, count = TreeNode._count_node(s, 0)
+        return count
+
+    @staticmethod
+    def _count_node(s: str, i: int) -> tuple[int, int]:
+        start = i
+        while i < len(s) and s[i].isdigit():
+            i += 1
+        length = int(s[start:i])
+        i += 1 + length
+
+        count = 1
+        if i < len(s) and s[i] == "{":
+            i += 1
+            while True:
+                i, child_count = TreeNode._count_node(s, i)
+                count += child_count
+                if s[i] == ",":
+                    i += 1
+                    continue
+                i += 1  # closing '}'
+                break
+        return i, count
+
+    @staticmethod
     def _parse_node(s: str, i: int) -> tuple["TreeNode", int]:
         """
         Internal recursive descent parser.

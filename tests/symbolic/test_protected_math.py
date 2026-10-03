@@ -88,3 +88,32 @@ def test_add_clips_overflow():
 def test_pow_zero_exponent():
     result = float(ProtectedMath.pow(5.0, 0.0))
     assert result == pytest.approx(1.0)
+
+
+def test_clipping_sets_saturated_flag():
+    ProtectedMath.reset_saturation()
+    ProtectedMath.add(1e200, 1e200)  # overflows OUTPUT_MAX, must be clipped
+    assert ProtectedMath.was_saturated() is True
+
+
+def test_normal_operation_leaves_saturated_false():
+    ProtectedMath.reset_saturation()
+    ProtectedMath.add(1.0, 2.0)
+    assert ProtectedMath.was_saturated() is False
+
+
+def test_reset_saturation_clears_flag():
+    ProtectedMath.reset_saturation()
+    ProtectedMath.add(1e200, 1e200)
+    assert ProtectedMath.was_saturated() is True
+    ProtectedMath.reset_saturation()
+    assert ProtectedMath.was_saturated() is False
+
+
+def test_div_by_zero_does_not_set_saturated_flag():
+    # div-by-zero substitutes a safe placeholder (1.0) before _finite() ever
+    # runs, so there's nothing extreme to clip; saturation specifically means
+    # "the magnitude had to be clamped", not "a domain error was guarded".
+    ProtectedMath.reset_saturation()
+    ProtectedMath.div(5.0, 0.0)
+    assert ProtectedMath.was_saturated() is False

@@ -18,6 +18,9 @@ class TreeGenerator:
         self.max_tree_depth = max_tree_depth
         # Keep grammar metadata ready for the generation methods below.
         self.grammar.analyze()
+        self._production_classification_cache: dict[
+            tuple[str, ...], tuple[bool, bool]
+        ] = {}
 
     def generate_tree_grow(
         self,
@@ -399,11 +402,23 @@ class TreeGenerator:
 
         return root
 
+    def _classify_production(self, production: list[str]) -> tuple[bool, bool]:
+        # Classification only depends on the (fixed) grammar's non-terminal
+        # set, so it's the same every time a given production is seen again.
+        key = tuple(production)
+        cached = self._production_classification_cache.get(key)
+        if cached is not None:
+            return cached
+        has_nonterminal = any(sym in self.grammar.non_terminals for sym in production)
+        result = (not has_nonterminal, has_nonterminal)
+        self._production_classification_cache[key] = result
+        return result
+
     def _is_terminal_only(self, production: list[str]) -> bool:
-        return all(sym not in self.grammar.non_terminals for sym in production)
+        return self._classify_production(production)[0]
 
     def _has_any_nonterminal(self, production: list[str]) -> bool:
-        return any(sym in self.grammar.non_terminals for sym in production)
+        return self._classify_production(production)[1]
 
     def _is_recursive_symbol(self, symbol: str) -> bool:
         """

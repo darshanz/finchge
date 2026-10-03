@@ -80,6 +80,7 @@ Each grammar rule follows the format:
 - Non-terminals: Enclosed in angle brackets: `<expr>`, `<digit>`, `<start>`
 - Terminals: Quoted strings or unquoted symbols .
 - Choice operator: `|` separates alternative productions
+- Whitespace between symbols is itself a terminal and appears in the output, so `<expr> + <term>` produces a space around `+`; write `<expr><term>` with no space if you don't want one.
 
 For example:
 

@@ -4,6 +4,7 @@ import pytest
 from finchge.algorithm import GeneticAlgorithm
 from finchge.core import Individual
 from finchge.fitness import FitnessEvaluator, GEFitnessFunction
+from finchge.fitness.fitness_functions import MSEFitness
 from finchge.fitness.fitness_types import Fitness
 from finchge.grammar import GenotypeMapper, Grammar
 from finchge.initialisation import RandomGenomeInitialiser
@@ -12,6 +13,8 @@ from finchge.operators.mutation import IntFlipMutation
 from finchge.operators.replacement import GenerationalReplacement
 from finchge.operators.selection import LexicaseSelection, TournamentSelection
 from finchge.runners import PhenotypeRunner
+from finchge.runners.sr import SymbolicRegressionRunner
+from finchge.utils.cache import CacheManager
 
 # Some DummyFitness functions to generalize the test cases.
 # Testing with dummy runners as they can cover the real runners
@@ -338,3 +341,52 @@ def test_algorithm_rejects_missing_required_case_key(mapper):
 
     with pytest.raises(ValueError, match="errors"):
         algorithm._validate_selection_requirements([ind])
+
+
+# Protected-math saturation must invalidate the individual rather than let a
+# clipped-but-finite value compete as an ordinary fitness value.
+
+
+@pytest.fixture
+def sr_evaluator(mapper):
+    X_train = np.array([[0.1], [0.5], [10.0]])  # 10.0 is large enough to
+    y_train = np.array([0.1, 0.5, 1.0])  # push exp(exp(exp(x0))) past OUTPUT_MAX
+
+    runner = SymbolicRegressionRunner(data_train=(X_train, y_train))
+    return FitnessEvaluator(
+        runner=runner, fitness_functions=MSEFitness(), mapper=mapper
+    )
+
+
+def _phenotype_individual(phenotype: str) -> Individual:
+    # tree="dummy" only needs to make is_mapped() true (phenotype is set);
+    # refresh_mapping() short-circuits before it would ever be parsed.
+    return Individual(
+        phenotype=phenotype, tree="dummy", used_genome=[], used_codon_count=0
+    )
+
+
+def test_evaluate_individual_invalidates_saturated_expression(sr_evaluator):
+    ind = _phenotype_individual("exp(exp(exp(x0)))")
+    sr_evaluator.evaluate_individual(ind)
+    assert ind.invalid is True
+
+
+def test_evaluate_individual_does_not_invalidate_normal_expression(sr_evaluator):
+    ind = _phenotype_individual("sin(x0) + x0")
+    sr_evaluator.evaluate_individual(ind)
+    assert ind.invalid is False
+
+
+def test_evaluate_individual_invalidates_saturated_expression_from_cache(sr_evaluator):
+    sr_evaluator.set_cache_manager(CacheManager(cache_type="lru", cache_size=128))
+
+    first = _phenotype_individual("exp(exp(exp(x0)))")
+    sr_evaluator.evaluate_individual(first)
+    assert first.invalid is True
+
+    # Same phenotype again: this must hit the fitness cache, not
+    # _evaluate_in_context, and still invalidate correctly.
+    second = _phenotype_individual("exp(exp(exp(x0)))")
+    sr_evaluator.evaluate_individual(second)
+    assert second.invalid is True

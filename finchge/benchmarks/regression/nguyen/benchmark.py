@@ -83,7 +83,7 @@ class NguyenBenchmark(Benchmark):
 
     @property
     def func(self) -> Callable[[FloatArray], FloatArray]:
-        return SymbolicExpression(self.expression_str).eval
+        return SymbolicExpression(self.expression_str, unprotected=True).eval
 
     def _verify_range(self, r: Range) -> Any:
         # if we only got one range, duplicate it

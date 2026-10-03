@@ -87,7 +87,7 @@ ge.run()
 For further details and more advanced usage, please check documentation
 at [finchge.readthedocs.io](https://finchge.readthedocs.io/), including [Getting Started](https://finchge.readthedocs.io/latest/getting_started/), [API docReference](https://finchge.readthedocs.io/latest/api/) and [Examples](https://finchge.readthedocs.io/latest/examples/)
 
-
+More examples are available on github repository [finchGE/finchge-examples](https://github.com/finchGE/finchge-examples)
 
 
 ## Status

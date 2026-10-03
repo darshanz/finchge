@@ -2,6 +2,8 @@ import json
 from pathlib import Path
 from typing import Callable, Optional, Tuple
 
+import numpy as np
+
 from finchge.benchmarks import Benchmark, BenchmarkMetadata
 from finchge.benchmarks.regression.keijzer.data import (
     calc_keijzer_size,
@@ -11,6 +13,18 @@ from finchge.benchmarks.regression.keijzer.grammar import get_keijzer_grammar
 from finchge.benchmarks.typing import FloatArray
 from finchge.grammar import Grammar
 from finchge.symbolic import SymbolicExpression
+
+
+def _keijzer6_harmonic_sum(X: FloatArray) -> FloatArray:
+    # Keijzer-6 is f(x) = sum_{i=1}^{x} 1/i, a discrete harmonic sum: not
+    # expressible as a SymbolicExpression string, so it's computed directly.
+    x = np.asarray(X, dtype=np.float64)[:, 0]
+    n = np.rint(x).astype(np.int64)
+    max_n = int(n.max()) if n.size else 0
+    cumulative = np.concatenate(
+        [[0.0], np.cumsum(1.0 / np.arange(1, max_n + 1, dtype=np.float64))]
+    )
+    return cumulative[n]
 
 
 class KeijzerBenchmark(Benchmark):
@@ -37,12 +51,16 @@ class KeijzerBenchmark(Benchmark):
         self.train_step = spec["train_step"]
         self.test_step = spec["test_step"]
 
-        # Calculate sizes: User Override > Step Calculation > Defaults
-        self.train_size = train_samples or calc_keijzer_size(
-            self.train_range, self.train_step, 100
+        # Calculate sizes: User Override > Spec Override > Step Calculation > Defaults
+        self.train_size = (
+            train_samples
+            or spec.get("train_samples")
+            or calc_keijzer_size(self.train_range, self.train_step, 100)
         )
-        self.test_size = test_samples or calc_keijzer_size(
-            self.test_range, self.test_step, 1000
+        self.test_size = (
+            test_samples
+            or spec.get("test_samples")
+            or calc_keijzer_size(self.test_range, self.test_step, 1000)
         )
 
         self._metadata = BenchmarkMetadata(
@@ -56,7 +74,9 @@ class KeijzerBenchmark(Benchmark):
 
     @property
     def func(self) -> Callable[[FloatArray], FloatArray]:
-        return SymbolicExpression(self.expression_str).eval
+        if self.version == 6:
+            return _keijzer6_harmonic_sum
+        return SymbolicExpression(self.expression_str, unprotected=True).eval
 
     def grammar(self) -> Grammar:
         return Grammar(get_keijzer_grammar(self.dim))
