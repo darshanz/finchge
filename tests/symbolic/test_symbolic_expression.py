@@ -166,3 +166,40 @@ def test_wrong_function_arity_raises_evaluation_error():
 
     with pytest.raises(Exception):
         expr.eval(X)
+
+
+def test_saturated_false_before_eval():
+    expr = SymbolicExpression("x0 + 1.0")
+    assert expr.saturated is False
+
+
+def test_saturated_true_after_pathological_eval():
+    expr = SymbolicExpression("exp(exp(exp(x0)))")
+    expr.eval(np.array([[10.0]]))
+    assert expr.saturated is True
+
+
+def test_saturated_false_after_normal_eval():
+    expr = SymbolicExpression("sin(x0) + x0 * 2.0")
+    expr.eval(np.array([[1.0], [2.0], [-1.0]]))
+    assert expr.saturated is False
+
+
+def test_saturated_resets_across_calls_on_same_instance():
+    # Same instance, evaluated first on data that saturates, then on data
+    # that doesn't: saturated must reflect only the most recent eval(), not
+    # accumulate across calls.
+    expr = SymbolicExpression("exp(exp(exp(x0)))")
+    expr.eval(np.array([[10.0]]))
+    assert expr.saturated is True
+
+    expr.eval(np.array([[0.1]]))
+    assert expr.saturated is False
+
+
+def test_unprotected_eval_never_sets_saturated():
+    expr = SymbolicExpression("exp(exp(exp(x0)))", unprotected=True)
+    result = expr.eval(np.array([[10.0]]))
+
+    assert not np.isfinite(result[0])  # genuinely overflows, unclipped
+    assert expr.saturated is False

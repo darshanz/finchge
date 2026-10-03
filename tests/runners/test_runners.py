@@ -378,8 +378,9 @@ def test_symbolic_regression_runner_run_preserves_common_runner_contract(split_d
     runner = SymbolicRegressionRunner(train, val, test)
     context = runner.run("x0 + x1")
 
-    assert set(context.keys()) == {"phenotype", "y_true", "y_pred"}
+    assert set(context.keys()) == {"phenotype", "y_true", "y_pred", "saturated"}
     assert context["phenotype"] == "x0 + x1"
+    assert context["saturated"] is False
     np.testing.assert_array_equal(context["y_true"], val[1])
     np.testing.assert_array_equal(context["y_pred"], np.sum(val[0], axis=1))
 
@@ -389,6 +390,15 @@ def test_symbolic_regression_runner_returns_nan_on_expression_failure(split_data
     runner = SymbolicRegressionRunner(train, val, test)
     context = runner.run("xxx+ddfdf+343")  # incorrect expression
     assert np.isnan(context["y_pred"]).all()
+
+
+def test_symbolic_regression_runner_reports_saturated_true_for_pathological_phenotype(
+    split_data,
+):
+    train, val, test = split_data
+    runner = SymbolicRegressionRunner(train, val, test)
+    context = runner.run("exp(exp(exp(x0)))")
+    assert context["saturated"] is True
 
 
 def test_ml_model_runner_run_preserves_common_runner_contract_non_torch(split_data):
