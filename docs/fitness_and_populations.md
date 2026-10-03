@@ -34,7 +34,10 @@ and parallel executors to evaluate the individuals. The phenotype runner instanc
  [`SymbolicRegressionRunner`][finchge.runners.SymbolicRegressionRunner],
 [`ControlRunner`][finchge.runners.ControlRunner], [`MLModelRunner`][finchge.runners.MLModelRunner] etc.,
 are responsible for running the phenotype against the data to
-output the solution or predictions which can be used to evaluate by the fitness functions.
+output the solution or predictions which can be used to evaluate by the fitness functions. Following diagram shows how
+FitnessEvaluator orchestrates the evolution process.
+
+![One Evolutionary run in FinchGE orchestrated by FitnessEvaluator class](assets/images/fitness_evaluator_flow.png)
 
 
 ### Fitness Functions
