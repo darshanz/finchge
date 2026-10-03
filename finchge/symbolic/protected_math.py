@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 from typing import Final, Union
 
 import numpy as np
@@ -13,6 +14,18 @@ class ProtectedMath:
     """
     Real-valued numerical helpers for symbolic regression.
     """
+
+    # Per-thread, so concurrent evaluations (thread-based parallel execution)
+    # don't clobber each other's saturation state.
+    _state: Final[threading.local] = threading.local()
+
+    @classmethod
+    def reset_saturation(cls) -> None:
+        cls._state.saturated = False
+
+    @classmethod
+    def was_saturated(cls) -> bool:
+        return getattr(cls._state, "saturated", False)
 
     # Small thresholds
 
@@ -61,8 +74,11 @@ class ProtectedMath:
             fill_pos = cls.OUTPUT_MAX
         if fill_neg is None:
             fill_neg = cls.OUTPUT_MIN
-        arr = np.nan_to_num(arr, nan=0.0, posinf=fill_pos, neginf=fill_neg)
-        return np.clip(arr, cls.OUTPUT_MIN, cls.OUTPUT_MAX)
+        fixed = np.nan_to_num(arr, nan=0.0, posinf=fill_pos, neginf=fill_neg)
+        clipped = np.clip(fixed, cls.OUTPUT_MIN, cls.OUTPUT_MAX)
+        if np.any(arr != clipped):
+            cls._state.saturated = True
+        return clipped
 
     @classmethod
     def _broadcast_pair(

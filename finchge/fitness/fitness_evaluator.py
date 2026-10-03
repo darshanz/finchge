@@ -332,7 +332,15 @@ class FitnessEvaluator:
         self._validate_context_keys(eval_context, required_keys, individual)
 
         results = [fn.evaluate(eval_context) for fn in self.fitness_functions]
-        return merge_fitness_results(results)
+        record = merge_fitness_results(results)
+        if eval_context.get("saturated"):
+            # Protected math had to clip/replace a value somewhere in this
+            # evaluation: the result isn't trustworthy, even though it's a
+            # well-formed finite number. Store it on the record (not just the
+            # individual) so a later cache hit for this phenotype still
+            # invalidates, rather than only the first, uncached evaluation.
+            record.meta["saturated"] = True
+        return record
 
     def _create_parallel_backend(self) -> BaseParallelBackend:
         """Create parallel backend from config dictionary"""
@@ -465,6 +473,9 @@ class FitnessEvaluator:
 
         for key, value in record.meta.items():
             individual.set_meta(key, value)
+
+        if record.meta.get("saturated"):
+            individual.invalid = True
 
     def _validate_context_compatibility(self) -> None:
         # Validate the runner-fitness combination to make sure runner can

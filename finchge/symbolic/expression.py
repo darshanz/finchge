@@ -193,6 +193,9 @@ class SymbolicExpression:
         self._functions = (
             self._UNPROTECTED_FUNCTIONS if unprotected else self._FUNCTIONS
         )
+        # True if the most recent eval() had to clip/replace a value anywhere
+        # in the computation (protected mode only; always False otherwise).
+        self.saturated = False
 
         try:
             parsed = ast.parse(self.expression, mode="eval")
@@ -352,10 +355,13 @@ class SymbolicExpression:
                 )
             env[var] = X_arr[:, idx]
 
+        if not self.unprotected:
+            pmath.reset_saturation()
+
         try:
             with np.errstate(all="ignore"):
                 value = self._eval_node(self._tree, env)
-            return self._coerce_output(value, n_samples)
+            result = self._coerce_output(value, n_samples)
 
         except ExpressionSyntaxError:
             raise
@@ -363,6 +369,10 @@ class SymbolicExpression:
             raise ExpressionEvaluationError(
                 f"failed to evaluate expression {self.expression!r}"
             ) from exc
+
+        if not self.unprotected:
+            self.saturated = pmath.was_saturated()
+        return result
 
     def node_count(self) -> int:
         # Count actual expression nodes, not regex matches.
